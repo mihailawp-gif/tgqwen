@@ -62,7 +62,7 @@ async def init_user(request):
                 first_name=data.get('first_name'),
                 last_name=data.get('last_name'),
                 photo_url=data.get('photo_url'),
-                balance=5000,  # Даем сразу 5000 звезд для теста
+                balance=0,  # Даем сразу 5000 звезд для теста
                 referral_code=referral_code
             )
             
@@ -866,19 +866,6 @@ async def create_app():
     # Инициализация БД
     await init_db()
 
-# Авто-создание кейсов и подарков
-    from database.init_db import populate_db
-    import asyncio
-
-    async def init_data():
-        try:
-            await populate_db()
-            print("✅ Database populated with cases and gifts")
-        except Exception as e:
-            print(f"⚠️ Populate skipped (may already exist): {e}")
-
-# Запускаем в фоне после старта
-    asyncio.create_task(init_data())
     
     return app
 

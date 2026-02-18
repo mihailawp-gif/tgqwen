@@ -167,40 +167,41 @@ PENDING_GIFTS = [
 
 
 async def populate_db():
-    try:
-        async with async_session() as session:
-            # ── СОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ ──
+    async with async_session() as session:
+        # ── СОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ ──
+        users_data = []
+        
+        try:
+            # Сохраняем пользователей
+            users_result = await session.execute(select(User))
+            for user in users_result.scalars().all():
+                users_data.append({
+                    'telegram_id': user.telegram_id,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'photo_url': user.photo_url,
+                    'balance': user.balance,
+                    'free_case_available': user.free_case_available,
+                    'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
+                })
+            
+            print(f"💾 Сохранено {len(users_data)} пользователей")
+        except Exception as e:
+            print(f"⚠️ No existing users to preserve: {e}")
             users_data = []
-            
+            await session.rollback()  # Откатываем ошибку чтобы продолжить
+        
+        # ── UPSERT обычных гифтов по gift_number ──
+        gift_objs = {}
+        for num, name, rarity, value in GIFTS_CATALOG:
+            is_stars = num >= 200
+            image_url = (
+                "/static/images/star.png"
+                if is_stars
+                else f"/static/images/gift_limited_{num}.tgs"
+            )
             try:
-                # Сохраняем пользователей
-                users_result = await session.execute(select(User))
-                for user in users_result.scalars().all():
-                    users_data.append({
-                        'telegram_id': user.telegram_id,
-                        'username': user.username,
-                        'first_name': user.first_name,
-                        'last_name': user.last_name,
-                        'photo_url': user.photo_url,
-                        'balance': user.balance,
-                        'free_case_available': user.free_case_available,
-                        'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
-                    })
-                
-                print(f"💾 Сохранено {len(users_data)} пользователей")
-            except Exception as e:
-                print(f"⚠️ No existing users to preserve: {e}")
-                users_data = []
-            
-            # ── UPSERT обычных гифтов по gift_number ──
-            gift_objs = {}
-            for num, name, rarity, value in GIFTS_CATALOG:
-                is_stars = num >= 200
-                image_url = (
-                    "/static/images/star.png"
-                    if is_stars
-                    else f"/static/images/gift_limited_{num}.tgs"
-                )
                 result = await session.execute(select(Gift).where(Gift.gift_number == num))
                 gift = result.scalar_one_or_none()
                 if gift:
@@ -216,9 +217,13 @@ async def populate_db():
                     session.add(gift)
                     print(f"  INSERT [{num}] {name}")
                 gift_objs[num] = gift
-            
-            # ── UPSERT подарков без TGS (по gift_id) ──
-            for key, name, rarity, value in PENDING_GIFTS:
+            except Exception as e:
+                print(f"  ⚠️ Error on gift {num}: {e}")
+                await session.rollback()
+        
+        # ── UPSERT подарков без TGS (по gift_id) ──
+        for key, name, rarity, value in PENDING_GIFTS:
+            try:
                 result = await session.execute(select(Gift).where(Gift.gift_id == key))
                 gift = result.scalar_one_or_none()
                 if gift:
@@ -234,19 +239,30 @@ async def populate_db():
                     session.add(gift)
                     print(f"  INSERT [{key}] {name}")
                 gift_objs[key] = gift
-            
-            await session.commit()
-            for k in gift_objs:
+            except Exception as e:
+                print(f"  ⚠️ Error on gift {key}: {e}")
+                await session.rollback()
+        
+        await session.commit()
+        
+        for k in gift_objs:
+            try:
                 await session.refresh(gift_objs[k])
-            
-            # ── ПЕРЕСОЗДАНИЕ КЕЙСОВ ──
-            # Удаляем старые кейсы и их предметы
-            print("🔄 Пересоздание кейсов...")
+            except:
+                pass
+        
+        # ── ПЕРЕСОЗДАНИЕ КЕЙСОВ ──
+        print("🔄 Пересоздание кейсов...")
+        try:
             await session.execute(delete(CaseItem))
             await session.execute(delete(Case))
             await session.commit()
-            
-            # ── Бесплатный кейс ─────────────────────────────────────────────
+        except Exception as e:
+            print(f"⚠️ Error deleting cases: {e}")
+            await session.rollback()
+        
+        # ── Бесплатный кейс ─────────────────────────────────────────────
+        try:
             case_free = Case(
                 name="Бесплатный кейс",
                 description="Открывай раз в 24 часа бесплатно!",
@@ -275,7 +291,14 @@ async def populate_db():
                         drop_chance=0.625
                     ))
             
-            # ── Кейс подарков ──
+            await session.commit()
+            print("✅ Бесплатный кейс создан!")
+        except Exception as e:
+            print(f"⚠️ Error creating free case: {e}")
+            await session.rollback()
+        
+        # ── Кейс подарков ──
+        try:
             gifts_nums = [49, 22, 81, 18, 50, 55, 48, 23, 91, 54, 52, 94, 51, 102, 117]
             case_gifts = Case(
                 name="Кейс Подарков",
@@ -290,7 +313,14 @@ async def populate_db():
                     chance = 15.0 if i < 5 else 8.0 if i < 10 else 3.0
                     session.add(CaseItem(case_id=case_gifts.id, gift_id=gift_objs[num].id, drop_chance=chance))
             
-            # ── Премиум кейс ──
+            await session.commit()
+            print("✅ Кейс подарков создан!")
+        except Exception as e:
+            print(f"⚠️ Error creating gifts case: {e}")
+            await session.rollback()
+        
+        # ── Премиум кейс ──
+        try:
             prem_nums = [76, 20, 75, 63, 68, 72, 93, 47, 41, 58, 104, 36, 53, 42, 77, 85, 88, 84, 1, 116]
             case_prem = Case(
                 name="Премиум кейс",
@@ -306,11 +336,16 @@ async def populate_db():
                     session.add(CaseItem(case_id=case_prem.id, gift_id=gift_objs[num].id, drop_chance=chance))
             
             await session.commit()
-            print("✅ Кейсы созданы!")
-            
-            # ── ВОССТАНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ──
-            # Восстанавливаем всех пользователей из сохранённых данных
-            if users_data:
+            print("✅ Премиум кейс создан!")
+        except Exception as e:
+            print(f"⚠️ Error creating premium case: {e}")
+            await session.rollback()
+        
+        print("✅ Кейсы созданы!")
+        
+        # ── ВОССТАНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ──
+        if users_data:
+            try:
                 print(f"💾 Восстановление {len(users_data)} пользователей...")
                 for u in users_data:
                     result = await session.execute(select(User).where(User.telegram_id == u['telegram_id']))
@@ -328,7 +363,6 @@ async def populate_db():
                         )
                         session.add(user)
                     else:
-                        # Обновляем существующие данные
                         user.username = u['username']
                         user.first_name = u['first_name']
                         user.last_name = u['last_name']
@@ -339,9 +373,9 @@ async def populate_db():
                 
                 await session.commit()
                 print(f"✅ Восстановлено {len(users_data)} пользователей")
-    
-    except Exception as e:
-        print(f"⚠️ Populate error (may already exist): {e}")
+            except Exception as e:
+                print(f"⚠️ Error restoring users: {e}")
+                await session.rollback()
 
 
 async def main():

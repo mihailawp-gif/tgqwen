@@ -1,0 +1,742 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --tg-theme-bg-color: #1a1a2e;
+    --tg-theme-text-color: #ffffff;
+    --tg-theme-hint-color: #999999;
+    --primary-color: #6C5CE7;
+    --secondary-color: #A29BFE;
+    --success-color: #00ff7f;
+    --danger-color: #FF7675;
+    --warning-color: #FFD700;
+    --common-color: #95A5A6;
+    --rare-color: #3498DB;
+    --epic-color: #9B59B6;
+    --legendary-color: #F39C12;
+    --card-bg: #16213e;
+    --card-border: #0f3460;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.user-balance {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.btn-topup {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border: none;
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-topup:active {
+    transform: scale(0.95);
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.tab {
+    flex: 1;
+    padding: 15px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tg-theme-hint-color);
+    cursor: pointer;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* Screen Management */
+.screen {
+    display: none;
+    min-height: 100vh;
+}
+
+.screen.active {
+    display: block;
+}
+
+.tab-content {
+    display: none;
+    padding: 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Cases Grid - БОЛЬШИЕ КАРТОЧКИ */
+.cases-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.case-card {
+    background: linear-gradient(135deg, rgba(0, 255, 127, 0.1) 0%, rgba(0, 200, 100, 0.05) 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    border: 2px solid rgba(0, 255, 127, 0.3);
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    min-height: 120px;
+}
+
+.case-card:active {
+    transform: scale(0.98);
+}
+
+.case-card:not(.free) {
+    background: linear-gradient(135deg, rgba(150, 50, 50, 0.15) 0%, rgba(100, 30, 30, 0.05) 100%);
+    border-color: rgba(200, 80, 80, 0.3);
+}
+
+.case-image-wrapper {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+}
+
+.case-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.case-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.case-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.case-price {
+    font-size: 16px;
+    font-weight: 800;
+    padding: 10px 20px;
+    border-radius: 25px;
+    display: inline-block;
+    width: fit-content;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+}
+
+.case-price.free {
+    background: linear-gradient(135deg, #00ff7f, #00d46a);
+    color: #000;
+}
+
+/* Opening Screen */
+.opening-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-right: 10px;
+}
+
+.case-preview {
+    padding: 0;
+}
+
+/* ОГРОМНАЯ картинка кейса */
+.case-carousel {
+    width: 100%;
+    height: 60vh;
+    max-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.1), rgba(162, 155, 254, 0.05));
+    border-bottom: 3px solid rgba(108, 92, 231, 0.2);
+}
+
+.case-carousel-track {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.case-carousel-item {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.case-carousel-item img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.case-description {
+    text-align: center;
+    color: var(--tg-theme-hint-color);
+    padding: 20px;
+    font-size: 14px;
+}
+
+/* Призы - БОЛЬШИЕ КАРТОЧКИ */
+.case-items-preview {
+    padding: 20px;
+}
+
+.case-items-preview h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: var(--tg-theme-text-color);
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.preview-item {
+    background: rgba(150, 50, 50, 0.15);
+    border-radius: 15px;
+    border: 2px solid rgba(150, 50, 50, 0.3);
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.preview-item img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+    object-fit: contain;
+}
+
+.preview-item-name {
+    font-size: 12px;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--tg-theme-text-color);
+}
+
+.preview-item-chance {
+    font-size: 11px;
+    color: var(--warning-color);
+    font-weight: 700;
+}
+
+/* Кнопка открытия */
+.case-price-badge {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 20px;
+    color: var(--warning-color);
+}
+
+.btn-open-case {
+    width: calc(100% - 40px);
+    margin: 0 20px 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border: none;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.btn-open-case:active {
+    transform: scale(0.98);
+}
+
+.btn-open-case.free {
+    background: linear-gradient(135deg, #00ff7f, #00d46a);
+    color: #000;
+}
+
+/* Roulette Animation */
+.roulette-container {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    margin: 50px 20px;
+    border-radius: 15px;
+    background: var(--card-bg);
+}
+
+.roulette-selector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 150px;
+    background: var(--primary-color);
+    z-index: 10;
+}
+
+.roulette-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.roulette-item {
+    min-width: 150px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    margin: 0 5px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.roulette-item img {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+}
+
+.roulette-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.opening-status {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 30px;
+    color: var(--primary-color);
+}
+
+/* Result Screen */
+.result-container {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.congrats {
+    font-size: 28px;
+    margin-bottom: 40px;
+}
+
+.won-item {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 30px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+}
+
+.won-item img {
+    width: 150px;
+    height: 150px;
+    z-index: 1;
+}
+
+.item-rarity {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 15px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    z-index: 2;
+}
+
+.item-rarity.common { background: var(--common-color); }
+.item-rarity.rare { background: var(--rare-color); }
+.item-rarity.epic { background: var(--epic-color); }
+.item-rarity.legendary { background: var(--legendary-color); }
+
+.item-value {
+    font-size: 18px;
+    color: var(--tg-theme-hint-color);
+    margin: 10px 0 30px;
+}
+
+.result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.btn-withdraw {
+    padding: 18px;
+    background: var(--success-color);
+    color: #000;
+    border: none;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-continue {
+    padding: 18px;
+    background: var(--card-bg);
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Inventory */
+.inventory-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.inventory-item {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid var(--card-border);
+}
+
+.inventory-item img {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+}
+
+.inventory-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.btn-withdraw-small {
+    width: 100%;
+    padding: 10px;
+    background: var(--success-color);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* History */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 0;
+    margin-bottom: 20px;
+}
+
+.history-header h3 {
+    font-size: 16px;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--danger-color);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+}
+
+.history-item {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid var(--card-border);
+}
+
+.history-item img {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+}
+
+.history-item-info {
+    flex: 1;
+}
+
+.history-user {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.history-prize {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color);
+}
+
+.history-time {
+    font-size: 11px;
+    color: var(--tg-theme-hint-color);
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 90%;
+    width: 350px;
+}
+
+.modal-content h3 {
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.modal-content p {
+    margin-bottom: 25px;
+    color: var(--tg-theme-hint-color);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-cancel, .btn-confirm {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--tg-theme-text-color);
+}
+
+.btn-confirm {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Loader */
+.loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loader.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--card-bg);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s;
+    border: 1px solid var(--card-border);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Empty states */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.empty-state-text {
+    font-size: 16px;
+    color: var(--tg-theme-hint-color);
+}

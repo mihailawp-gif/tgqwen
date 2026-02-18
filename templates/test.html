@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Кейсы - Standalone Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Mock Telegram Web App API -->
+    <script>
+        // Эмуляция Telegram Web App API для локального тестирования
+        window.Telegram = {
+            WebApp: {
+                initData: '',
+                initDataUnsafe: {
+                    user: {
+                        id: 123456789,
+                        first_name: 'Test',
+                        last_name: 'User',
+                        username: 'testuser',
+                        language_code: 'ru'
+                    }
+                },
+                version: '6.0',
+                platform: 'web',
+                colorScheme: 'light',
+                themeParams: {
+                    bg_color: '#ffffff',
+                    text_color: '#000000',
+                    hint_color: '#999999',
+                    link_color: '#2481cc',
+                    button_color: '#2481cc',
+                    button_text_color: '#ffffff'
+                },
+                isExpanded: true,
+                viewportHeight: window.innerHeight,
+                viewportStableHeight: window.innerHeight,
+                
+                // Методы
+                ready: function() {
+                    console.log('✅ Telegram WebApp ready (mock)');
+                },
+                expand: function() {
+                    console.log('📱 Telegram WebApp expanded (mock)');
+                },
+                close: function() {
+                    console.log('❌ Close called (mock)');
+                    alert('В реальном Telegram приложение закроется');
+                },
+                
+                // Main Button
+                MainButton: {
+                    text: '',
+                    color: '#2481cc',
+                    textColor: '#ffffff',
+                    isVisible: false,
+                    isActive: true,
+                    isProgressVisible: false,
+                    
+                    setText: function(text) {
+                        this.text = text;
+                        console.log('MainButton text:', text);
+                    },
+                    show: function() {
+                        this.isVisible = true;
+                        console.log('MainButton shown');
+                    },
+                    hide: function() {
+                        this.isVisible = false;
+                        console.log('MainButton hidden');
+                    },
+                    onClick: function(callback) {
+                        this._callback = callback;
+                    },
+                    offClick: function(callback) {
+                        this._callback = null;
+                    }
+                },
+                
+                // Back Button
+                BackButton: {
+                    isVisible: false,
+                    
+                    show: function() {
+                        this.isVisible = true;
+                        console.log('BackButton shown');
+                        this._createButton();
+                    },
+                    hide: function() {
+                        this.isVisible = false;
+                        console.log('BackButton hidden');
+                        this._removeButton();
+                    },
+                    onClick: function(callback) {
+                        this._callback = callback;
+                    },
+                    offClick: function(callback) {
+                        this._callback = null;
+                    },
+                    _createButton: function() {
+                        if (!document.getElementById('mock-back-btn')) {
+                            const btn = document.createElement('button');
+                            btn.id = 'mock-back-btn';
+                            btn.textContent = '← Назад';
+                            btn.style.cssText = `
+                                position: fixed;
+                                top: 10px;
+                                left: 10px;
+                                z-index: 10000;
+                                background: #2481cc;
+                                color: white;
+                                border: none;
+                                padding: 10px 20px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 600;
+                            `;
+                            btn.onclick = () => {
+                                if (this._callback) this._callback();
+                            };
+                            document.body.appendChild(btn);
+                        }
+                    },
+                    _removeButton: function() {
+                        const btn = document.getElementById('mock-back-btn');
+                        if (btn) btn.remove();
+                    }
+                },
+                
+                // Haptic Feedback
+                HapticFeedback: {
+                    impactOccurred: function(style) {
+                        console.log('Haptic:', style);
+                    },
+                    notificationOccurred: function(type) {
+                        console.log('Notification haptic:', type);
+                    },
+                    selectionChanged: function() {
+                        console.log('Selection changed haptic');
+                    }
+                },
+                
+                // Alerts
+                showAlert: function(message) {
+                    alert(message);
+                },
+                showConfirm: function(message, callback) {
+                    callback(confirm(message));
+                },
+                showPopup: function(params, callback) {
+                    alert(params.message);
+                    if (callback) callback();
+                },
+                
+                // Other
+                sendData: function(data) {
+                    console.log('Send data to bot:', data);
+                    alert('Данные отправлены боту: ' + data);
+                }
+            }
+        };
+        
+        // Глобальный объект tg
+        window.tg = window.Telegram.WebApp;
+        
+        console.log('%c🧪 Standalone Test Mode', 'background: #2481cc; color: white; padding: 5px 10px; border-radius: 3px;');
+        console.log('Telegram Web App API эмулируется локально');
+        console.log('User ID:', window.tg.initDataUnsafe.user.id);
+    </script>
+</head>
+<body>
+    <!-- Тестовая панель -->
+    <div id="test-panel" style="
+        position: fixed;
+        top: 0;
+        right: 0;
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 15px;
+        border-bottom-left-radius: 10px;
+        z-index: 9999;
+        font-size: 12px;
+        max-width: 300px;
+    ">
+        <div style="font-weight: bold; margin-bottom: 10px;">🧪 Standalone Test Mode</div>
+        <div style="margin-bottom: 5px;">👤 User ID: <span id="test-user-id">123456789</span></div>
+        <div style="margin-bottom: 5px;">💰 Balance: <span id="test-balance">0</span> ⭐</div>
+        <div style="margin-top: 10px;">
+            <button onclick="addTestBalance(50)" style="
+                background: #00B894;
+                border: none;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 11px;
+                margin-right: 5px;
+            ">+50 ⭐</button>
+            <button onclick="addTestBalance(100)" style="
+                background: #00B894;
+                border: none;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 11px;
+            ">+100 ⭐</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 10px; opacity: 0.7;">
+            Приложение работает в режиме тестирования БЕЗ Telegram
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="main-screen" class="screen active">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Test User</div>
+                    <div class="user-balance">💰 <span id="userBalance">0</span> ⭐</div>
+                </div>
+            </div>
+            <button class="btn-topup" onclick="showTopupScreen()">
+                <span>💳</span> Пополнить
+            </button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('cases')">🎁 Кейсы</button>
+            <button class="tab" onclick="switchTab('inventory')">📦 Инвентарь</button>
+            <button class="tab" onclick="switchTab('history')">📜 История</button>
+        </div>
+
+        <div id="cases-tab" class="tab-content active">
+            <div class="cases-grid" id="casesGrid">
+                <!-- Кейсы загружаются динамически -->
+            </div>
+        </div>
+
+        <div id="inventory-tab" class="tab-content">
+            <div class="inventory-list" id="inventoryList">
+                <!-- Предметы загружаются динамически -->
+            </div>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <div class="history-header">
+                <h3>🌍 История выигрышей всех пользователей</h3>
+                <div class="live-indicator">🔴 LIVE</div>
+            </div>
+            <div class="history-list" id="historyList">
+                <!-- История загружается динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран открытия кейса -->
+    <div id="opening-screen" class="screen">
+        <div class="opening-header">
+            <button class="btn-back" onclick="closeOpeningScreen()">← Назад</button>
+            <h2 id="openingCaseName"></h2>
+        </div>
+
+        <div class="case-preview">
+            <div class="case-image-container">
+                <img id="openingCaseImage" src="" alt="">
+            </div>
+            <p class="case-description" id="openingCaseDescription"></p>
+            
+            <div class="case-items-preview">
+                <h3>Возможные призы:</h3>
+                <div class="items-scroll" id="caseItemsPreview"></div>
+            </div>
+
+            <div class="case-price">
+                <span id="openingCasePrice"></span>
+            </div>
+
+            <button class="btn-open-case" id="btnOpenCase" onclick="confirmOpenCase()">
+                <span class="btn-text">Открыть кейс</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Экран анимации открытия -->
+    <div id="animation-screen" class="screen">
+        <div class="roulette-container">
+            <div class="roulette-selector"></div>
+            <div class="roulette-track" id="rouletteTrack"></div>
+        </div>
+        <div class="opening-status">Крутим...</div>
+    </div>
+
+    <!-- Экран результата -->
+    <div id="result-screen" class="screen">
+        <div class="result-container">
+            <h2 class="congrats">🎉 Поздравляем! 🎉</h2>
+            
+            <div class="won-item">
+                <div class="item-glow"></div>
+                <img id="wonItemImage" src="" alt="">
+                <div class="item-rarity" id="wonItemRarity"></div>
+            </div>
+
+            <h3 id="wonItemName"></h3>
+            <div class="item-value">Ценность: <span id="wonItemValue"></span> ⭐</div>
+
+            <div class="result-actions">
+                <button class="btn-withdraw" onclick="withdrawItem()">
+                    <span>📤</span> Вывести приз
+                </button>
+                <button class="btn-continue" onclick="closeResultScreen()">
+                    Продолжить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Подтверждение</h3>
+            <p id="confirmText"></p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Отмена</button>
+                <button class="btn-confirm" onclick="executeOpenCase()">Открыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div id="loader" class="loader hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast уведомления -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Test panel functions -->
+    <script>
+        function addTestBalance(amount) {
+            const balanceEl = document.getElementById('userBalance');
+            const currentBalance = parseInt(balanceEl.textContent);
+            const newBalance = currentBalance + amount;
+            balanceEl.textContent = newBalance;
+            document.getElementById('test-balance').textContent = newBalance;
+            
+            // Обновляем в state
+            if (window.state && window.state.user) {
+                window.state.user.balance = newBalance;
+            }
+            
+            showToast(`✅ Добавлено ${amount} ⭐ для тестирования`);
+        }
+    </script>
+
+    <script src="/static/js/app.js"></script>
+    
+    <script>
+        // Дополнительные логи для отладки
+        console.log('%c✅ Standalone mode активен', 'background: #00B894; color: white; padding: 5px 10px;');
+        console.log('Откройте DevTools (F12) для просмотра логов');
+    </script>
+</body>
+</html>

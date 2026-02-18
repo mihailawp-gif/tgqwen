@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="theme-color" content="#0d0d17">
+    <title>Кейсы — Telegram</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+</head>
+<body>
+    <!-- ===== ГЛАВНЫЙ ЭКРАН ===== -->
+    <div id="main-screen" class="screen active">
+        <div class="header">
+            <div class="user-section" onclick="openProfile()" style="cursor:pointer">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Загрузка...</div>
+                    <div class="user-balance">
+                        <img src="/static/images/star.png" alt="⭐" class="balance-star-icon"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                        <span class="balance-star-fallback" style="display:none">⭐</span>
+                        <span id="userBalance">0</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-topup" onclick="showTopupScreen()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Пополнить
+            </button>
+        </div>
+
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="cases" onclick="switchTab('cases')">
+                    <!-- placeholder — замени src на свою иконку -->
+                    <img src="/static/images/tab-cases.png" class="tab-icon-img"
+                         onerror="this.style.opacity='0.4'" alt="">
+                    <span class="tab-label">Кейсы</span>
+                </button>
+                <button class="tab" data-tab="inventory" onclick="switchTab('inventory')">
+                    <!-- placeholder — замени src на свою иконку -->
+                    <img src="/static/images/tab-inventory.png" class="tab-icon-img"
+                         onerror="this.style.opacity='0.4'" alt="">
+                    <span class="tab-label">Инвентарь</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ИСТОРИЯ ВЫИГРЫШЕЙ — всегда под табами, горизонтальный скролл -->
+        <div class="live-history-section">
+            <div class="live-history-header">
+                <span class="live-history-title">Последние выигрыши</span>
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>LIVE</span>
+                </div>
+            </div>
+            <div class="live-history-scroll" id="liveHistoryScroll">
+                <!-- заполняется JS -->
+            </div>
+        </div>
+
+        <!-- КЕЙСЫ -->
+        <div id="cases-tab" class="tab-content active">
+            <div class="cases-container">
+                <div class="cases-grid" id="casesGrid"></div>
+            </div>
+        </div>
+
+        <div id="inventory-tab" class="tab-content">
+            <div class="inventory-container">
+                <div class="inventory-grid" id="inventoryList"></div>
+            </div>
+        </div>
+
+        <!-- история как вкладка оставлена скрытой для совместимости -->
+        <div id="history-tab" class="tab-content" style="display:none">
+            <div class="history-container">
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ЭКРАН ПРЕДПРОСМОТРА ===== -->
+    <div id="opening-screen" class="screen">
+        <div class="preview-header">
+            <button class="btn-back" onclick="closeOpeningScreen()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h2 id="openingCaseName">Название кейса</h2>
+        </div>
+
+        <div class="preview-roulette-wrapper">
+            <div class="preview-roulette-fade preview-roulette-fade-left"></div>
+            <div class="preview-roulette-track-container">
+                <div class="preview-roulette-track" id="previewRouletteTrack"></div>
+            </div>
+            <div class="preview-roulette-fade preview-roulette-fade-right"></div>
+            <div class="preview-roulette-indicator-bottom"></div>
+        </div>
+
+        <div class="preview-scrollable">
+            <p class="case-description" id="openingCaseDescription"></p>
+            <div class="items-preview-section">
+                <h3>Возможные награды</h3>
+                <div class="preview-rewards-box">
+                    <div class="preview-tiles-grid" id="caseItemsPreview"></div>
+                </div>
+            </div>
+            <div style="display:none" id="itemsListSection">
+                <div id="itemsList"></div>
+            </div>
+        </div>
+
+        <div class="open-case-footer">
+            <div class="case-price-display" id="openingCasePrice">
+                <img src="/static/images/star.png" class="price-icon" onerror="this.outerHTML='⭐'" alt="star">
+                <span class="price-amount">50</span>
+            </div>
+            <button class="btn-open-case" id="btnOpenCase" onclick="confirmOpenCase()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                Открыть кейс
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== ЭКРАН РУЛЕТКИ ===== -->
+    <div id="animation-screen" class="screen">
+        <div class="animation-container">
+            <div class="roulette-wrapper">
+                <div class="roulette-indicator"></div>
+                <div class="roulette-track-container">
+                    <div class="roulette-track" id="rouletteTrack"></div>
+                </div>
+            </div>
+            <div class="opening-status">
+                <div class="spinner-icon"></div>
+                <span>Открываем кейс...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ЭКРАН РЕЗУЛЬТАТА ===== -->
+    <div id="result-screen" class="screen">
+        <div class="result-container">
+            <div class="result-header">
+                <h2 class="congrats-text">🎉 Поздравляем! 🎉</h2>
+            </div>
+            <div class="won-item-showcase">
+                <div class="item-glow-effect"></div>
+                <div class="won-item-card">
+                    <img id="wonItemImage" src="" alt="Приз" style="display:none">
+                    <div class="item-rarity-badge" id="wonItemRarity">LEGENDARY</div>
+                </div>
+            </div>
+            <div class="won-item-details">
+                <h3 id="wonItemName" class="item-name">Название предмета</h3>
+                <div class="item-value">
+                    <span>Ценность:</span>
+                    <span class="value-amount">
+                        <img src="/static/images/star.png" class="value-icon" onerror="this.outerHTML='⭐'" alt="star">
+                        <span id="wonItemValue">100</span>
+                    </span>
+                </div>
+            </div>
+            <div class="result-actions">
+                <button class="btn-action btn-sell-result" onclick="sellResultItem()">
+                    Продать за <span id="resultSellPrice">0</span> <img src="/static/images/star.png" class="btn-sell-star-icon" alt="star">
+                </button>
+                <div id="starsAutoNotice" style="display:none;align-items:center;justify-content:center;gap:6px;padding:12px 16px;background:linear-gradient(135deg,rgba(255,200,0,.15),rgba(255,150,0,.1));border:1px solid rgba(255,200,0,.3);border-radius:14px;font-size:13px;font-weight:700;color:#ffd700;">
+                    <img src="/static/images/star.png" style="width:18px;height:18px" alt="⭐"> Звёзды зачислены на баланс!
+                </div>
+                <button class="btn-action btn-continue" onclick="closeResultScreen()">
+                    Продолжить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА ПОПОЛНЕНИЯ ===== -->
+    <div id="topupModal" class="modal">
+        <div class="modal-overlay" onclick="closeTopupModal()"></div>
+        <div class="modal-content topup-modal">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h3>Пополнение баланса</h3>
+                <button class="btn-close" onclick="closeTopupModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="payment-options">
+                <div class="payment-header">
+                    <img src="/static/images/star.png" class="stars-icon-large"
+                        onerror="this.outerHTML='<div style=\'font-size:48px\'>⭐</div>'" alt="star">
+                    <p>Выберите количество звёзд</p>
+                </div>
+                <div class="amounts-grid" id="topupAmounts">
+                    <button class="amount-card" onclick="createStarsInvoice(200)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 200</div></button>
+                    <button class="amount-card" onclick="createStarsInvoice(500)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 500</div></button>
+                    <button class="amount-card" onclick="createStarsInvoice(1000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 1000</div></button>
+                    <button class="amount-card" onclick="createStarsInvoice(2500)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 2500</div></button>
+                    <button class="amount-card" onclick="createStarsInvoice(5000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 5000</div></button>
+                    <button class="amount-card" onclick="createStarsInvoice(10000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 10000</div></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА ПОДТВЕРЖДЕНИЯ ===== -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-overlay" onclick="closeConfirmModal()"></div>
+        <div class="modal-content confirm-modal">
+            <div class="modal-handle"></div>
+            <h3>Подтверждение</h3>
+            <p id="confirmText"></p>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">Отмена</button>
+                <button class="btn-modal btn-confirm" onclick="executeOpenCase()">Открыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loader" class="loader hidden"><div class="loader-spinner"></div></div>
+    <div id="toast" class="toast"></div>
+
+    <!-- ===== ЭКРАН ПРОФИЛЯ ===== -->
+    <div id="profile-screen" class="screen">
+        <div class="profile-header">
+            <button class="btn-back" onclick="closeProfile()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h2>Профиль</h2>
+        </div>
+        
+        <div class="profile-content">
+            <!-- Аватарка и имя -->
+            <div class="profile-avatar-section">
+                <div class="profile-avatar" id="profileAvatar">👤</div>
+                <h3 id="profileName">Имя пользователя</h3>
+                <div class="profile-username" id="profileUsername">@username</div>
+            </div>
+            
+            <!-- Баланс -->
+            <div class="profile-balance-card">
+                <div class="balance-label">Баланс</div>
+                <div class="balance-amount">
+                    <img src="/static/images/star.png" class="profile-star-icon" alt="star">
+                    <span id="profileBalance">0</span>
+                </div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="profile-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="profileOpenings">0</div>
+                    <div class="stat-label">Открыто кейсов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="profileReferrals">0</div>
+                    <div class="stat-label">Рефералов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="profileEarnings">0</div>
+                    <div class="stat-label">Заработано ⭐</div>
+                </div>
+            </div>
+            
+            <!-- Реферальная ссылка -->
+            <div class="referral-section">
+                <h4>Пригласи друзей</h4>
+                <p class="referral-description">Получай 5% с каждого открытия кейса твоими друзьями!</p>
+                
+                <div class="referral-link-box">
+                    <div class="referral-code" id="referralCode">CODE</div>
+                    <button class="btn-copy" onclick="copyReferralLink()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="referral-hint">Нажми чтобы скопировать</p>
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="profile-actions">
+                <button class="btn-profile-action" onclick="showReferralsList()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Мои рефералы
+                </button>
+                <button class="btn-profile-action" onclick="showEarningsHistory()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    История заработка
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА РЕФЕРАЛОВ ===== -->
+    <div id="referralsModal" class="modal">
+        <div class="modal-overlay" onclick="closeReferralsModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Мои рефералы</h3>
+                <button class="btn-close" onclick="closeReferralsModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="referrals-list" id="referralsList">
+                <!-- Заполняется JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА ИСТОРИИ ЗАРАБОТКА ===== -->
+    <div id="earningsModal" class="modal">
+        <div class="modal-overlay" onclick="closeEarningsModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>История заработка</h3>
+                <button class="btn-close" onclick="closeEarningsModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="earnings-list" id="earningsList">
+                <!-- Заполняется JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/tgs-manager.js?v=11"></script>
+    <script src="/static/js/app.js?v=8"></script>
+</body>
+</html>

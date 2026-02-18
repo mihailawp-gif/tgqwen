@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TGS Test</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #111; color: #eee; font: 13px/1.5 monospace; padding: 16px; }
+#log { background: #1a1a1a; border: 1px solid #333; padding: 10px; margin-bottom: 16px; 
+       max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 11px; }
+.boxes { display: flex; gap: 16px; flex-wrap: wrap; }
+.box { width: 100px; height: 100px; background: #222; border: 1px solid #444; 
+       display: block; overflow: hidden; }
+h3 { margin-bottom: 8px; font-size: 14px; color: #aaa; }
+</style>
+</head>
+<body>
+<h3>TGS Diagnostic</h3>
+<div id="log">Loading scripts...</div>
+<div class="boxes">
+  <div id="t1" class="box" data-tgs="1"></div>
+  <div id="t5" class="box" data-tgs="5"></div>
+  <div id="t10" class="box" data-tgs="10"></div>
+  <div id="t50" class="box" data-tgs="50"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script>
+const L = document.getElementById('log');
+function log(s) { L.textContent += s + '\n'; L.scrollTop = L.scrollHeight; }
+
+async function gunzip(buf) {
+    if (typeof DecompressionStream !== 'undefined') {
+        const ds = new DecompressionStream('gzip');
+        const w = ds.writable.getWriter(); const r = ds.readable.getReader();
+        w.write(new Uint8Array(buf)); w.close();
+        const chunks = [];
+        for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);}
+        const m = new Uint8Array(chunks.reduce((n,c)=>n+c.length,0));
+        let i=0;for(const c of chunks){m.set(c,i);i+=c.length;}
+        return new TextDecoder().decode(m);
+    }
+    return new Promise((res,rej)=>fflate.gunzip(new Uint8Array(buf),(e,d)=>e?rej(e):res(new TextDecoder().decode(d))));
+}
+
+async function render(id, num) {
+    const el = document.getElementById(id);
+    const url = `/static/images/gift_limited_${num}.tgs`;
+    log(`[${num}] fetching...`);
+    try {
+        const r = await fetch(url);
+        log(`[${num}] HTTP ${r.status}`);
+        const buf = await r.arrayBuffer();
+        log(`[${num}] buf ${buf.byteLength}b`);
+        const data = JSON.parse(await gunzip(buf));
+        log(`[${num}] json ok, w=${data.w} h=${data.h} fr=${data.fr}`);
+        el.innerHTML = '';
+        const anim = lottie.loadAnimation({
+            container: el, renderer: 'svg', loop: true, autoplay: true,
+            animationData: data,
+            rendererSettings: { preserveAspectRatio: 'xMidYMid meet' }
+        });
+        anim.addEventListener('DOMLoaded', () => {
+            const svg = el.querySelector('svg');
+            if (svg) {
+                svg.setAttribute('width','100'); svg.setAttribute('height','100');
+                svg.style.width='100px'; svg.style.height='100px';
+                log(`[${num}] SVG rendered ✓`);
+            } else {
+                log(`[${num}] DOMLoaded but no SVG!`);
+            }
+        });
+        anim.addEventListener('error', e => log(`[${num}] ERROR: `+JSON.stringify(e)));
+    } catch(e) { log(`[${num}] FAIL: ${e.message}`); }
+}
+
+setTimeout(()=>{
+    log(`lottie=${!!window.lottie} fflate=${!!window.fflate} DS=${typeof DecompressionStream}`);
+    render('t1',1); render('t5',5); render('t10',10); render('t50',50);
+}, 200);
+</script>
+</body>
+</html>

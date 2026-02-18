@@ -878,7 +878,7 @@ async def create_app():
             print(f"⚠️ Populate skipped (may already exist): {e}")
 
 # Запускаем в фоне после старта
-    syncio.create_task(init_data())
+    asyncio.create_task(init_data())
     
     return app
 

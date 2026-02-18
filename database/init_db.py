@@ -169,24 +169,27 @@ PENDING_GIFTS = [
 async def populate_db():
     async with async_session() as session:
         # ── СОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ ──
-        # Сохраняем всех пользователей и их данные перед пересозданием БД
         users_data = []
         
-        # Сохраняем пользователей
-        users_result = await session.execute(select(User))
-        for user in users_result.scalars().all():
-            users_data.append({
-                'telegram_id': user.telegram_id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'photo_url': user.photo_url,
-                'balance': user.balance,
-                'free_case_available': user.free_case_available,
-                'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
-            })
-        
-        print(f"💾 Сохранено {len(users_data)} пользователей")
+        try:
+            # Сохраняем пользователей
+            users_result = await session.execute(select(User))
+            for user in users_result.scalars().all():
+                users_data.append({
+                    'telegram_id': user.telegram_id,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'photo_url': user.photo_url,
+                    'balance': user.balance,
+                    'free_case_available': user.free_case_available,
+                    'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
+                })
+            
+            print(f"💾 Сохранено {len(users_data)} пользователей")
+        except Exception as e:
+            print(f"⚠️ No existing users to preserve: {e}")
+            users_data = []
         
         # ── UPSERT обычных гифтов по gift_number ──
         gift_objs = {}

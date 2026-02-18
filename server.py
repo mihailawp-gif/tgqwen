@@ -865,6 +865,20 @@ async def create_app():
     
     # Инициализация БД
     await init_db()
+
+# Авто-создание кейсов и подарков
+    from database.init_db import populate_db
+    import asyncio
+
+    async def init_data():
+        try:
+            await populate_db()
+            print("✅ Database populated with cases and gifts")
+        except Exception as e:
+            print(f"⚠️ Populate skipped (may already exist): {e}")
+
+# Запускаем в фоне после старта
+    syncio.create_task(init_data())
     
     return app
 

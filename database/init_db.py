@@ -167,185 +167,181 @@ PENDING_GIFTS = [
 
 
 async def populate_db():
-    async with async_session() as session:
-        # ── СОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ ──
-        users_data = []
-        
-        try:
-            # Сохраняем пользователей
-            users_result = await session.execute(select(User))
-            for user in users_result.scalars().all():
-                users_data.append({
-                    'telegram_id': user.telegram_id,
-                    'username': user.username,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'photo_url': user.photo_url,
-                    'balance': user.balance,
-                    'free_case_available': user.free_case_available,
-                    'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
-                })
-            
-            print(f"💾 Сохранено {len(users_data)} пользователей")
-        except Exception as e:
-            print(f"⚠️ No existing users to preserve: {e}")
+    try:
+        async with async_session() as session:
+            # ── СОХРАНЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ ──
             users_data = []
-        
-        # ── UPSERT обычных гифтов по gift_number ──
-        gift_objs = {}
-        for num, name, rarity, value in GIFTS_CATALOG:
-            is_stars = num >= 200
-            image_url = (
-                "/static/images/star.png"
-                if is_stars
-                else f"/static/images/gift_limited_{num}.tgs"
-            )
-            result = await session.execute(select(Gift).where(Gift.gift_number == num))
-            gift = result.scalar_one_or_none()
-            if gift:
-                gift.name = name; gift.rarity = rarity
-                gift.value = value; gift.image_url = image_url
-                print(f"  UPDATE [{num}] {name}")
-            else:
-                gift = Gift(
-                    name=name, gift_id=f"gift_{num}",
-                    rarity=rarity, value=value,
-                    gift_number=num, image_url=image_url,
+            
+            try:
+                # Сохраняем пользователей
+                users_result = await session.execute(select(User))
+                for user in users_result.scalars().all():
+                    users_data.append({
+                        'telegram_id': user.telegram_id,
+                        'username': user.username,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'photo_url': user.photo_url,
+                        'balance': user.balance,
+                        'free_case_available': user.free_case_available,
+                        'last_free_case': user.last_free_case.isoformat() if user.last_free_case else None,
+                    })
+                
+                print(f"💾 Сохранено {len(users_data)} пользователей")
+            except Exception as e:
+                print(f"⚠️ No existing users to preserve: {e}")
+                users_data = []
+            
+            # ── UPSERT обычных гифтов по gift_number ──
+            gift_objs = {}
+            for num, name, rarity, value in GIFTS_CATALOG:
+                is_stars = num >= 200
+                image_url = (
+                    "/static/images/star.png"
+                    if is_stars
+                    else f"/static/images/gift_limited_{num}.tgs"
                 )
-                session.add(gift)
-                print(f"  INSERT [{num}] {name}")
-            gift_objs[num] = gift
-
-        # ── UPSERT подарков без TGS (по gift_id) ──
-        for key, name, rarity, value in PENDING_GIFTS:
-            result = await session.execute(select(Gift).where(Gift.gift_id == key))
-            gift = result.scalar_one_or_none()
-            if gift:
-                gift.name = name; gift.rarity = rarity; gift.value = value
-                print(f"  UPDATE [{key}] {name}")
-            else:
-                gift = Gift(
-                    name=name, gift_id=key,
-                    rarity=rarity, value=value,
-                    gift_number=None,
-                    image_url="/static/images/star.png",
-                )
-                session.add(gift)
-                print(f"  INSERT [{key}] {name}")
-            gift_objs[key] = gift
-
-        await session.commit()
-        for k in gift_objs:
-            await session.refresh(gift_objs[k])
-
-        # ── ПЕРЕСОЗДАНИЕ КЕЙСОВ ──
-        # Удаляем старые кейсы и их предметы
-        print("🔄 Пересоздание кейсов...")
-        await session.execute(delete(CaseItem))
-        await session.execute(delete(Case))
-        await session.commit()
-
-        # ── Бесплатный кейс ─────────────────────────────────────────────
-        # Состав: Stars x1-x10 (95%), Lol Pop(86), Whip Cupcake(99),
-        #         Кубок(121), Heart(122), Diamond(123), Ring(124), Champagne(125)
-        #         Pet Snake, Lunar Snake, Snake Box — все < 1%
-        #
-        # Итоговое распределение:
-        #   Stars x1..x10  : по 9.5% каждый  → суммарно 95%
-        #   Остальные 8 шт.: по 0.625% каждый → суммарно 5%
-        # ────────────────────────────────────────────────────────────────
-        case_free = Case(
-            name="Бесплатный кейс",
-            description="Открывай раз в 24 часа бесплатно!",
-            price=0, is_free=True,
-            image_url="/static/images/free-stars-case.png"
-        )
-        session.add(case_free)
-        await session.flush()
-
-        # Stars — 9.5% каждый
-        for num in range(200, 210):
-            if num in gift_objs:
-                session.add(CaseItem(
-                    case_id=case_free.id,
-                    gift_id=gift_objs[num].id,
-                    drop_chance=9.5
-                ))
-
-        # Редкие призы — 0.625% каждый (итого 5% на 8 предметов)
-        rare_free = [86, 99, 121, 122, 123, 124, 125, "pet_snake"]
-        for k in rare_free:
-            if k in gift_objs:
-                session.add(CaseItem(
-                    case_id=case_free.id,
-                    gift_id=gift_objs[k].id,
-                    drop_chance=0.625
-                ))
-
-        # ── Кейс подарков ──
-        gifts_nums = [49, 22, 81, 18, 50, 55, 48, 23, 91, 54, 52, 94, 51, 102, 117]
-        case_gifts = Case(
-            name="Кейс Подарков",
-            description="Эксклюзивные подарки Telegram!",
-            price=150,
-            image_url="/static/images/premium-gifts-case.png"
-        )
-        session.add(case_gifts)
-        await session.flush()
-        for i, num in enumerate(gifts_nums):
-            if num in gift_objs:
-                chance = 15.0 if i < 5 else 8.0 if i < 10 else 3.0
-                session.add(CaseItem(case_id=case_gifts.id, gift_id=gift_objs[num].id, drop_chance=chance))
-
-        # ── Премиум кейс ──
-        prem_nums = [76, 20, 75, 63, 68, 72, 93, 47, 41, 58, 104, 36, 53, 42, 77, 85, 88, 84, 1, 116]
-        case_prem = Case(
-            name="Премиум кейс",
-            description="Максимальные шансы на легендарки!",
-            price=500,
-            image_url="/static/images/premium-gifts-case.png"
-        )
-        session.add(case_prem)
-        await session.flush()
-        for i, num in enumerate(prem_nums):
-            if num in gift_objs:
-                chance = 10.0 if i < 6 else 5.0 if i < 12 else 2.0 if i < 16 else 0.5
-                session.add(CaseItem(case_id=case_prem.id, gift_id=gift_objs[num].id, drop_chance=chance))
-
-        await session.commit()
-        print("✅ Кейсы созданы!")
-        
-        # ── ВОССТАНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ──
-        # Восстанавливаем всех пользователей из сохранённых данных
-        if users_data:
-            print(f"💾 Восстановление {len(users_data)} пользователей...")
-            for u in users_data:
-                result = await session.execute(select(User).where(User.telegram_id == u['telegram_id']))
-                user = result.scalar_one_or_none()
-                if not user:
-                    user = User(
-                        telegram_id=u['telegram_id'],
-                        username=u['username'],
-                        first_name=u['first_name'],
-                        last_name=u['last_name'],
-                        photo_url=u['photo_url'],
-                        balance=u['balance'],
-                        free_case_available=u['free_case_available'],
-                        last_free_case=datetime.fromisoformat(u['last_free_case']) if u['last_free_case'] else None,
-                    )
-                    session.add(user)
+                result = await session.execute(select(Gift).where(Gift.gift_number == num))
+                gift = result.scalar_one_or_none()
+                if gift:
+                    gift.name = name; gift.rarity = rarity
+                    gift.value = value; gift.image_url = image_url
+                    print(f"  UPDATE [{num}] {name}")
                 else:
-                    # Обновляем существующие данные
-                    user.username = u['username']
-                    user.first_name = u['first_name']
-                    user.last_name = u['last_name']
-                    user.photo_url = u['photo_url']
-                    user.balance = u['balance']
-                    user.free_case_available = u['free_case_available']
-                    user.last_free_case = datetime.fromisoformat(u['last_free_case']) if u['last_free_case'] else None
+                    gift = Gift(
+                        name=name, gift_id=f"gift_{num}",
+                        rarity=rarity, value=value,
+                        gift_number=num, image_url=image_url,
+                    )
+                    session.add(gift)
+                    print(f"  INSERT [{num}] {name}")
+                gift_objs[num] = gift
+            
+            # ── UPSERT подарков без TGS (по gift_id) ──
+            for key, name, rarity, value in PENDING_GIFTS:
+                result = await session.execute(select(Gift).where(Gift.gift_id == key))
+                gift = result.scalar_one_or_none()
+                if gift:
+                    gift.name = name; gift.rarity = rarity; gift.value = value
+                    print(f"  UPDATE [{key}] {name}")
+                else:
+                    gift = Gift(
+                        name=name, gift_id=key,
+                        rarity=rarity, value=value,
+                        gift_number=None,
+                        image_url="/static/images/star.png",
+                    )
+                    session.add(gift)
+                    print(f"  INSERT [{key}] {name}")
+                gift_objs[key] = gift
             
             await session.commit()
-            print(f"✅ Восстановлено {len(users_data)} пользователей")
+            for k in gift_objs:
+                await session.refresh(gift_objs[k])
+            
+            # ── ПЕРЕСОЗДАНИЕ КЕЙСОВ ──
+            # Удаляем старые кейсы и их предметы
+            print("🔄 Пересоздание кейсов...")
+            await session.execute(delete(CaseItem))
+            await session.execute(delete(Case))
+            await session.commit()
+            
+            # ── Бесплатный кейс ─────────────────────────────────────────────
+            case_free = Case(
+                name="Бесплатный кейс",
+                description="Открывай раз в 24 часа бесплатно!",
+                price=0, is_free=True,
+                image_url="/static/images/free-stars-case.png"
+            )
+            session.add(case_free)
+            await session.flush()
+            
+            # Stars — 9.5% каждый
+            for num in range(200, 210):
+                if num in gift_objs:
+                    session.add(CaseItem(
+                        case_id=case_free.id,
+                        gift_id=gift_objs[num].id,
+                        drop_chance=9.5
+                    ))
+            
+            # Редкие призы — 0.625% каждый (итого 5% на 8 предметов)
+            rare_free = [86, 99, 121, 122, 123, 124, 125, "pet_snake"]
+            for k in rare_free:
+                if k in gift_objs:
+                    session.add(CaseItem(
+                        case_id=case_free.id,
+                        gift_id=gift_objs[k].id,
+                        drop_chance=0.625
+                    ))
+            
+            # ── Кейс подарков ──
+            gifts_nums = [49, 22, 81, 18, 50, 55, 48, 23, 91, 54, 52, 94, 51, 102, 117]
+            case_gifts = Case(
+                name="Кейс Подарков",
+                description="Эксклюзивные подарки Telegram!",
+                price=150,
+                image_url="/static/images/premium-gifts-case.png"
+            )
+            session.add(case_gifts)
+            await session.flush()
+            for i, num in enumerate(gifts_nums):
+                if num in gift_objs:
+                    chance = 15.0 if i < 5 else 8.0 if i < 10 else 3.0
+                    session.add(CaseItem(case_id=case_gifts.id, gift_id=gift_objs[num].id, drop_chance=chance))
+            
+            # ── Премиум кейс ──
+            prem_nums = [76, 20, 75, 63, 68, 72, 93, 47, 41, 58, 104, 36, 53, 42, 77, 85, 88, 84, 1, 116]
+            case_prem = Case(
+                name="Премиум кейс",
+                description="Максимальные шансы на легендарки!",
+                price=500,
+                image_url="/static/images/premium-gifts-case.png"
+            )
+            session.add(case_prem)
+            await session.flush()
+            for i, num in enumerate(prem_nums):
+                if num in gift_objs:
+                    chance = 10.0 if i < 6 else 5.0 if i < 12 else 2.0 if i < 16 else 0.5
+                    session.add(CaseItem(case_id=case_prem.id, gift_id=gift_objs[num].id, drop_chance=chance))
+            
+            await session.commit()
+            print("✅ Кейсы созданы!")
+            
+            # ── ВОССТАНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ──
+            # Восстанавливаем всех пользователей из сохранённых данных
+            if users_data:
+                print(f"💾 Восстановление {len(users_data)} пользователей...")
+                for u in users_data:
+                    result = await session.execute(select(User).where(User.telegram_id == u['telegram_id']))
+                    user = result.scalar_one_or_none()
+                    if not user:
+                        user = User(
+                            telegram_id=u['telegram_id'],
+                            username=u['username'],
+                            first_name=u['first_name'],
+                            last_name=u['last_name'],
+                            photo_url=u['photo_url'],
+                            balance=u['balance'],
+                            free_case_available=u['free_case_available'],
+                            last_free_case=datetime.fromisoformat(u['last_free_case']) if u['last_free_case'] else None,
+                        )
+                        session.add(user)
+                    else:
+                        # Обновляем существующие данные
+                        user.username = u['username']
+                        user.first_name = u['first_name']
+                        user.last_name = u['last_name']
+                        user.photo_url = u['photo_url']
+                        user.balance = u['balance']
+                        user.free_case_available = u['free_case_available']
+                        user.last_free_case = datetime.fromisoformat(u['last_free_case']) if u['last_free_case'] else None
+                
+                await session.commit()
+                print(f"✅ Восстановлено {len(users_data)} пользователей")
+    
+    except Exception as e:
+        print(f"⚠️ Populate error (may already exist): {e}")
 
 
 async def main():

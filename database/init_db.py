@@ -380,19 +380,24 @@ async def populate_db():
 
 async def main():
     print("🔄 Инициализация таблиц...")
-    await init_db()
-    print("✅ Таблицы готовы")
     
-    # Небольшая пауза чтобы БД успела создаться
+    # Шаг 1: Создаём таблицы (ОТДЕЛЬНАЯ транзакция)
+    from database.models import init_db as create_tables
+    await create_tables()
+    
+    # Пауза чтобы PostgreSQL успел применить изменения
     import asyncio
-    await asyncio.sleep(2)
+    await asyncio.sleep(3)
     
+    print("✅ Таблицы созданы")
+    
+    # Шаг 2: Заполняем данными (НОВАЯ транзакция)
     print("🔄 Синхронизация гифтов...")
     try:
         await populate_db()
         print("\n✅ База данных готова!")
     except Exception as e:
-        print(f"⚠️ Populate error (may already exist): {e}")
+        print(f"⚠️ Populate error: {e}")
         print("✅ База данных готова!")
 
 

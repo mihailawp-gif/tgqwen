@@ -14,7 +14,7 @@ from aiogram.types import (
     WebAppInfo, PreCheckoutQuery, LabeledPrice
 )
 from aiogram.enums import ParseMode
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from dotenv import load_dotenv
 import random
 
@@ -28,6 +28,7 @@ class AdminState(StatesGroup):
     waiting_for_user_search = State()
     waiting_for_broadcast = State()
     waiting_for_add_balance = State()
+    waiting_for_mass_bonus = State()
 # Инициализация бота
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 admin_bot = Bot(token=os.getenv("ADMIN_BOT_TOKEN"))
@@ -477,61 +478,180 @@ async def back_to_menu(callback: CallbackQuery):
 #     )
 
 # === ADMIN КОМАНДЫ (ПОЛНАЯ АДМИНКА) ===
+def get_admin_keyboard():
+    """Генератор главной клавиатуры админа"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
+        [
+            InlineKeyboardButton(text="🔍 Найти юзера", callback_data="admin_search_user"),
+            InlineKeyboardButton(text="👥 Все юзеры", callback_data="admin_users_list_1")
+        ],
+        [
+            InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast_start"),
+            InlineKeyboardButton(text="💸 Бонус ВСЕМ", callback_data="admin_mass_bonus")
+        ],
+        [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
+    ])
 
 @router.message(Command("admin"))
 async def admin_panel(message: Message, state: FSMContext):
-    """Главное меню админки"""
     if message.from_user.id not in ADMIN_IDS:
         return
     await state.clear()
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
-        [InlineKeyboardButton(text="🔍 Найти пользователя", callback_data="admin_search_user")],
-        [InlineKeyboardButton(text="📢 Рассылка всем", callback_data="admin_broadcast_start")],
-        [InlineKeyboardButton(text="💸 Заявки на вывод", callback_data="admin_withdrawals")],
-        [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
-    ])
-    
-    await message.answer("👑 <b>Панель администратора</b>\n\nВыбери действие:", reply_markup=keyboard, parse_mode="HTML")
+    await message.answer("👑 <b>Панель администратора</b>\n\nВыбери действие:", reply_markup=get_admin_keyboard(), parse_mode="HTML")
 
-# --- СТАТИСТИКА ---
-@router.callback_query(F.data == "admin_stats")
-async def admin_stats(callback: CallbackQuery):
+# --- ИСПРАВЛЕННАЯ КНОПКА НАЗАД ---
+@router.callback_query(F.data == "admin_back")
+async def admin_back(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
+    await state.clear()
+    await callback.message.edit_text("👑 <b>Панель администратора</b>\n\nВыбери действие:", reply_markup=get_admin_keyboard(), parse_mode="HTML")
+
+# --- ПОСТРАНИЧНЫЙ СПИСОК ПОЛЬЗОВАТЕЛЕЙ ---
+@router.callback_query(F.data.startswith("admin_users_list_"))
+async def admin_users_list(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+        
+    page = int(callback.data.split("_")[3])
+    limit = 10
+    offset = (page - 1) * limit
     
     async with async_session() as session:
-        users_count = len((await session.execute(select(User))).scalars().all())
-        openings_count = len((await session.execute(select(CaseOpening))).scalars().all())
+        # Считаем всего юзеров для пагинации
+        total_users = await session.scalar(select(func.count(User.id)))
+        total_pages = math.ceil(total_users / limit) if total_users > 0 else 1
         
-        payments_result = await session.execute(select(Payment).where(Payment.status == "completed"))
-        total_revenue = sum(p.amount for p in payments_result.scalars().all())
+        if page > total_pages: page = total_pages
+        if page < 1: page = 1
         
-        # Считаем суммарный баланс всех юзеров (сколько звезд на руках)
-        users = (await session.execute(select(User))).scalars().all()
-        total_balance = sum(u.balance for u in users)
+        # Получаем юзеров для текущей страницы
+        users_result = await session.execute(
+            select(User).order_by(desc(User.created_at)).limit(limit).offset((page - 1) * limit)
+        )
+        users = users_result.scalars().all()
+        
+    kb = []
+    # Генерируем кнопки для каждого юзера
+    for u in users:
+        name = u.first_name or "Без имени"
+        uname = f"(@{u.username})" if u.username else ""
+        kb.append([InlineKeyboardButton(text=f"👤 {name} {uname}", callback_data=f"admin_user_info_{u.telegram_id}")])
+        
+    # Кнопки пагинации
+    nav = []
+    if page > 1:
+        nav.append(InlineKeyboardButton(text="⬅️", callback_data=f"admin_users_list_{page-1}"))
+    nav.append(InlineKeyboardButton(text=f"{page}/{total_pages}", callback_data="ignore"))
+    if page < total_pages:
+        nav.append(InlineKeyboardButton(text="➡️", callback_data=f"admin_users_list_{page+1}"))
+        
+    if nav: kb.append(nav)
+    kb.append([InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")])
     
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]])
-    
-    await callback.message.edit_text(
-        f"📊 <b>Статистика проекта:</b>\n\n"
-        f"👥 Всего пользователей: <b>{users_count}</b>\n"
-        f"🎁 Открыто кейсов: <b>{openings_count}</b>\n"
-        f"💰 Заработано (донат): <b>{total_revenue} ⭐</b>\n"
-        f"💎 Звезд на руках у игроков: <b>{total_balance} ⭐</b>",
-        reply_markup=keyboard,
-        parse_mode="HTML"
-    )
+    await callback.message.edit_text(f"👥 <b>База пользователей</b> (Всего: {total_users} чел.)\nСтраница {page} из {total_pages}", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode="HTML")
 
-# --- ПОИСК И УПРАВЛЕНИЕ ЮЗЕРОМ ---
-@router.callback_query(F.data == "admin_search_user")
-async def admin_search_user(callback: CallbackQuery, state: FSMContext):
+# --- ПОЛНОЕ ДОСЬЕ ПОЛЬЗОВАТЕЛЯ (ФАРШ) ---
+@router.callback_query(F.data.startswith("admin_user_info_"))
+async def admin_user_info(callback: CallbackQuery, state: FSMContext):
     if callback.from_user.id not in ADMIN_IDS:
         return
-    await state.set_state(AdminState.waiting_for_user_search)
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_back")]])
-    await callback.message.edit_text("🔍 Введи <b>Telegram ID</b> или <b>@username</b> пользователя:", reply_markup=keyboard, parse_mode="HTML")
+        
+    tg_id = int(callback.data.split("_")[3])
+    
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == tg_id))).scalar_one_or_none()
+        if not user:
+            return await callback.answer("Юзер не найден!", show_alert=True)
+            
+        # 1. Открыто кейсов
+        openings_count = await session.scalar(select(func.count(CaseOpening.id)).where(CaseOpening.user_id == user.id))
+        
+        # 2. Сумма депозитов
+        total_dep = await session.scalar(select(func.sum(Payment.amount)).where(Payment.user_id == user.id, Payment.status == 'completed')) or 0
+        
+        # 3. Выводы
+        withdrawals_count = await session.scalar(select(func.count(Withdrawal.id)).where(Withdrawal.user_id == user.id))
+        
+        # 4. Анализ инвентаря
+        inv_result = await session.execute(
+            select(CaseOpening, Gift)
+            .join(Gift, CaseOpening.gift_id == Gift.id)
+            .where(CaseOpening.user_id == user.id, CaseOpening.is_sold == False, CaseOpening.is_withdrawn == False)
+        )
+        inventory = inv_result.all() # Список кортежей (CaseOpening, Gift)
+        inv_count = len(inventory)
+        inv_value = sum(g.value for o, g in inventory if g.value)
+        
+    # Сохраняем в стейт, чтобы можно было выдать баланс
+    await state.update_data(target_user_id=user.telegram_id)
+    
+    # Формируем текст инвентаря
+    inv_text = f"Предметов: <b>{inv_count}</b> (Ценность: {inv_value} ⭐)"
+    if inv_count > 0:
+        # Берем топ-3 самых дорогих предмета из инвентаря
+        top_items = sorted([g for o, g in inventory], key=lambda x: x.value or 0, reverse=True)[:3]
+        top_names = ", ".join(f"{g.name}" for g in top_items)
+        inv_text += f"\n└ <i>Топ дроп: {top_names}</i>"
+        
+    date_reg = user.created_at.strftime('%d.%m.%Y') if user.created_at else 'Неизвестно'
+
+    text = (
+        f"👑 <b>ПОЛНОЕ ДОСЬЕ ИГРОКА</b>\n\n"
+        f"├ <b>Внутренний ID:</b> <code>{user.id}</code>\n"
+        f"├ <b>Telegram ID:</b> <code>{user.telegram_id}</code>\n"
+        f"├ <b>Имя:</b> {user.first_name} {user.last_name or ''}\n"
+        f"├ <b>Юзернейм:</b> @{user.username or '—'}\n"
+        f"└ <b>Регистрация:</b> {date_reg}\n\n"
+        f"💰 <b>ФИНАНСЫ:</b>\n"
+        f"├ Текущий баланс: <b>{user.balance} ⭐</b>\n"
+        f"└ Всего задонатил: <b>{total_dep} ⭐</b>\n\n"
+        f"🎰 <b>АКТИВНОСТЬ:</b>\n"
+        f"├ Открыл кейсов: <b>{openings_count}</b>\n"
+        f"└ Выводов призов: <b>{withdrawals_count}</b>\n\n"
+        f"🎒 <b>ИНВЕНТАРЬ:</b>\n"
+        f"{inv_text}"
+    )
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 Изменить баланс", callback_data="admin_edit_balance")],
+        [InlineKeyboardButton(text="🔄 Сбросить Free Кейс", callback_data=f"admin_reset_free_{user.telegram_id}")],
+        [
+            InlineKeyboardButton(text="◀️ К списку", callback_data="admin_users_list_1"),
+            InlineKeyboardButton(text="🏠 В меню", callback_data="admin_back")
+        ]
+    ])
+    await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+
+# --- МАССОВЫЙ БОНУС (КИЛЛЕР ФИЧА) ---
+@router.callback_query(F.data == "admin_mass_bonus")
+async def admin_mass_bonus_start(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    await state.set_state(AdminState.waiting_for_mass_bonus)
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_back")]])
+    await callback.message.edit_text("💸 <b>МАССОВЫЙ БОНУС</b>\n\nВведи сумму звезд, которую нужно начислить <b>ВСЕМ</b> зарегистрированным пользователям:", reply_markup=kb, parse_mode="HTML")
+
+@router.message(AdminState.waiting_for_mass_bonus)
+async def process_mass_bonus(message: Message, state: FSMContext):
+    try:
+        amount = int(message.text.strip())
+    except ValueError:
+        return await message.answer("❌ Введи просто число!")
+        
+    async with async_session() as session:
+        users = (await session.execute(select(User))).scalars().all()
+        for u in users:
+            u.balance += amount
+        await session.commit()
+        
+    await state.clear()
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]])
+    await message.answer(f"✅ Успешно! <b>{amount} ⭐</b> выдано всем игрокам (Охвачено: {len(users)} чел.)!", reply_markup=kb, parse_mode="HTML")
+
+# --- ПОИСК И УПРАВЛЕНИЕ ЮЗЕРОМ ---
+
 
 @router.message(AdminState.waiting_for_user_search)
 async def process_user_search(message: Message, state: FSMContext):
@@ -662,15 +782,7 @@ async def admin_reset_my_free_handler(callback: CallbackQuery):
         else:
             await callback.answer("❌ Профиль не найден", show_alert=True)
 # --- КНОПКА НАЗАД ---
-@router.callback_query(F.data == "admin_back")
-async def admin_back(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await admin_panel(callback.message, state) # Возвращаемся в главное меню админки
-    # Удаляем старое сообщение чтобы не мусорить
-    try:
-        await callback.message.delete()
-    except:
-        pass
+
 
 
 # @router.message(Command("resetfreecase"))

@@ -317,6 +317,10 @@ async def open_case(request):
                 else:
                     # Если нет не-Stars предметов, берём первый
                     won_item = items[0]
+                
+                # Получаем гифт (уже загружен через joinedload)
+                gift = won_item.gift
+                user.balance += gift.value or 0
             else:
                 # Выпали Stars (99.99% шанс) — рандом 1-10 с весами
                 # Веса: 1-5 stars имеют высокий шанс, 6-10 — меньший
@@ -327,11 +331,11 @@ async def open_case(request):
                 won_item = None
                 for item in items:
                     if item.gift.gift_number and item.gift.gift_number >= 200:
-                        if item.gift.value == stars_amount:
-                            won_item = item
-                            break
+                        # Используем stars_amount который уже сгенерировали
+                        won_item = item
+                        break
 
-                # Если не нашли точное совпадение, берём первый Stars предмет
+                # Если не нашли, берём первый Stars предмет
                 if not won_item:
                     stars_items = [item for item in items
                                    if item.gift.gift_number and item.gift.gift_number >= 200]
@@ -340,19 +344,12 @@ async def open_case(request):
                     else:
                         won_item = items[0]
 
-            # Получаем гифт (уже загружен через joinedload)
-            gift = won_item.gift
+                # Получаем гифт (уже загружен через joinedload)
+                gift = won_item.gift
 
-            # Для бесплатного кейса — зачисляем Stars на баланс
-            is_stars = bool(gift.gift_number and gift.gift_number >= 200)
-            if is_stars:
-                # Пересчитываем amount для Stars
-                stars_weights = [25, 20, 15, 12, 10, 7, 5, 3, 2, 1]
-                stars_amount = random.choices(range(1, 11), weights=stars_weights, k=1)[0]
+                # Зачисляем ТОТ ЖЕ stars_amount который сгенерировали выше
                 user.balance += stars_amount
                 gift.value = stars_amount  # Обновляем значение для ответа
-            else:
-                user.balance += gift.value or 0
         else:
             # === ОБЫЧНАЯ ЛОГИКА ДЛЯ ПЛАТНЫХ КЕЙСОВ ===
             total_chance = sum(item.drop_chance for item in items)

@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initUser() {
     const initData = tg.initDataUnsafe;
+    
+    // Получаем реферальный код из start_param (если пользователь пришёл по реф. ссылке)
+    const referrerCode = initData?.start_param || null;
 
     // Проверяем есть ли данные от Telegram
     if (initData.user) {
@@ -57,7 +60,8 @@ async function initUser() {
                 username: initData.user.username,
                 first_name: initData.user.first_name,
                 last_name: initData.user.last_name,
-                photo_url: initData.user.photo_url
+                photo_url: initData.user.photo_url,
+                referrer_code: referrerCode
             });
 
             if (response.success) {
@@ -86,7 +90,8 @@ async function initUser() {
             username: 'test_user',
             first_name: 'Test User',
             last_name: '',
-            photo_url: null
+            photo_url: null,
+            referrer_code: null
         });
 
         if (response.success) {

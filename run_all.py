@@ -20,26 +20,13 @@ async def main():
     from bot.main import dp, bot
     from bot.admin_bot import dp as admin_dp, admin_bot
     
-    # Создаём задачи для ботов
-    async def start_main_bot():
-        print("🤖 Starting main bot...")
-        await dp.start_polling(bot)
-    
-    async def start_admin_bot():
-        print("👮 Starting admin bot...")
-        await admin_dp.start_polling(admin_bot)
-    
-    # Запускаем ботов в фоне
-    bot_task = asyncio.create_task(start_main_bot())
-    admin_bot_task = asyncio.create_task(start_admin_bot())
+    # Получаем настройки из env
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', 8000))
     
     # Инициализируем и запускаем веб-сервер
     print("🚀 Starting web server...")
     app = await init_app()
-    
-    # Получаем настройки из env
-    host = os.getenv('HOST', '0.0.0.0')
-    port = int(os.getenv('PORT', 8000))
     
     runner = web.AppRunner(app)
     await runner.setup()
@@ -48,11 +35,39 @@ async def main():
     
     print(f"✅ Web server started on http://{host}:{port}")
     print("=" * 60)
-    print("🎉 All services started successfully!")
+    
+    # Создаём задачи для ботов
+    async def start_main_bot():
+        print("🤖 Starting main bot...")
+        try:
+            await dp.start_polling(bot)
+        except Exception as e:
+            print(f"❌ Main bot error: {e}")
+    
+    async def start_admin_bot():
+        print("👮 Starting admin bot...")
+        try:
+            await admin_dp.start_polling(admin_bot)
+        except Exception as e:
+            print(f"❌ Admin bot error: {e}")
+    
+    # Запускаем ботов в фоне
+    bot_task = asyncio.create_task(start_main_bot())
+    admin_bot_task = asyncio.create_task(start_admin_bot())
+    
+    print("🎉 All services started!")
     print("=" * 60)
     
-    # Ждём завершения всех задач
-    await asyncio.gather(bot_task, admin_bot_task, return_exceptions=True)
+    # Держим приложение запущенным
+    try:
+        # Ждём пока сервер работает
+        while True:
+            await asyncio.sleep(3600)
+    except asyncio.CancelledError:
+        print("\n👋 Shutting down...")
+        bot_task.cancel()
+        admin_bot_task.cancel()
+        await runner.cleanup()
 
 if __name__ == "__main__":
     try:

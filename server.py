@@ -877,7 +877,7 @@ async def init_app():
 
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', 8443))
-    webapp_url = os.getenv('WEBAPP_URL', f'https://localhost:{port}')
+    webapp_url = os.getenv('WEBAPP_URL', f'https://tgqwen.onrender.com/')
 
     # === HTTPS SSL ===
     use_https = os.getenv('USE_HTTPS', 'true').lower() == 'true'

@@ -407,7 +407,16 @@ async def main():
     except Exception as e:
         print(f"⚠️ Populate error: {e}")
         print("✅ База данных готова!")
+        
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE users ALTER COLUMN telegram_id TYPE BIGINT"))
+            print("✅ Колонка telegram_id успешно расширена до BIGINT")
+    except Exception as e:
+        print(f"⚠️ Ошибка изменения колонки (возможно уже обновлена): {e}")
+    # -----------------------------
 
+    await engine.dispose()
 
 if __name__ == "__main__":
     asyncio.run(main())

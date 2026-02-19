@@ -976,9 +976,9 @@ function createCustomStarsInvoice() {
     let stars = parseInt(input.value);
     
     // Проверяем минимальную сумму
-    if (!stars || stars < 100) {
-        showToast('❌ Минимальная сумма: 100 ⭐');
-        if (input) input.value = 100;
+    if (!stars || stars < 1) {
+        showToast('❌ Минимальная сумма: 1 ⭐');
+        if (input) input.value = 1;
         return;
     }
     

@@ -381,13 +381,24 @@ async def populate_db():
 async def main():
     print("🔄 Инициализация таблиц...")
     
-    from database.models import init_db as create_tables, engine
-    await create_tables()
+    from database.models import init_db as create_tables, engine, DATABASE_URL
     
-    # Сбрасываем пул — все новые соединения увидят свежую схему
+    # ДИАГНОСТИКА
+    print(f"📌 DATABASE_URL: {DATABASE_URL[:50]}...")
+    
+    await create_tables()
     await engine.dispose()
     
     print("✅ Таблицы созданы")
+    
+    # ПРОВЕРКА что таблицы реально существуют
+    from sqlalchemy import text
+    async with engine.connect() as conn:
+        result = await conn.execute(text(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+        ))
+        tables = [r[0] for r in result]
+        print(f"📋 Таблицы в БД: {tables}")
     
     print("🔄 Синхронизация гифтов...")
     try:

@@ -252,12 +252,12 @@ async def populate_db():
                 pass
         
         # ── ПЕРЕСОЗДАНИЕ КЕЙСОВ ──
-        print("🔄 Пересоздание кейсов...")
-        try:
-            await session.execute(delete(CaseItem))
-            await session.execute(delete(Case))
-            await session.commit()
-        except Exception as e:
+        # print("🔄 Пересоздание кейсов...")
+        # try:
+        #     await session.execute(delete(CaseItem))
+        #     await session.execute(delete(Case))
+        #     await session.commit()
+        # except Exception as e:
             print(f"⚠️ Error deleting cases: {e}")
             await session.rollback()
         

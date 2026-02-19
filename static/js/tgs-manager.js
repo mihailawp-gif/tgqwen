@@ -189,7 +189,7 @@ function playSuccessAnimation() {
             renderer: 'svg',
             loop: false, 
             autoplay: true,
-            path: 'https://lottie.host/575a8789-0493-44ed-9a9d-686480357f78/2pY6l7w6iW.json'
+            path: '/static/images/success.json' // <--- Указываем локальный путь
         });
     }
 

@@ -381,17 +381,14 @@ async def populate_db():
 async def main():
     print("🔄 Инициализация таблиц...")
     
-    # Шаг 1: Создаём таблицы (ОТДЕЛЬНАЯ транзакция)
-    from database.models import init_db as create_tables
+    from database.models import init_db as create_tables, engine
     await create_tables()
     
-    # Пауза чтобы PostgreSQL успел применить изменения
-    import asyncio
-    await asyncio.sleep(3)
+    # Сбрасываем пул — все новые соединения увидят свежую схему
+    await engine.dispose()
     
     print("✅ Таблицы созданы")
     
-    # Шаг 2: Заполняем данными (НОВАЯ транзакция)
     print("🔄 Синхронизация гифтов...")
     try:
         await populate_db()

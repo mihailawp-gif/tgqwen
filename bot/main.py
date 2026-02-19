@@ -493,8 +493,13 @@ async def main():
     print("📱 Ready to receive commands!")
     print("⚙️  Press Ctrl+C to stop")
     print("=" * 60)
-    
+
     await dp.start_polling(bot)
+
+
+def start_bot():
+    """Запуск бота (для вызова из run_all.py)"""
+    asyncio.run(main())
 
 
 if __name__ == "__main__":

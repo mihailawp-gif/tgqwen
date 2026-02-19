@@ -79,7 +79,7 @@ async def main():
     print("=" * 60)
     print("👑 Telegram Cases Admin Bot - Starting...")
     print("=" * 60)
-    
+
     # Получаем информацию о боте
     try:
         bot_info = await admin_bot.get_me()
@@ -88,14 +88,19 @@ async def main():
         print(f"🆔 ID: {bot_info.id}")
     except Exception as e:
         print(f"⚠️  Warning: Could not get bot info: {e}")
-    
+
     print("=" * 60)
     print("🔄 Processing withdrawals every 10 seconds...")
     print("📤 Ready to send gifts to users")
     print("⚙️  Press Ctrl+C to stop")
     print("=" * 60)
-    
+
     await process_withdrawals()
+
+
+def start_bot():
+    """Запуск бота (для вызова из run_all.py)"""
+    asyncio.run(main())
 
 
 if __name__ == "__main__":

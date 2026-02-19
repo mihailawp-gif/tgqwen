@@ -39,49 +39,62 @@ async def get_or_create_user(telegram_id: int, username: str = None,
                              first_name: str = None, last_name: str = None,
                              photo_url: str = None, referrer_code: str = None):
     """Получить или создать пользователя"""
-    async with async_session() as session:
-        result = await session.execute(
-            select(User).where(User.telegram_id == telegram_id)
-        )
-        user = result.scalar_one_or_none()
-
-        if not user:
-            # Создаём нового пользователя
-            user = User(
-                telegram_id=telegram_id,
-                username=username,
-                first_name=first_name,
-                last_name=last_name,
-                photo_url=photo_url,
-                balance=1000  # Бонус при регистрации
+    try:
+        async with async_session() as session:
+            result = await session.execute(
+                select(User).where(User.telegram_id == telegram_id)
             )
-            
-            # Если есть реферальный код — находим реферера
-            if referrer_code:
-                referrer_result = await session.execute(
-                    select(User).where(User.referral_code == referrer_code)
-                )
-                referrer = referrer_result.scalar_one_or_none()
-                if referrer and referrer.telegram_id != telegram_id:
-                    user.referrer_id = referrer.id
-                    user.referral_code = referrer_code  # Сохраняем код кто пригласил
-            
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
-        else:
-            # Обновляем данные если изменились
-            if username and user.username != username:
-                user.username = username
-            if first_name and user.first_name != first_name:
-                user.first_name = first_name
-            if last_name and user.last_name != last_name:
-                user.last_name = last_name
-            if photo_url and user.photo_url != photo_url:
-                user.photo_url = photo_url
-            await session.commit()
+            user = result.scalar_one_or_none()
 
-        return user
+            if not user:
+                # Создаём нового пользователя
+                user = User(
+                    telegram_id=telegram_id,
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    photo_url=photo_url,
+                    balance=0  # Баланс 0 при регистрации
+                )
+                
+                # Если есть реферальный код — находим реферера
+                if referrer_code:
+                    referrer_result = await session.execute(
+                        select(User).where(User.referral_code == referrer_code)
+                    )
+                    referrer = referrer_result.scalar_one_or_none()
+                    if referrer and referrer.telegram_id != telegram_id:
+                        user.referrer_id = referrer.id
+                
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
+                print(f"✅ Новый пользователь создан: {telegram_id} ({first_name})")
+            else:
+                # Обновляем данные если изменились
+                updated = False
+                if username and user.username != username:
+                    user.username = username
+                    updated = True
+                if first_name and user.first_name != first_name:
+                    user.first_name = first_name
+                    updated = True
+                if last_name and user.last_name != last_name:
+                    user.last_name = last_name
+                    updated = True
+                if photo_url and user.photo_url != photo_url:
+                    user.photo_url = photo_url
+                    updated = True
+                if updated:
+                    await session.commit()
+                    print(f"🔄 Данные пользователя обновлены: {telegram_id}")
+
+            return user
+    except Exception as e:
+        print(f"❌ Ошибка в get_or_create_user: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 async def check_free_case_available(user: User) -> bool:
@@ -173,44 +186,76 @@ async def open_case(user_id: int, case_id: int) -> dict:
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     """Стартовое сообщение"""
-    # Получаем реферальный код из аргумента команды /start CODE
-    referrer_code = message.text.split()[1] if len(message.text.split()) > 1 else None
-    
-    # Получаем фото профиля
-    photo_url = None
-    if message.from_user.photo:
-        # Получаем фото наибольшего размера
-        photos = await message.bot.get_user_profile_photos(message.from_user.id)
-        if photos and photos.photos:
-            photo_file = await message.bot.get_file(photos.photos[-1][-1].file_id)
-            photo_url = f"https://api.telegram.org/file/bot{os.getenv('BOT_TOKEN')}/{photo_file.file_path}"
-    
-    user = await get_or_create_user(
-        message.from_user.id,
-        message.from_user.username,
-        message.from_user.first_name,
-        message.from_user.last_name,
-        photo_url,
-        referrer_code
-    )
+    try:
+        # Получаем реферальный код из аргумента команды /start CODE
+        referrer_code = message.text.split()[1] if len(message.text.split()) > 1 else None
+        
+        # Получаем фото профиля
+        photo_url = None
+        try:
+            if message.from_user.photo:
+                # Получаем фото наибольшего размера
+                photos = await message.bot.get_user_profile_photos(message.from_user.id)
+                if photos and photos.photos:
+                    photo_file = await message.bot.get_file(photos.photos[-1][-1].file_id)
+                    photo_url = f"https://api.telegram.org/file/bot{os.getenv('BOT_TOKEN')}/{photo_file.file_path}"
+        except Exception as e:
+            print(f"⚠️ Не удалось получить фото: {e}")
+        
+        user = await get_or_create_user(
+            message.from_user.id,
+            message.from_user.username,
+            message.from_user.first_name,
+            message.from_user.last_name,
+            photo_url,
+            referrer_code
+        )
+        
+        # Если пользователь не создался — всё равно отвечаем
+        balance = user.balance if user else 0
+        name = message.from_user.first_name or "Пользователь"
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="🎰 Открыть приложение",
-            web_app=WebAppInfo(url=WEBAPP_URL)
-        )],
-        [InlineKeyboardButton(text="💰 Баланс", callback_data="balance")],
-        [InlineKeyboardButton(text="📊 Статистика", callback_data="stats")]
-    ])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="🎰 Открыть приложение",
+                web_app=WebAppInfo(url=WEBAPP_URL)
+            )],
+            [InlineKeyboardButton(text="💰 Баланс", callback_data="balance")],
+            [InlineKeyboardButton(text="📊 Статистика", callback_data="stats")]
+        ])
 
-    await message.answer(
-        f"👋 Привет, {message.from_user.first_name}!\n\n"
-        f"🎁 Добро пожаловать в мир кейсов!\n\n"
-        f"💎 Открывай кейсы и выигрывай крутые гифты!\n"
-        f"⭐ Каждый день доступен бесплатный кейс!\n\n"
-        f"💰 Твой баланс: {user.balance} звезд",
-        reply_markup=keyboard
-    )
+        await message.answer(
+            f"👋 Привет, {name}!\n\n"
+            f"🎁 Добро пожаловать в мир кейсов!\n\n"
+            f"💎 Открывай кейсы и выигрывай крутые гифты!\n"
+            f"⭐ Каждый день доступен бесплатный кейс!\n\n"
+            f"💰 Твой баланс: {balance} звезд",
+            reply_markup=keyboard
+        )
+        
+        if user:
+            print(f"✅ /start отработан для пользователя {message.from_user.id}")
+        else:
+            print(f"⚠️ /start отработан для пользователя {message.from_user.id} (гость)")
+            
+    except Exception as e:
+        print(f"❌ Ошибка в cmd_start: {e}")
+        import traceback
+        traceback.print_exc()
+        # Всё равно отвечаем пользователю
+        try:
+            await message.answer(
+                "👋 Привет! Добро пожаловать в мир кейсов!\n\n"
+                "🎰 Нажми кнопку ниже чтобы открыть приложение:",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(
+                        text="🎰 Открыть приложение",
+                        web_app=WebAppInfo(url=WEBAPP_URL)
+                    )]
+                ])
+            )
+        except:
+            pass
 
 
 @router.callback_query(F.data == "balance")

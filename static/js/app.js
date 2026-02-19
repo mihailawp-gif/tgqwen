@@ -934,20 +934,20 @@ function closeTopupModal() {
 
 async function createStarsInvoice(stars) {
     showLoader();
-    
+
     try {
         // Создаем invoice через API
         const response = await apiRequest('/payment/create-invoice', 'POST', {
             user_id: state.user.telegram_id,
             stars: stars
         });
-        
+
         hideLoader();
-        
+
         if (response.success && response.invoice_link) {
             // Закрываем модалку
             closeTopupModal();
-            
+
             // Открываем Telegram Stars Invoice
             tg.openInvoice(response.invoice_link, async (status) => {
                 if (status === 'paid') {
@@ -968,6 +968,29 @@ async function createStarsInvoice(stars) {
         console.error('Payment error:', error);
         showToast('❌ Ошибка создания платежа');
     }
+}
+
+function createCustomStarsInvoice() {
+    // Получаем сумму из поля ввода
+    const input = document.getElementById('customStarsAmount');
+    let stars = parseInt(input.value);
+    
+    // Проверяем минимальную сумму
+    if (!stars || stars < 100) {
+        showToast('❌ Минимальная сумма: 100 ⭐');
+        if (input) input.value = 100;
+        return;
+    }
+    
+    // Проверяем максимальную сумму
+    if (stars > 100000) {
+        showToast('❌ Максимальная сумма: 100,000 ⭐');
+        if (input) input.value = 100000;
+        return;
+    }
+    
+    // Создаем invoice
+    createStarsInvoice(stars);
 }
 
 async function loadUserBalance() {

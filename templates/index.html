@@ -214,6 +214,19 @@
                     <button class="amount-card" onclick="createStarsInvoice(5000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 5000</div></button>
                     <button class="amount-card" onclick="createStarsInvoice(10000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 10000</div></button>
                 </div>
+                
+                <!-- Поле для ввода своей суммы -->
+                <div class="custom-amount-section">
+                    <p class="custom-amount-label">Или введите свою сумму:</p>
+                    <div class="custom-amount-input">
+                        <input type="number" id="customStarsAmount" placeholder="Мин. 100" min="100" max="100000" value="1000">
+                        <button class="btn-custom-amount" onclick="createCustomStarsInvoice()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -355,6 +368,6 @@
     </div>
 
     <script src="/static/js/tgs-manager.js?v=11"></script>
-    <script src="/static/js/app.js?v=10"></script>
+    <script src="/static/js/app.js?v=11"></script>
 </body>
 </html>

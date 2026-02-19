@@ -1233,6 +1233,75 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* Custom amount input section */
+.custom-amount-section {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+}
+
+.custom-amount-label {
+    font-size: 13px;
+    color: var(--txt2);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.custom-amount-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.custom-amount-input input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--txt);
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.custom-amount-input input:focus {
+    border-color: var(--blue);
+}
+
+.custom-amount-input input::-webkit-inner-spin-button,
+.custom-amount-input input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.btn-custom-amount {
+    background: var(--blue);
+    border: none;
+    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-custom-amount:hover {
+    opacity: 0.8;
+}
+
+.btn-custom-amount:active {
+    transform: scale(0.95);
+}
+
+.btn-custom-amount svg {
+    stroke: white;
 }
 
 .amount-card {

@@ -993,11 +993,22 @@ function createCustomStarsInvoice() {
     createStarsInvoice(stars);
 }
 
+// async function loadUserBalance() {
+//     const response = await apiRequest(`/user/${state.user.telegram_id}`, 'GET');
+//     if (response.success) {
+//         state.user.balance = response.user.balance;
+//         updateUserDisplay();
+//     }
+// }
 async function loadUserBalance() {
-    const response = await apiRequest(`/user/${state.user.telegram_id}`, 'GET');
+    // Стучимся на правильный эндпоинт /profile
+    const response = await apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET');
     if (response.success) {
-        state.user.balance = response.user.balance;
-        updateUserDisplay();
+        // Берем баланс из объекта profile
+        state.user.balance = response.profile.balance;
+        updateUserDisplay(); // Эта функция как раз обновляет цифру на главном экране
+    } else {
+        console.error('Не удалось загрузить баланс:', response.error);
     }
 }
 

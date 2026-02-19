@@ -144,3 +144,59 @@ window.renderTGS     = renderTGS;
 window.initAllTGS    = initAllTGS;
 window.destroyAllTGS = destroyAllTGS;
 window.tgsEl         = tgsEl;
+
+function playSuccessAnimation() {
+    let container = document.getElementById('celebration-container');
+    
+    // Создаем контейнер-оверлей при первом вызове
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'celebration-container';
+        // Накидываем стили прямо через JS, чтобы не пачкать CSS
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            pointerEvents: 'none', // Чтобы клики проходили насквозь
+            zIndex: '9999',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            opacity: '0',
+            transition: 'opacity 0.3s ease'
+        });
+        document.body.appendChild(container);
+    }
+
+    // Вставляем див для самой анимации
+    container.innerHTML = '<div id="celeb-lottie" style="width: 100%; height: 100%;"></div>';
+    
+    // Проявляем контейнер
+    requestAnimationFrame(() => {
+        container.style.opacity = '1';
+    });
+
+    // Запускаем через УЖЕ существующий window.lottie
+    if (window.lottie) {
+        window.lottie.loadAnimation({
+            container: document.getElementById('celeb-lottie'),
+            renderer: 'svg',
+            loop: false, // Нам нужно, чтобы бахнуло один раз
+            autoplay: true,
+            path: 'https://lottie.host/575a8789-0493-44ed-9a9d-686480357f78/2pY6l7w6iW.json'
+        });
+    }
+
+    // Плавно скрываем через 2.5 секунды
+    setTimeout(() => {
+        container.style.opacity = '0';
+        setTimeout(() => {
+            container.innerHTML = ''; // Чистим DOM
+        }, 300);
+    }, 2500);
+}
+
+// Экспортируем функцию в глобальный window
+window.playSuccessAnimation = playSuccessAnimation;

@@ -951,9 +951,23 @@ async function createStarsInvoice(stars) {
             // Открываем Telegram Stars Invoice
             tg.openInvoice(response.invoice_link, async (status) => {
                 if (status === 'paid') {
-                    // Пополнение прошло успешно
+                    // ЗАПУСКАЕМ ФЕЙЕРВЕРК 🎇
+                    if (window.playSuccessAnimation) {
+                        window.playSuccessAnimation();
+                    }
+                    
                     showToast(`✅ Баланс пополнен на ${stars} ⭐`);
-                    await loadUserBalance();
+                    
+                    // Даем серверу 1 секунду на обработку вебхука от Telegram
+                    setTimeout(async () => {
+                        await loadUserBalance();
+                        // Если юзер в момент оплаты находился на экране профиля — обновим и его
+                        const profileScreen = document.getElementById('profile-screen');
+                        if (profileScreen && profileScreen.classList.contains('active')) {
+                            openProfile();
+                        }
+                    }, 1000);
+                    
                 } else if (status === 'cancelled') {
                     showToast('Оплата отменена');
                 } else if (status === 'failed') {
@@ -1138,6 +1152,7 @@ document.addEventListener('click', (e) => {
 
 // Обработчики стрелок карусели
 document.addEventListener('DOMContentLoaded', () => {
+
     const leftArrow = document.getElementById('carouselLeft');
     const rightArrow = document.getElementById('carouselRight');
 

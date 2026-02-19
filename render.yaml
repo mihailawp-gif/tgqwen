@@ -4,7 +4,7 @@ services:
     env: python
     region: frankfurt
     buildCommand: pip install -r requirements.txt && python database/init_db.py
-    startCommand: python server.py
+    startCommand: python run_all.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

@@ -478,7 +478,7 @@ async def back_to_menu(callback: CallbackQuery):
 
 # === ADMIN КОМАНДЫ (ПОЛНАЯ АДМИНКА) ===
 
-@@router.message(Command("admin"))
+@router.message(Command("admin"))
 async def admin_panel(message: Message, state: FSMContext):
     """Главное меню админки"""
     if message.from_user.id not in ADMIN_IDS:

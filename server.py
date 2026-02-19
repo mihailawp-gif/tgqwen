@@ -309,6 +309,8 @@ async def open_case(request):
             if case.is_free:
                 # Шанс на выпадение редкого подарка (не Stars) — 0.01%
                 rare_chance = random.uniform(0, 100)
+                is_stars = False  # По умолчанию не Stars
+                
                 if rare_chance < 0.01:
                     # Выпал редкий подарок — выбираем из НЕ-Stars предметов
                     non_stars_items = [item for item in items
@@ -328,6 +330,7 @@ async def open_case(request):
                     # Веса: 1-5 stars имеют высокий шанс, 6-10 — меньший
                     stars_weights = [25, 20, 15, 12, 10, 7, 5, 3, 2, 1]  # Сумма = 100
                     stars_amount = random.choices(range(1, 11), weights=stars_weights, k=1)[0]
+                    is_stars = True  # Это Stars
 
                     # Находим предмет Stars с нужным количеством
                     won_item = None
@@ -793,7 +796,7 @@ async def get_referral_earnings(request):
 
 
 async def create_invoice(request):
-    """Создание Telegram Invoice для пополнения баланса"""
+    """Создание Telegram Invoice для пополнения баланса через Mini App"""
     data = await request.json()
     stars = data.get('stars', 100)
     user_id = data.get('user_id')
@@ -801,18 +804,50 @@ async def create_invoice(request):
     if not user_id:
         return web.json_response({'success': False, 'error': 'user_id required'})
     
-    # Возвращаем данные для создания invoice через Telegram Bot
-    # В реальном приложении здесь был бы вызов к боту
-    return web.json_response({
-        'success': True,
-        'invoice_data': {
-            'title': f'{stars} Telegram Stars',
-            'description': f'Пополнение баланса на {stars} звезд',
-            'payload': f'stars_{stars}_{user_id}',
-            'currency': 'XTR',  # Telegram Stars
-            'prices': [{'label': f'{stars} Stars', 'amount': stars}]
-        }
-    })
+    bot_token = os.getenv('BOT_TOKEN')
+    if not bot_token:
+        return web.json_response({'success': False, 'error': 'Токен бота не настроен'})
+
+    # Payload, который потом прилетит в main.py при успешной оплате
+    payload = f"stars_{stars}_{user_id}"
+    
+    # Стучимся напрямую в Telegram Bot API за ссылкой
+    api_url = f"https://api.telegram.org/bot{bot_token}/createInvoiceLink"
+    
+    # Формируем данные для инвойса. 
+    # ВАЖНО: provider_token для Telegram Stars ДОЛЖЕН быть пустой строкой!
+    invoice_payload = {
+        "title": f"{stars} Telegram Stars",
+        "description": f"Пополнение баланса на {stars} звезд",
+        "payload": payload,
+        "provider_token": "", 
+        "currency": "XTR",
+        "prices": [{"label": f"{stars} Stars", "amount": stars}]
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_url, json=invoice_payload) as resp:
+                result = await resp.json()
+                
+                if result.get("ok"):
+                    # Telegram вернул ссылку, отдаем её фронтенду
+                    return web.json_response({
+                        'success': True,
+                        'invoice_link': result["result"]
+                    })
+                else:
+                    # Telegram ругнулся (например, кривые параметры)
+                    print(f"[PAYMENT ERROR] Telegram API: {result}")
+                    return web.json_response({
+                        'success': False, 
+                        'error': result.get("description", "Ошибка API Telegram")
+                    })
+    except Exception as e:
+        print(f"[PAYMENT EXCEPTION] {e}")
+        return web.json_response({'success': False, 'error': 'Внутренняя ошибка сервера'})
+
+    
 
 
 async def index(request):

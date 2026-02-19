@@ -155,8 +155,13 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Авто-миграция: добавляем колонки если их нет (для существующих БД)
-        await conn.run_sync(_migrate_columns)
+    
+    # Потом миграции — в отдельной, чтобы их падение не откатило create_all
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(_migrate_columns)
+    except Exception as e:
+        print(f"⚠️ Migration warning (non-critical): {e}")
 
 
 def _migrate_columns(conn):

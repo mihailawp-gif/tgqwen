@@ -22,6 +22,14 @@ from database.models import (
 
 load_dotenv()
 
+# Печатаем DATABASE_URL для отладки
+DATABASE_URL = os.getenv("DATABASE_URL")
+print("=" * 60)
+print(f"🔧 DATABASE_URL: {'✅ Настроен' if DATABASE_URL else '❌ НЕ НАСТРОЕН'}")
+if DATABASE_URL:
+    print(f"   {DATABASE_URL[:50]}...")
+print("=" * 60)
+
 # Инициализация бота
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 admin_bot = Bot(token=os.getenv("ADMIN_BOT_TOKEN"))
@@ -39,12 +47,18 @@ async def get_or_create_user(telegram_id: int, username: str = None,
                              first_name: str = None, last_name: str = None,
                              photo_url: str = None, referrer_code: str = None):
     """Получить или создать пользователя"""
+    print(f"\n🔍 get_or_create_user вызван для: {telegram_id}")
+    print(f"   Username: {username}, First: {first_name}")
+    print(f"   DATABASE_URL: {'✅' if os.getenv('DATABASE_URL') else '❌'}")
+    
     try:
         async with async_session() as session:
+            print(f"   📡 Подключение к БД...")
             result = await session.execute(
                 select(User).where(User.telegram_id == telegram_id)
             )
             user = result.scalar_one_or_none()
+            print(f"   {'✅ Пользователь найден' if user else '🆕 Пользователь не найден, создаём'}")
 
             if not user:
                 # Создаём нового пользователя
@@ -59,17 +73,20 @@ async def get_or_create_user(telegram_id: int, username: str = None,
                 
                 # Если есть реферальный код — находим реферера
                 if referrer_code:
+                    print(f"   🎁 Есть реферальный код: {referrer_code}")
                     referrer_result = await session.execute(
                         select(User).where(User.referral_code == referrer_code)
                     )
                     referrer = referrer_result.scalar_one_or_none()
                     if referrer and referrer.telegram_id != telegram_id:
                         user.referrer_id = referrer.id
+                        print(f"   ✅ Реферер найден: {referrer.telegram_id}")
                 
                 session.add(user)
                 await session.commit()
                 await session.refresh(user)
-                print(f"✅ Новый пользователь создан: {telegram_id} ({first_name})")
+                print(f"   ✅ Новый пользователь создан: {telegram_id} ({first_name})")
+                print(f"   💰 Баланс: {user.balance}")
             else:
                 # Обновляем данные если изменились
                 updated = False
@@ -87,11 +104,11 @@ async def get_or_create_user(telegram_id: int, username: str = None,
                     updated = True
                 if updated:
                     await session.commit()
-                    print(f"🔄 Данные пользователя обновлены: {telegram_id}")
+                    print(f"   🔄 Данные пользователя обновлены: {telegram_id}")
 
             return user
     except Exception as e:
-        print(f"❌ Ошибка в get_or_create_user: {e}")
+        print(f"   ❌ Ошибка в get_or_create_user: {e}")
         import traceback
         traceback.print_exc()
         return None

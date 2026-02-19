@@ -8,12 +8,33 @@ import os
 # Добавляем путь к проекту
 sys.path.insert(0, os.path.dirname(__file__))
 
-async def run_server():
-    """Запуск веб-сервера"""
-    print("🚀 Starting web server...")
+async def main():
+    """Запуск всех процессов параллельно"""
+    print("=" * 60)
+    print("🎮 Telegram Cases Mini App - Full Stack")
+    print("=" * 60)
+    
+    # Импортируем всё здесь
     from server import init_app
     from aiohttp import web
+    from bot.main import dp, bot
+    from bot.admin_bot import dp as admin_dp, admin_bot
     
+    # Создаём задачи для ботов
+    async def start_main_bot():
+        print("🤖 Starting main bot...")
+        await dp.start_polling(bot)
+    
+    async def start_admin_bot():
+        print("👮 Starting admin bot...")
+        await admin_dp.start_polling(admin_bot)
+    
+    # Запускаем ботов в фоне
+    bot_task = asyncio.create_task(start_main_bot())
+    admin_bot_task = asyncio.create_task(start_admin_bot())
+    
+    # Инициализируем и запускаем веб-сервер
+    print("🚀 Starting web server...")
     app = await init_app()
     
     # Получаем настройки из env
@@ -26,43 +47,20 @@ async def run_server():
     await site.start()
     
     print(f"✅ Web server started on http://{host}:{port}")
-    
-    # Держим сервер запущенным
-    while True:
-        await asyncio.sleep(3600)
-
-async def run_bot():
-    """Запуск основного бота"""
-    print("🤖 Starting main bot...")
-    from bot.main import dp, bot
-    
-    # Запускаем поллинг
-    await dp.start_polling(bot)
-
-async def run_admin_bot():
-    """Запуск админ бота"""
-    print("👮 Starting admin bot...")
-    from bot.admin_bot import dp, admin_bot
-    
-    # Запускаем поллинг
-    await dp.start_polling(admin_bot)
-
-async def main():
-    """Запуск всех процессов параллельно"""
     print("=" * 60)
-    print("🎮 Telegram Cases Mini App - Full Stack")
+    print("🎉 All services started successfully!")
     print("=" * 60)
     
-    # Запускаем все три процесса параллельно
-    await asyncio.gather(
-        run_server(),
-        run_bot(),
-        run_admin_bot(),
-        return_exceptions=True  # Если один упадёт, другие продолжат работать
-    )
+    # Ждём завершения всех задач
+    await asyncio.gather(bot_task, admin_bot_task, return_exceptions=True)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\n👋 Shutting down...")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

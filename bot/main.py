@@ -35,26 +35,52 @@ PAYMENT_TOKEN = os.getenv("PAYMENT_TOKEN")
 
 # === УТИЛИТЫ ===
 
-async def get_or_create_user(telegram_id: int, username: str = None, 
-                             first_name: str = None, last_name: str = None):
+async def get_or_create_user(telegram_id: int, username: str = None,
+                             first_name: str = None, last_name: str = None,
+                             photo_url: str = None, referrer_code: str = None):
     """Получить или создать пользователя"""
     async with async_session() as session:
         result = await session.execute(
             select(User).where(User.telegram_id == telegram_id)
         )
         user = result.scalar_one_or_none()
-        
+
         if not user:
+            # Создаём нового пользователя
             user = User(
                 telegram_id=telegram_id,
                 username=username,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                photo_url=photo_url,
+                balance=1000  # Бонус при регистрации
             )
+            
+            # Если есть реферальный код — находим реферера
+            if referrer_code:
+                referrer_result = await session.execute(
+                    select(User).where(User.referral_code == referrer_code)
+                )
+                referrer = referrer_result.scalar_one_or_none()
+                if referrer and referrer.telegram_id != telegram_id:
+                    user.referrer_id = referrer.id
+                    user.referral_code = referrer_code  # Сохраняем код кто пригласил
+            
             session.add(user)
             await session.commit()
             await session.refresh(user)
-        
+        else:
+            # Обновляем данные если изменились
+            if username and user.username != username:
+                user.username = username
+            if first_name and user.first_name != first_name:
+                user.first_name = first_name
+            if last_name and user.last_name != last_name:
+                user.last_name = last_name
+            if photo_url and user.photo_url != photo_url:
+                user.photo_url = photo_url
+            await session.commit()
+
         return user
 
 
@@ -147,13 +173,27 @@ async def open_case(user_id: int, case_id: int) -> dict:
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     """Стартовое сообщение"""
+    # Получаем реферальный код из аргумента команды /start CODE
+    referrer_code = message.text.split()[1] if len(message.text.split()) > 1 else None
+    
+    # Получаем фото профиля
+    photo_url = None
+    if message.from_user.photo:
+        # Получаем фото наибольшего размера
+        photos = await message.bot.get_user_profile_photos(message.from_user.id)
+        if photos and photos.photos:
+            photo_file = await message.bot.get_file(photos.photos[-1][-1].file_id)
+            photo_url = f"https://api.telegram.org/file/bot{os.getenv('BOT_TOKEN')}/{photo_file.file_path}"
+    
     user = await get_or_create_user(
         message.from_user.id,
         message.from_user.username,
         message.from_user.first_name,
-        message.from_user.last_name
+        message.from_user.last_name,
+        photo_url,
+        referrer_code
     )
-    
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="🎰 Открыть приложение",
@@ -162,7 +202,7 @@ async def cmd_start(message: Message):
         [InlineKeyboardButton(text="💰 Баланс", callback_data="balance")],
         [InlineKeyboardButton(text="📊 Статистика", callback_data="stats")]
     ])
-    
+
     await message.answer(
         f"👋 Привет, {message.from_user.first_name}!\n\n"
         f"🎁 Добро пожаловать в мир кейсов!\n\n"

@@ -259,170 +259,176 @@ async def open_case(request):
     data = await request.json()
     case_id = data.get('case_id')
     user_telegram_id = data.get('user_id')
-    
+
     if not case_id or not user_telegram_id:
         return web.json_response({'success': False, 'error': 'Missing parameters'})
-    
-    async with async_session() as session:
-        # Получаем пользователя
-        user_result = await session.execute(
-            select(User).where(User.telegram_id == user_telegram_id)
-        )
-        user = user_result.scalar_one_or_none()
-        if not user:
-            return web.json_response({'success': False, 'error': 'User not found'})
-        
-        # Получаем кейс
-        case = await session.get(Case, case_id)
-        if not case:
-            return web.json_response({'success': False, 'error': 'Case not found'})
-        
-        # Проверка бесплатного кейса
-        if case.is_free:
-            if user.last_free_case:
-                time_diff = datetime.utcnow() - user.last_free_case
-                if time_diff < timedelta(hours=24):
-                    remaining = timedelta(hours=24) - time_diff
-                    return web.json_response({
-                        'success': False,
-                        'error': f'Бесплатный кейс доступен через {remaining.seconds // 3600} ч'
-                    })
-        else:
-            # Проверка баланса
-            if user.balance < case.price:
-                return web.json_response({'success': False, 'error': 'Insufficient balance'})
-            user.balance -= case.price
 
-        # Получаем предметы кейса с загруженным Gift (joinedload)
-        items_result = await session.execute(
-            select(CaseItem)
-            .where(CaseItem.case_id == case_id)
-            .options(joinedload(CaseItem.gift))
-        )
-        items = items_result.scalars().unique().all()
+    try:
+        async with async_session() as session:
+            # Получаем пользователя
+            user_result = await session.execute(
+                select(User).where(User.telegram_id == user_telegram_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if not user:
+                return web.json_response({'success': False, 'error': 'User not found'})
 
-        if not items:
-            return web.json_response({'success': False, 'error': 'No items in case'})
+            # Получаем кейс
+            case = await session.get(Case, case_id)
+            if not case:
+                return web.json_response({'success': False, 'error': 'Case not found'})
 
-        # === СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ БЕСПЛАТНОГО КЕЙСА ===
-        if case.is_free:
-            # Шанс на выпадение редкого подарка (не Stars) — 0.01%
-            rare_chance = random.uniform(0, 100)
-            if rare_chance < 0.01:
-                # Выпал редкий подарок — выбираем из НЕ-Stars предметов
-                non_stars_items = [item for item in items
-                                   if not (item.gift.gift_number and item.gift.gift_number >= 200)]
-                if non_stars_items:
-                    # Выбираем случайный не-Stars предмет
-                    won_item = random.choice(non_stars_items)
-                else:
-                    # Если нет не-Stars предметов, берём первый
-                    won_item = items[0]
-                
-                # Получаем гифт (уже загружен через joinedload)
-                gift = won_item.gift
-                user.balance += gift.value or 0
+            # Проверка бесплатного кейса
+            if case.is_free:
+                if user.last_free_case:
+                    time_diff = datetime.utcnow() - user.last_free_case
+                    if time_diff < timedelta(hours=24):
+                        remaining = timedelta(hours=24) - time_diff
+                        return web.json_response({
+                            'success': False,
+                            'error': f'Бесплатный кейс доступен через {remaining.seconds // 3600} ч'
+                        })
             else:
-                # Выпали Stars (99.99% шанс) — рандом 1-10 с весами
-                # Веса: 1-5 stars имеют высокий шанс, 6-10 — меньший
-                stars_weights = [25, 20, 15, 12, 10, 7, 5, 3, 2, 1]  # Сумма = 100
-                stars_amount = random.choices(range(1, 11), weights=stars_weights, k=1)[0]
+                # Проверка баланса
+                if user.balance < case.price:
+                    return web.json_response({'success': False, 'error': 'Insufficient balance'})
+                user.balance -= case.price
 
-                # Находим предмет Stars с нужным количеством
+            # Получаем предметы кейса с загруженным Gift (joinedload)
+            items_result = await session.execute(
+                select(CaseItem)
+                .where(CaseItem.case_id == case_id)
+                .options(joinedload(CaseItem.gift))
+            )
+            items = items_result.scalars().unique().all()
+
+            if not items:
+                return web.json_response({'success': False, 'error': 'No items in case'})
+
+            # === СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ БЕСПЛАТНОГО КЕЙСА ===
+            if case.is_free:
+                # Шанс на выпадение редкого подарка (не Stars) — 0.01%
+                rare_chance = random.uniform(0, 100)
+                if rare_chance < 0.01:
+                    # Выпал редкий подарок — выбираем из НЕ-Stars предметов
+                    non_stars_items = [item for item in items
+                                       if not (item.gift.gift_number and item.gift.gift_number >= 200)]
+                    if non_stars_items:
+                        # Выбираем случайный не-Stars предмет
+                        won_item = random.choice(non_stars_items)
+                    else:
+                        # Если нет не-Stars предметов, берём первый
+                        won_item = items[0]
+
+                    # Получаем гифт (уже загружен через joinedload)
+                    gift = won_item.gift
+                    user.balance += gift.value or 0
+                else:
+                    # Выпали Stars (99.99% шанс) — рандом 1-10 с весами
+                    # Веса: 1-5 stars имеют высокий шанс, 6-10 — меньший
+                    stars_weights = [25, 20, 15, 12, 10, 7, 5, 3, 2, 1]  # Сумма = 100
+                    stars_amount = random.choices(range(1, 11), weights=stars_weights, k=1)[0]
+
+                    # Находим предмет Stars с нужным количеством
+                    won_item = None
+                    for item in items:
+                        if item.gift.gift_number and item.gift.gift_number >= 200:
+                            # Используем stars_amount который уже сгенерировали
+                            won_item = item
+                            break
+
+                    # Если не нашли, берём первый Stars предмет
+                    if not won_item:
+                        stars_items = [item for item in items
+                                       if item.gift.gift_number and item.gift.gift_number >= 200]
+                        if stars_items:
+                            won_item = stars_items[0]
+                        else:
+                            won_item = items[0]
+
+                    # Получаем гифт (уже загружен через joinedload)
+                    gift = won_item.gift
+
+                    # Зачисляем ТОТ ЖЕ stars_amount который сгенерировали выше
+                    user.balance += stars_amount
+                    gift.value = stars_amount  # Обновляем значение для ответа
+            else:
+                # === ОБЫЧНАЯ ЛОГИКА ДЛЯ ПЛАТНЫХ КЕЙСОВ ===
+                total_chance = sum(item.drop_chance for item in items)
+                rand = random.uniform(0, total_chance)
+
+                current = 0
                 won_item = None
                 for item in items:
-                    if item.gift.gift_number and item.gift.gift_number >= 200:
-                        # Используем stars_amount который уже сгенерировали
+                    current += item.drop_chance
+                    if rand <= current:
                         won_item = item
                         break
 
-                # Если не нашли, берём первый Stars предмет
                 if not won_item:
-                    stars_items = [item for item in items
-                                   if item.gift.gift_number and item.gift.gift_number >= 200]
-                    if stars_items:
-                        won_item = stars_items[0]
-                    else:
-                        won_item = items[0]
+                    won_item = items[0]
 
                 # Получаем гифт (уже загружен через joinedload)
                 gift = won_item.gift
 
-                # Зачисляем ТОТ ЖЕ stars_amount который сгенерировали выше
-                user.balance += stars_amount
-                gift.value = stars_amount  # Обновляем значение для ответа
-        else:
-            # === ОБЫЧНАЯ ЛОГИКА ДЛЯ ПЛАТНЫХ КЕЙСОВ ===
-            total_chance = sum(item.drop_chance for item in items)
-            rand = random.uniform(0, total_chance)
+                # Если это Stars — зачисляем на баланс
+                is_stars = bool(gift.gift_number and gift.gift_number >= 200)
+                if is_stars:
+                    user.balance += gift.value or 0
 
-            current = 0
-            won_item = None
-            for item in items:
-                current += item.drop_chance
-                if rand <= current:
-                    won_item = item
-                    break
-
-            if not won_item:
-                won_item = items[0]
-
-            # Получаем гифт (уже загружен через joinedload)
-            gift = won_item.gift
-
-            # Если это Stars — зачисляем на баланс
-            is_stars = bool(gift.gift_number and gift.gift_number >= 200)
+            # Создаем запись об открытии
+            opening = CaseOpening(
+                user_id=user.id,
+                case_id=case_id,
+                gift_id=gift.id
+            )
             if is_stars:
-                user.balance += gift.value or 0
+                opening.is_sold = True   # помечаем сразу чтобы не светился в инвентаре
+            session.add(opening)
 
-        # Создаем запись об открытии
-        opening = CaseOpening(
-            user_id=user.id,
-            case_id=case_id,
-            gift_id=gift.id
-        )
-        if is_stars:
-            opening.is_sold = True   # помечаем сразу чтобы не светился в инвентаре
-        session.add(opening)
+            # Помечаем бесплатный кейс как открытый (после успешного открытия)
+            if case.is_free:
+                user.last_free_case = datetime.utcnow()
 
-        # Помечаем бесплатный кейс как открытый (после успешного открытия)
-        if case.is_free:
-            user.last_free_case = datetime.utcnow()
-        
-        # === РЕФЕРАЛЬНАЯ СИСТЕМА ===
-        # Если у пользователя есть реферер, начисляем 5% с трат
-        if user.referrer_id and not case.is_free:
-            referrer = await session.get(User, user.referrer_id)
-            if referrer:
-                referral_bonus = int(case.price * 0.05)  # 5% от стоимости кейса
-                if referral_bonus > 0:
-                    referrer.balance += referral_bonus
-                    # Записываем в историю заработка
-                    earning = ReferralEarning(
-                        referrer_id=referrer.id,
-                        referred_user_id=user.id,
-                        amount=referral_bonus,
-                        source='case_opening'
-                    )
-                    session.add(earning)
-        
-        await session.commit()
-        await session.refresh(opening)
-        
-        return web.json_response({
-            'success': True,
-            'opening_id': opening.id,
-            'gift': {
-                'id': gift.id,
-                'name': gift.name,
-                'rarity': gift.rarity,
-                'value': gift.value,
-                'image_url': gift.image_url,
-                'gift_number': gift.gift_number or ((gift.id - 1) % 120 + 1),
-                'is_stars': bool(gift.gift_number and gift.gift_number >= 200),
-            },
-            'balance': user.balance
-        })
+            # === РЕФЕРАЛЬНАЯ СИСТЕМА ===
+            # Если у пользователя есть реферер, начисляем 5% с трат
+            if user.referrer_id and not case.is_free:
+                referrer = await session.get(User, user.referrer_id)
+                if referrer:
+                    referral_bonus = int(case.price * 0.05)  # 5% от стоимости кейса
+                    if referral_bonus > 0:
+                        referrer.balance += referral_bonus
+                        # Записываем в историю заработка
+                        earning = ReferralEarning(
+                            referrer_id=referrer.id,
+                            referred_user_id=user.id,
+                            amount=referral_bonus,
+                            source='case_opening'
+                        )
+                        session.add(earning)
+
+            await session.commit()
+            await session.refresh(opening)
+
+            return web.json_response({
+                'success': True,
+                'opening_id': opening.id,
+                'gift': {
+                    'id': gift.id,
+                    'name': gift.name,
+                    'rarity': gift.rarity,
+                    'value': gift.value,
+                    'image_url': gift.image_url,
+                    'gift_number': gift.gift_number or ((gift.id - 1) % 120 + 1),
+                    'is_stars': bool(gift.gift_number and gift.gift_number >= 200),
+                },
+                'balance': user.balance
+            })
+    except Exception as e:
+        print(f"❌ Error in open_case: {e}")
+        import traceback
+        traceback.print_exc()
+        return web.json_response({'success': False, 'error': f'Internal server error: {str(e)}'}, status=500)
 
 
 async def get_inventory(request):

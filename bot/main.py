@@ -3,6 +3,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import asyncio
 import os
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy import or_
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
@@ -21,7 +24,10 @@ from database.models import (
 )
 
 load_dotenv()
-
+class AdminState(StatesGroup):
+    waiting_for_user_search = State()
+    waiting_for_broadcast = State()
+    waiting_for_add_balance = State()
 # Инициализация бота
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 admin_bot = Bot(token=os.getenv("ADMIN_BOT_TOKEN"))
@@ -428,87 +434,281 @@ async def back_to_menu(callback: CallbackQuery):
 
 # === ADMIN КОМАНДЫ ===
 
-@router.message(Command("admin"))
-async def admin_panel(message: Message):
-    """Админ панель"""
+# @router.message(Command("admin"))
+# async def admin_panel(message: Message):
+#     """Админ панель"""
+#     if message.from_user.id not in ADMIN_IDS:
+#         await message.answer("❌ У вас нет доступа к админ-панели")
+#         return
+    
+#     keyboard = InlineKeyboardMarkup(inline_keyboard=[
+#         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
+#         [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_users")],
+#         [InlineKeyboardButton(text="💸 Выводы", callback_data="admin_withdrawals")]
+#     ])
+    
+#     await message.answer(
+#         "⚙️ Админ-панель\n\nВыберите действие:",
+#         reply_markup=keyboard
+#     )
+
+
+# @router.callback_query(F.data == "admin_stats")
+# async def admin_stats(callback: CallbackQuery):
+#     """Статистика для админа"""
+#     if callback.from_user.id not in ADMIN_IDS:
+#         await callback.answer("❌ Доступ запрещен", show_alert=True)
+#         return
+    
+#     async with async_session() as session:
+#         users_count = len((await session.execute(select(User))).scalars().all())
+#         openings_count = len((await session.execute(select(CaseOpening))).scalars().all())
+        
+#         payments_result = await session.execute(
+#             select(Payment).where(Payment.status == "completed")
+#         )
+#         total_revenue = sum(p.amount for p in payments_result.scalars().all())
+    
+#     await callback.message.edit_text(
+#         f"📊 Статистика платформы:\n\n"
+#         f"👥 Пользователей: {users_count}\n"
+#         f"🎁 Открытий кейсов: {openings_count}\n"
+#         f"💰 Общий доход: {total_revenue} ⭐"
+#     )
+
+# === ADMIN КОМАНДЫ (ПОЛНАЯ АДМИНКА) ===
+
+@@router.message(Command("admin"))
+async def admin_panel(message: Message, state: FSMContext):
+    """Главное меню админки"""
     if message.from_user.id not in ADMIN_IDS:
-        await message.answer("❌ У вас нет доступа к админ-панели")
         return
+    await state.clear()
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
-        [InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_users")],
-        [InlineKeyboardButton(text="💸 Выводы", callback_data="admin_withdrawals")]
+        [InlineKeyboardButton(text="🔍 Найти пользователя", callback_data="admin_search_user")],
+        [InlineKeyboardButton(text="📢 Рассылка всем", callback_data="admin_broadcast_start")],
+        [InlineKeyboardButton(text="💸 Заявки на вывод", callback_data="admin_withdrawals")],
+        [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
     
-    await message.answer(
-        "⚙️ Админ-панель\n\nВыберите действие:",
-        reply_markup=keyboard
-    )
+    await message.answer("👑 <b>Панель администратора</b>\n\nВыбери действие:", reply_markup=keyboard, parse_mode="HTML")
 
-
+# --- СТАТИСТИКА ---
 @router.callback_query(F.data == "admin_stats")
 async def admin_stats(callback: CallbackQuery):
-    """Статистика для админа"""
     if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("❌ Доступ запрещен", show_alert=True)
         return
     
     async with async_session() as session:
         users_count = len((await session.execute(select(User))).scalars().all())
         openings_count = len((await session.execute(select(CaseOpening))).scalars().all())
         
-        payments_result = await session.execute(
-            select(Payment).where(Payment.status == "completed")
-        )
+        payments_result = await session.execute(select(Payment).where(Payment.status == "completed"))
         total_revenue = sum(p.amount for p in payments_result.scalars().all())
+        
+        # Считаем суммарный баланс всех юзеров (сколько звезд на руках)
+        users = (await session.execute(select(User))).scalars().all()
+        total_balance = sum(u.balance for u in users)
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]])
     
     await callback.message.edit_text(
-        f"📊 Статистика платформы:\n\n"
-        f"👥 Пользователей: {users_count}\n"
-        f"🎁 Открытий кейсов: {openings_count}\n"
-        f"💰 Общий доход: {total_revenue} ⭐"
+        f"📊 <b>Статистика проекта:</b>\n\n"
+        f"👥 Всего пользователей: <b>{users_count}</b>\n"
+        f"🎁 Открыто кейсов: <b>{openings_count}</b>\n"
+        f"💰 Заработано (донат): <b>{total_revenue} ⭐</b>\n"
+        f"💎 Звезд на руках у игроков: <b>{total_balance} ⭐</b>",
+        reply_markup=keyboard,
+        parse_mode="HTML"
     )
 
-
-
-
-@router.message(Command("resetfreecase"))
-async def reset_free_case(message: Message):
-    """Сброс таймера бесплатного кейса (только для админов)"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer("❌ У вас нет доступа к этой команде")
+# --- ПОИСК И УПРАВЛЕНИЕ ЮЗЕРОМ ---
+@router.callback_query(F.data == "admin_search_user")
+async def admin_search_user(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
         return
+    await state.set_state(AdminState.waiting_for_user_search)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_back")]])
+    await callback.message.edit_text("🔍 Введи <b>Telegram ID</b> или <b>@username</b> пользователя:", reply_markup=keyboard, parse_mode="HTML")
 
-    args = message.text.split()
-    if len(args) > 1:
-        try:
-            target_telegram_id = int(args[1])
-        except ValueError:
-            await message.answer("❌ Неверный формат ID\nИспользование: /resetfreecase [telegram_id]")
-            return
-    else:
-        target_telegram_id = message.from_user.id
-
+@router.message(AdminState.waiting_for_user_search)
+async def process_user_search(message: Message, state: FSMContext):
+    query = message.text.replace('@', '').strip()
+    
     async with async_session() as session:
-        result = await session.execute(
-            select(User).where(User.telegram_id == target_telegram_id)
-        )
+        # Ищем по ID или юзернейму
+        if query.isdigit():
+            result = await session.execute(select(User).where(User.telegram_id == int(query)))
+        else:
+            result = await session.execute(select(User).where(User.username.ilike(f"%{query}%")))
+            
         user = result.scalar_one_or_none()
+        
         if not user:
-            await message.answer(f"❌ Пользователь с ID <code>{target_telegram_id}</code> не найден", parse_mode="HTML")
+            await message.answer("❌ Пользователь не найден. Попробуй еще раз или нажми /admin")
             return
+        
+        # Считаем сколько он открыл кейсов
+        openings = len((await session.execute(select(CaseOpening).where(CaseOpening.user_id == user.id))).scalars().all())
+        
+        # Сохраняем ID найденного юзера в состояние, чтобы потом менять ему баланс
+        await state.update_data(target_user_id=user.telegram_id)
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="💰 Изменить баланс", callback_data="admin_edit_balance")],
+            [InlineKeyboardButton(text="🔄 Сбросить Free Кейс", callback_data=f"admin_reset_free_{user.telegram_id}")],
+            [InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]
+        ])
+        
+        await message.answer(
+            f"👤 <b>Профиль игрока:</b>\n\n"
+            f"ID: <code>{user.telegram_id}</code>\n"
+            f"Имя: {user.first_name}\n"
+            f"Юзернейм: @{user.username or 'нет'}\n"
+            f"Баланс: <b>{user.balance} ⭐</b>\n"
+            f"Открыл кейсов: {openings}\n"
+            f"Реф. код: <code>{user.referral_code}</code>",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    await state.set_state(None) # Выходим из состояния поиска
+
+# --- ИЗМЕНЕНИЕ БАЛАНСА ---
+@router.callback_query(F.data == "admin_edit_balance")
+async def admin_edit_balance_start(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(AdminState.waiting_for_add_balance)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_back")]])
+    await callback.message.edit_text("💸 Введи сумму, которую хочешь добавить (или отнять с минусом, например -100):", reply_markup=keyboard)
+
+@router.message(AdminState.waiting_for_add_balance)
+async def process_edit_balance(message: Message, state: FSMContext):
+    try:
+        amount = int(message.text.strip())
+    except ValueError:
+        await message.answer("❌ Введи просто число (например: 500 или -200)")
+        return
+        
+    data = await state.get_data()
+    target_id = data.get("target_user_id")
+    
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == target_id))).scalar_one()
+        user.balance += amount
+        if user.balance < 0: 
+            user.balance = 0 # Защита от отрицательного баланса
+        await session.commit()
+        
+    await message.answer(f"✅ Баланс успешно изменен!\nНовый баланс: <b>{user.balance} ⭐</b>", parse_mode="HTML")
+    await state.clear()
+
+# --- СБРОС БЕСПЛАТНОГО КЕЙСА ---
+@router.callback_query(F.data.startswith("admin_reset_free_"))
+async def admin_reset_free(callback: CallbackQuery):
+    target_id = int(callback.data.split("_")[3])
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == target_id))).scalar_one()
         user.last_free_case = None
         user.free_case_available = True
         await session.commit()
+    await callback.answer(f"Таймер сброшен для {user.first_name}!", show_alert=True)
 
-    if target_telegram_id == message.from_user.id:
-        await message.answer("✅ Твой таймер бесплатного кейса сброшен")
-    else:
-        await message.answer(
-            f"✅ Таймер сброшен\n🆔 <code>{target_telegram_id}</code> · {user.first_name or '—'} (@{user.username or '—'})",
-            parse_mode="HTML"
+# --- РАССЫЛКА (BROADCAST) ---
+@router.callback_query(F.data == "admin_broadcast_start")
+async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(AdminState.waiting_for_broadcast)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_back")]])
+    await callback.message.edit_text("📢 Отправь мне сообщение (текст, фото или кружок), и я разошлю его всем пользователям базы:", reply_markup=keyboard)
+
+@router.message(AdminState.waiting_for_broadcast)
+async def process_broadcast(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("⏳ Начинаю рассылку... Это может занять какое-то время.")
+    
+    success = 0
+    failed = 0
+    
+    async with async_session() as session:
+        users = (await session.execute(select(User))).scalars().all()
+        
+    for user in users:
+        try:
+            # Копируем сообщение админа и отправляем юзеру
+            await message.copy_to(chat_id=user.telegram_id)
+            success += 1
+        except Exception:
+            failed += 1
+            
+    await message.answer(f"✅ <b>Рассылка завершена!</b>\n\nУспешно доставлено: {success}\nЗаблокировали бота: {failed}", parse_mode="HTML")
+
+@router.callback_query(F.data == "admin_reset_my_free")
+async def admin_reset_my_free_handler(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        return
+    
+    async with async_session() as session:
+        result = await session.execute(
+            select(User).where(User.telegram_id == callback.from_user.id)
         )
+        user = result.scalar_one_or_none()
+        
+        if user:
+            user.last_free_case = None
+            user.free_case_available = True
+            await session.commit()
+            # show_alert=True покажет окошко прямо по центру экрана 
+            await callback.answer("✅ Твой таймер бесплатного кейса сброшен!", show_alert=True)
+        else:
+            await callback.answer("❌ Профиль не найден", show_alert=True)
+# --- КНОПКА НАЗАД ---
+@router.callback_query(F.data == "admin_back")
+async def admin_back(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await admin_panel(callback.message, state) # Возвращаемся в главное меню админки
+    # Удаляем старое сообщение чтобы не мусорить
+    try:
+        await callback.message.delete()
+    except:
+        pass
+
+
+# @router.message(Command("resetfreecase"))
+# async def reset_free_case(message: Message):
+#     """Сброс таймера бесплатного кейса (только для админов)"""
+#     if message.from_user.id not in ADMIN_IDS:
+#         await message.answer("❌ У вас нет доступа к этой команде")
+#         return
+
+#     args = message.text.split()
+#     if len(args) > 1:
+#         try:
+#             target_telegram_id = int(args[1])
+#         except ValueError:
+#             await message.answer("❌ Неверный формат ID\nИспользование: /resetfreecase [telegram_id]")
+#             return
+#     else:
+#         target_telegram_id = message.from_user.id
+
+#     async with async_session() as session:
+#         result = await session.execute(
+#             select(User).where(User.telegram_id == target_telegram_id)
+#         )
+#         user = result.scalar_one_or_none()
+#         if not user:
+#             await message.answer(f"❌ Пользователь с ID <code>{target_telegram_id}</code> не найден", parse_mode="HTML")
+#             return
+#         user.last_free_case = None
+#         user.free_case_available = True
+#         await session.commit()
+
+#     if target_telegram_id == message.from_user.id:
+#         await message.answer("✅ Твой таймер бесплатного кейса сброшен")
+#     else:
+#         await message.answer(
+#             f"✅ Таймер сброшен\n🆔 <code>{target_telegram_id}</code> · {user.first_name or '—'} (@{user.username or '—'})",
+#             parse_mode="HTML"
+#         )
 
 
 

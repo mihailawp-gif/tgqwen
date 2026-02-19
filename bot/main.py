@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
+import math
 import asyncio
 import os
 from aiogram.fsm.context import FSMContext

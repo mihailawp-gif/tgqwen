@@ -1,3 +1,4 @@
+import aiohttp
 from aiohttp import web
 from aiohttp.web import middleware
 import aiohttp_cors

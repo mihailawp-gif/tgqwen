@@ -1243,88 +1243,97 @@ function closeProfile() {
     switchScreen('main-screen');
 }
 
-function copyReferralLink() {
-    const code = document.getElementById('referralCode').textContent;
-    const botUsername = 'ludomihabot';  // ← ЗАМЕНИ НА СВОЙ USERNAME БЕЗ @
-    const referralLink = `https://t.me/${botUsername}?start=${code}`;
+
+
+// --- НОВАЯ ЛОГИКА РЕФЕРАЛОВ ---
+async function showReferralsList() {
+    if (!state.user?.telegram_id) return;
     
-    navigator.clipboard.writeText(referralLink).then(() => {
-        showToast('📋 Ссылка скопирована!');
-        if (tg.HapticFeedback) {
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-    }).catch(() => {
-        showToast('❌ Не удалось скопировать');
+    document.getElementById('referralsModal').classList.add('active');
+    const listContainer = document.getElementById('referralsList');
+    listContainer.innerHTML = '<div class="loader-spinner" style="margin: 20px auto"></div>';
+
+    // Заполняем баланс
+    document.getElementById('refModalBalance').innerText = state.user.balance || 0;
+
+    // Генерируем ссылку
+    const botUsername = 'ludomihabot'; // Твой бот
+    const refLink = `https://t.me/${botUsername}?start=${state.user.referral_code}`;
+    document.getElementById('refModalLinkInput').value = refLink;
+
+    // Сначала получаем профиль для статы
+    const profileRes = await apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET');
+    if (profileRes.success) {
+        document.getElementById('refModalEarned').innerText = profileRes.profile.total_referral_earnings || 0;
+        document.getElementById('refModalCount').innerText = profileRes.profile.total_referrals || 0;
+    }
+
+    // Получаем сам список людей
+    const response = await apiRequest(`/user/${state.user.telegram_id}/referrals`, 'GET');
+    if (response.success) {
+        renderReferrals(response.referrals);
+    } else {
+        listContainer.innerHTML = '<div class="empty-state">Ошибка загрузки данных</div>';
+    }
+}
+
+function renderReferrals(referralsArray) {
+    const listContainer = document.getElementById('referralsList');
+    listContainer.innerHTML = '';
+
+    if (!referralsArray || referralsArray.length === 0) {
+        listContainer.innerHTML = `
+            <div class="empty-state" style="padding-top:20px;">
+                <div style="font-size:40px;margin-bottom:10px;opacity:0.5;">👥</div>
+                Пока нет рефералов<br><span style="font-size:12px;color:#888;">Поделитесь ссылкой с друзьями, чтобы заработать звезды</span>
+            </div>`;
+        return;
+    }
+
+    referralsArray.forEach(ref => {
+        // Красивая дата регистрации
+        const regDate = new Date(ref.joined_at || new Date()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        // Аватарка или смайлик
+        const avatarHtml = ref.photo_url ? `<img src="${ref.photo_url}" style="width:100%;height:100%;object-fit:cover;">` : `👤`;
+        
+        listContainer.innerHTML += `
+            <div class="modern-list-item">
+                <div class="ml-left">
+                    <div class="ml-avatar">${avatarHtml}</div>
+                    <div class="ml-info">
+                        <div class="ml-title">${ref.first_name || 'Игрок'}</div>
+                        <div class="ml-subtitle">Регистрация: ${regDate}</div>
+                    </div>
+                </div>
+                <div class="ml-right">
+                    <div class="ml-value positive">+${ref.total_earned || 0} ⭐</div>
+                </div>
+            </div>
+        `;
     });
 }
 
-function showReferralsList() {
-    if (!state.user?.telegram_id) return;
-    
-    showLoader();
-    apiRequest(`/user/${state.user.telegram_id}/referrals`, 'GET')
-        .then(response => {
-            if (response.success) {
-                const list = document.getElementById('referralsList');
-                const referrals = response.referrals || [];
-                
-                if (referrals.length === 0) {
-                    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--txt3)">Пока нет рефералов</div>';
-                } else {
-                    list.innerHTML = referrals.map(ref => `
-                        <div class="referral-item">
-                            <div class="referral-avatar">
-                                ${ref.photo_url ? `<img src="${ref.photo_url}" alt="avatar">` : '👤'}
-                            </div>
-                            <div class="referral-info">
-                                <div class="referral-name">${ref.first_name || 'Пользователь'}</div>
-                                <div class="referral-username">${ref.username ? '@'+ref.username : ''}</div>
-                            </div>
-                            <div class="referral-earned">+${ref.total_earned} ⭐</div>
-                        </div>
-                    `).join('');
-                }
-                
-                document.getElementById('referralsModal').classList.add('active');
-            }
-        })
-        .finally(() => hideLoader());
+function copyReferralLinkModal() {
+    const input = document.getElementById('refModalLinkInput');
+    input.select();
+    document.execCommand('copy');
+    showToast('📋 Ссылка скопирована!');
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+
+function shareReferralLink() {
+    const input = document.getElementById('refModalLinkInput').value;
+    const text = encodeURIComponent('🎁 Привет залетай скорее! Открывай бесплатный кейс с реальными NFT Гифтами!');
+    if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(`https://t.me/share/url?url=${input}&text=${text}`);
+    } else {
+        window.open(`https://t.me/share/url?url=${input}&text=${text}`, '_blank');
+    }
 }
 
 function closeReferralsModal() {
     document.getElementById('referralsModal').classList.remove('active');
 }
 
-function showEarningsHistory() {
-    if (!state.user?.telegram_id) return;
-    
-    showLoader();
-    apiRequest(`/user/${state.user.telegram_id}/referral-earnings`, 'GET')
-        .then(response => {
-            if (response.success) {
-                const list = document.getElementById('earningsList');
-                const earnings = response.earnings || [];
-                
-                if (earnings.length === 0) {
-                    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--txt3)">Пока нет заработка</div>';
-                } else {
-                    list.innerHTML = earnings.map(e => `
-                        <div class="earning-item">
-                            <div class="earning-info">
-                                <div class="earning-amount">+${e.amount} ⭐</div>
-                                <div class="earning-source">С реферала ${e.referred_user?.first_name || 'Unknown'}</div>
-                                <div class="earning-time">${new Date(e.created_at).toLocaleDateString()}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-                
-                document.getElementById('earningsModal').classList.add('active');
-            }
-        })
-        .finally(() => hideLoader());
-}
 
-function closeEarningsModal() {
-    document.getElementById('earningsModal').classList.remove('active');
-}
+

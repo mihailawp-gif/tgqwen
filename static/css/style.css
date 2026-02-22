@@ -1893,6 +1893,40 @@ body {
 }
 
 /* Referrals & Earnings Lists */
+/* --- НОВЫЙ ДИЗАЙН РЕФЕРАЛОВ --- */
+.ref-new-modal { background: #0f1115; padding: 0; height: 90vh; display: flex; flex-direction: column; border-radius: 20px 20px 0 0; }
+.ref-header { display: flex; justify-content: space-between; align-items: center; padding: 24px 20px 16px 20px; }
+.ref-header h2 { margin: 0; font-size: 24px; color: #fff; }
+.ref-balance-badge { background: rgba(26, 188, 156, 0.15); color: #1abc9c; padding: 6px 14px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.ref-body { padding: 0 20px 20px 20px; overflow-y: auto; flex: 1; }
+.ref-block { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+.ref-title-sm { color: #1abc9c; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase; }
+.text-green { color: #1abc9c; font-weight: bold; }
+.ref-desc { font-size: 14px; margin-bottom: 14px; color: #aaa; }
+.ref-warning { background: rgba(255, 70, 70, 0.1); color: #ff6b6b; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.4; margin-bottom: 16px; border: 1px solid rgba(255, 70, 70, 0.2); }
+.ref-input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+.ref-input-group input { flex: 1; background: #0f1115; border: 1px solid rgba(26, 188, 156, 0.3); color: #1abc9c; border-radius: 10px; padding: 12px 14px; font-size: 13px; outline: none; }
+.btn-ref-copy { background: #0f1115; border: 1px solid rgba(26, 188, 156, 0.3); color: #1abc9c; border-radius: 10px; padding: 0 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-ref-share { width: 100%; background: #1abc9c; color: #0f1115; border: none; border-radius: 10px; padding: 14px; font-weight: bold; font-size: 15px; cursor: pointer; }
+.ref-stats-flex { display: flex; gap: 12px; margin-bottom: 12px; }
+.ref-stat-box { flex: 1; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 16px 10px; text-align: center; }
+.ref-stat-label { font-size: 10px; color: #888; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 10px;}
+.ref-stat-value { font-size: 22px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;}
+.ref-stat-sub { font-size: 11px; color: #1abc9c; }
+.ref-list-title { margin: 24px 0 14px 0; font-size: 18px; font-weight: bold; color: #fff;}
+
+/* Современные карточки списка */
+.modern-list-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); padding: 14px 16px; border-radius: 16px; margin-bottom: 10px; transition: transform 0.2s, background 0.2s; }
+.modern-list-item:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.1); }
+.ml-left { display: flex; align-items: center; gap: 14px; }
+.ml-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #2AABEE, #1A709E); display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(42, 171, 238, 0.3); overflow: hidden; }
+.ml-info { display: flex; flex-direction: column; gap: 4px; }
+.ml-title { font-size: 15px; font-weight: 600; color: #ffffff; }
+.ml-subtitle { font-size: 13px; color: #999999; }
+.ml-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ml-value { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.ml-value.positive { color: #1abc9c; } /* Сделал зеленым, как на скрине */
+
 .referrals-list, .earnings-list {
     max-height: 400px;
     overflow-y: auto;

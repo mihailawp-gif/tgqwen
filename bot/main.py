@@ -11,7 +11,7 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, PreCheckoutQuery, LabeledPrice
+    WebAppInfo, PreCheckoutQuery, LabeledPrice 
 )
 from aiogram.enums import ParseMode
 from sqlalchemy import select, desc, func
@@ -20,7 +20,7 @@ import random
 
 from database.models import (
     async_session, User, Case, CaseOpening, 
-    Gift, CaseItem, Withdrawal, Payment
+    Gift, CaseItem, Withdrawal, Payment, ReferralEarning
 )
 
 load_dotenv()
@@ -346,6 +346,29 @@ async def process_successful_payment(message: Message):
             telegram_payment_id=message.successful_payment.telegram_payment_charge_id
         )
         session.add(payment)
+        
+        if user.referrer_id:
+            referrer = await session.get(User, user.referrer_id)
+            if referrer:
+                bonus_stars = int(amount * 0.05) # 5% от депа
+                if bonus_stars > 0:
+                    referrer.balance += bonus_stars
+                    earning = ReferralEarning(
+                        referrer_id=referrer.id,
+                        referred_user_id=user.id,
+                        amount=bonus_stars,
+                        source='deposit_bonus'
+                    )
+                    session.add(earning)
+                   
+                    try:
+                        await bot.send_message(
+                            chat_id=referrer.telegram_id,
+                            text=f"🎁 <b> Вы получили реферальную награду!</b>\nВам начислено: <b>{bonus_stars} ⭐</b>",
+                            parse_mode="HTML"
+                        )
+                    except Exception:
+                        pass 
         await session.commit()
 
     # Уведомление всем админам

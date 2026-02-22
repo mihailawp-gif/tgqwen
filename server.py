@@ -396,20 +396,7 @@ async def open_case(request):
 
             # === РЕФЕРАЛЬНАЯ СИСТЕМА ===
             # Если у пользователя есть реферер, начисляем 5% с трат
-            if user.referrer_id and not case.is_free:
-                referrer = await session.get(User, user.referrer_id)
-                if referrer:
-                    referral_bonus = int(case.price * 0.05)  # 5% от стоимости кейса
-                    if referral_bonus > 0:
-                        referrer.balance += referral_bonus
-                        # Записываем в историю заработка
-                        earning = ReferralEarning(
-                            referrer_id=referrer.id,
-                            referred_user_id=user.id,
-                            amount=referral_bonus,
-                            source='case_opening'
-                        )
-                        session.add(earning)
+  
 
             await session.commit()
             await session.refresh(opening)

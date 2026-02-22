@@ -19,12 +19,6 @@ const state = {
 // API Base URL
 const API_URL = '/api';
 
-// Функция для безопасной установки текста
-function safeSetText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-}
-
 // === INITIALIZATION ===
 document.addEventListener('DOMContentLoaded', async () => {
     await initUser();
@@ -95,8 +89,8 @@ async function initUser() {
 function updateUserDisplay() {
     if (!state.user) return;
     
-    safeSetText('userName', state.user.first_name || 'Пользователь');
-    safeSetText('userBalance', state.user.balance || 0);
+    document.getElementById('userName').textContent = state.user.first_name || 'Пользователь';
+    document.getElementById('userBalance').textContent = state.user.balance || 0;
 
     const userAvatar = document.getElementById('userAvatar');
     if (userAvatar) {
@@ -247,8 +241,8 @@ async function showCasePreview(caseId) {
     if(window.tgsManager) window.tgsManager.destroyAll();
     stopPreviewRoulette();
 
-    safeSetText('openingCaseName', caseItem.name);
-    safeSetText('openingCaseDescription', caseItem.description || '');
+    document.getElementById('openingCaseName').textContent = caseItem.name;
+    document.getElementById('openingCaseDescription').textContent = caseItem.description || '';
 
     const priceDisplay = document.getElementById('openingCasePrice');
     const btnOpenCase  = document.getElementById('btnOpenCase');
@@ -425,9 +419,9 @@ function showResult(result) {
 
     setTimeout(() => initAllTGS(), 100);
 
-    safeSetText('wonItemName', result.gift.name);
-    safeSetText('wonItemValue', result.gift.value);
-    safeSetText('resultSellPrice', result.gift.value || 0);
+    document.getElementById('wonItemName').textContent = result.gift.name;
+    document.getElementById('wonItemValue').textContent = result.gift.value;
+    document.getElementById('resultSellPrice').textContent = result.gift.value || 0;
 
     const btnSell = document.querySelector('.btn-sell-result');
     const starsNotice = document.getElementById('starsAutoNotice');
@@ -675,21 +669,21 @@ function openProfile() {
             if (response.success) {
                 const profile = response.profile;
                 const avatar = document.getElementById('profileAvatar');
-                if (avatar) avatar.innerHTML = profile.photo_url ? `<img src="${profile.photo_url}" alt="avatar">` : '👤';
+                if (avatar) avatar.innerHTML = profile.photo_url ? `<img src="${profile.photo_url}" alt="avatar" style="width:100%;height:100%;object-fit:cover;">` : '👤';
                 
-                safeSetText('profileName', profile.first_name || 'Пользователь');
-                safeSetText('profileUsername', profile.username ? `@${profile.username}` : '');
-                safeSetText('profileBalance', profile.balance || 0);
-                safeSetText('profileOpenings', profile.total_openings || 0);
-                safeSetText('profileReferrals', profile.total_referrals || 0);
-                safeSetText('profileEarnings', profile.total_referral_earnings || 0);
+                document.getElementById('profileName').textContent = profile.first_name || 'Пользователь';
+                document.getElementById('profileUsername').textContent = profile.username ? `@${profile.username}` : '';
+                document.getElementById('profileBalance').textContent = profile.balance || 0;
+                document.getElementById('profileOpenings').textContent = profile.total_openings || 0;
+                document.getElementById('profileReferrals').textContent = profile.total_referrals || 0;
+                document.getElementById('profileEarnings').textContent = profile.total_referral_earnings || 0;
                 
                 switchScreen('profile-screen');
             } else {
                 showToast('❌ Ошибка загрузки профиля');
             }
         })
-        .catch(error => showToast('❌ Ошибка'))
+        .catch(error => showToast('❌ Ошибка: ' + error.message))
         .finally(() => hideLoader());
 }
 
@@ -698,23 +692,22 @@ function closeProfile() { switchScreen('main-screen'); }
 async function showReferralsList() {
     if (!state.user?.telegram_id) return;
     document.getElementById('referralsModal').classList.add('active');
-    const listContainer = document.getElementById('referralsList');
-    if(listContainer) listContainer.innerHTML = '<div class="loader-spinner" style="margin: 20px auto"></div>';
-    safeSetText('refModalBalance', state.user.balance || 0);
+    
+    document.getElementById('referralsList').innerHTML = '<div class="loader-spinner" style="margin: 20px auto"></div>';
+    document.getElementById('refModalBalance').textContent = state.user.balance || 0;
 
     const botUsername = 'ludomihabot'; 
-    const refLink = `https://t.me/${botUsername}?start=${state.user.referral_code}`;
-    const linkInput = document.getElementById('refModalLinkInput');
-    if(linkInput) linkInput.value = refLink;
+    document.getElementById('refModalLinkInput').value = `https://t.me/${botUsername}?start=${state.user.referral_code}`;
 
     const profileRes = await apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET');
     if (profileRes.success) {
-        safeSetText('refModalEarned', profileRes.profile.total_referral_earnings || 0);
-        safeSetText('refModalCount', profileRes.profile.total_referrals || 0);
+        document.getElementById('refModalEarned').textContent = profileRes.profile.total_referral_earnings || 0;
+        document.getElementById('refModalCount').textContent = profileRes.profile.total_referrals || 0;
     }
 
     const response = await apiRequest(`/user/${state.user.telegram_id}/referrals`, 'GET');
-    if (response.success && listContainer) {
+    if (response.success) {
+        const listContainer = document.getElementById('referralsList');
         listContainer.innerHTML = '';
         if (!response.referrals || response.referrals.length === 0) {
             listContainer.innerHTML = `<div class="empty-state" style="padding-top:20px;"><div style="font-size:40px;margin-bottom:10px;opacity:0.5;">👥</div>Пока нет рефералов<br><span style="font-size:12px;color:#888;">Поделитесь ссылкой с друзьями, чтобы заработать звезды</span></div>`;
@@ -725,8 +718,8 @@ async function showReferralsList() {
             const avatarHtml = ref.photo_url ? `<img src="${ref.photo_url}" style="width:100%;height:100%;object-fit:cover;">` : `👤`;
             listContainer.innerHTML += `<div class="modern-list-item"><div class="ml-left"><div class="ml-avatar">${avatarHtml}</div><div class="ml-info"><div class="ml-title">${ref.first_name || 'Игрок'}</div><div class="ml-subtitle">Регистрация: ${regDate}</div></div></div><div class="ml-right"><div class="ml-value positive">+${ref.total_earned || 0} ⭐</div></div></div>`;
         });
-    } else if(listContainer) {
-        listContainer.innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
+    } else {
+        document.getElementById('referralsList').innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     }
 }
 

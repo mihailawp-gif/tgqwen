@@ -1191,51 +1191,37 @@ function openProfile() {
         return;
     }
     
-    console.log('Opening profile for user:', state.user.telegram_id);
     showLoader();
     
     apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET')
         .then(response => {
-            console.log('Profile response:', response);
             if (response.success) {
                 const profile = response.profile;
                 
                 // Аватарка
                 const avatar = document.getElementById('profileAvatar');
-                if (avatar) {
-                    if (profile.photo_url) {
-                        avatar.innerHTML = `<img src="${profile.photo_url}" alt="avatar">`;
-                    } else {
-                        avatar.textContent = '👤';
-                    }
+                if (profile.photo_url) {
+                    avatar.innerHTML = `<img src="${profile.photo_url}" alt="avatar">`;
+                } else {
+                    avatar.textContent = '👤';
                 }
                 
-                // Имя и username
+                // Заполняем данные профиля
                 document.getElementById('profileName').textContent = profile.first_name || 'Пользователь';
                 document.getElementById('profileUsername').textContent = profile.username ? `@${profile.username}` : '';
-                
-                // Баланс
                 document.getElementById('profileBalance').textContent = profile.balance || 0;
-                
-                // Статистика
                 document.getElementById('profileOpenings').textContent = profile.total_openings || 0;
                 document.getElementById('profileReferrals').textContent = profile.total_referrals || 0;
                 document.getElementById('profileEarnings').textContent = profile.total_referral_earnings || 0;
                 
-                // Реферальный код
-                const referralCode = profile.referral_code || 'CODE';
-                document.getElementById('referralCode').textContent = referralCode;
+                // ВСЁ! Строку с referralCode мы просто удалили навсегда, так как её больше нет в HTML.
                 
                 switchScreen('profile-screen');
             } else {
-                console.error('Profile API error:', response.error);
                 showToast('❌ Ошибка загрузки профиля: ' + (response.error || 'Неизвестная ошибка'));
             }
         })
-        .catch(error => {
-            console.error('Profile API exception:', error);
-            showToast('❌ Ошибка: ' + error.message);
-        })
+        .catch(error => showToast('❌ Ошибка: ' + error.message))
         .finally(() => hideLoader());
 }
 

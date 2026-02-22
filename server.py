@@ -6,7 +6,8 @@ import os
 import ssl
 import asyncio
 from datetime import datetime, timedelta
-from sqlalchemy import select, desc
+# ДОБАВЛЕН ИМПОРТ or_ для защиты от ошибок пустых колонок
+from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import random
@@ -241,19 +242,31 @@ async def open_case(request):
 
 async def get_inventory(request):
     telegram_id = int(request.match_info['telegram_id'])
-    async with async_session() as session:
-        user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
-        if not user: return web.json_response({'success': False, 'error': 'User not found'})
+    try:
+        async with async_session() as session:
+            user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
+            if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-        openings = (await session.execute(select(CaseOpening).where(CaseOpening.user_id == user.id, CaseOpening.is_sold == False).order_by(desc(CaseOpening.created_at)).options(joinedload(CaseOpening.gift)))).scalars().unique().all()
-        items_data = []
-        for opening in openings:
-            gift = opening.gift
-            items_data.append({
-                'opening_id': opening.id, 'is_withdrawn': opening.is_withdrawn, 'is_sold': opening.is_sold, 'created_at': opening.created_at.isoformat(),
-                'gift': { 'id': gift.id, 'name': gift.name, 'rarity': gift.rarity, 'value': gift.value, 'image_url': gift.image_url, 'gift_number': gift.gift_number if gift.gift_number else ((gift.id - 1) % 120 + 1), 'is_stars': bool(gift.gift_number and gift.gift_number >= 200) }
-            })
-        return web.json_response({'success': True, 'inventory': items_data})
+            # Защита от пустой колонки is_sold
+            openings = (await session.execute(
+                select(CaseOpening).where(
+                    CaseOpening.user_id == user.id, 
+                    or_(CaseOpening.is_sold == False, CaseOpening.is_sold.is_(None))
+                ).order_by(desc(CaseOpening.created_at)).options(joinedload(CaseOpening.gift))
+            )).scalars().unique().all()
+            
+            items_data = []
+            for opening in openings:
+                gift = opening.gift
+                items_data.append({
+                    'opening_id': opening.id, 'is_withdrawn': opening.is_withdrawn, 'is_sold': opening.is_sold, 'created_at': opening.created_at.isoformat(),
+                    'gift': { 'id': gift.id, 'name': gift.name, 'rarity': gift.rarity, 'value': gift.value, 'image_url': gift.image_url, 'gift_number': gift.gift_number if gift.gift_number else ((gift.id - 1) % 120 + 1), 'is_stars': bool(gift.gift_number and gift.gift_number >= 200) }
+                })
+            return web.json_response({'success': True, 'inventory': items_data})
+    except Exception as e:
+        print(f"❌ Error in get_inventory: {e}")
+        return web.json_response({'success': False, 'error': 'Internal server error'}, status=500)
+
 
 async def withdraw_item(request):
     data = await request.json()
@@ -306,68 +319,82 @@ async def check_free_case(request):
         available = time_diff >= timedelta(hours=24)
         return web.json_response({'available': available, 'remaining_seconds': max(0, (timedelta(hours=24) - time_diff).total_seconds()) if not available else 0})
 
-# === НОВАЯ ЛОГИКА ПРОФИЛЯ И РЕФЕРАЛОВ ===
+# === НОВАЯ ЛОГИКА ПРОФИЛЯ И РЕФЕРАЛОВ С ЗАЩИТОЙ ===
 async def get_profile(request):
     telegram_id = int(request.match_info['telegram_id'])
-    async with async_session() as session:
-        user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
-        if not user: return web.json_response({'success': False, 'error': 'User not found'})
+    try:
+        async with async_session() as session:
+            user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
+            if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-        openings_count = len((await session.execute(select(CaseOpening).where(CaseOpening.user_id == user.id))).scalars().all())
-        total_referrals = len((await session.execute(select(User).where(User.referrer_id == user.id))).scalars().all())
-        
-        # Считаем сумму Депозитов (оплаченных счетов)
-        deposits_result = await session.execute(select(Payment).where(Payment.user_id == user.id, Payment.status == 'completed'))
-        total_deposits = sum(p.amount for p in deposits_result.scalars().all())
+            openings_count = len((await session.execute(select(CaseOpening).where(CaseOpening.user_id == user.id))).scalars().all())
+            total_referrals = len((await session.execute(select(User).where(User.referrer_id == user.id))).scalars().all())
+            
+            deposits_result = await session.execute(select(Payment).where(Payment.user_id == user.id, Payment.status == 'completed'))
+            total_deposits = sum(p.amount for p in deposits_result.scalars().all())
 
-        # Считаем ДОСТУПНЫЙ заработок с рефералов (который еще не выведен)
-        referral_earnings_result = await session.execute(select(ReferralEarning).where(ReferralEarning.referrer_id == user.id, ReferralEarning.is_withdrawn == False))
-        available_referral_earnings = sum(e.amount for e in referral_earnings_result.scalars().all())
+            # ИСПОЛЬЗУЕМ OR_ ДЛЯ ЗАЩИТЫ ОТ ПУСТОЙ КОЛОНКИ
+            referral_earnings_result = await session.execute(
+                select(ReferralEarning).where(
+                    ReferralEarning.referrer_id == user.id, 
+                    or_(ReferralEarning.is_withdrawn == False, ReferralEarning.is_withdrawn.is_(None))
+                )
+            )
+            available_referral_earnings = sum(e.amount for e in referral_earnings_result.scalars().all())
 
-        return web.json_response({
-            'success': True,
-            'profile': {
-                'id': user.id, 'telegram_id': user.telegram_id, 'first_name': user.first_name, 'username': user.username, 'photo_url': user.photo_url,
-                'balance': user.balance, 'referral_code': user.referral_code,
-                'total_openings': openings_count,
-                'total_referrals': total_referrals,
-                'total_deposits': total_deposits, # <-- Отдаем Депозиты на фронт
-                'available_referral_earnings': available_referral_earnings # <-- Отдаем доступные звезды
-            }
-        })
+            return web.json_response({
+                'success': True,
+                'profile': {
+                    'id': user.id, 'telegram_id': user.telegram_id, 'first_name': user.first_name, 'username': user.username, 'photo_url': user.photo_url,
+                    'balance': user.balance, 'referral_code': user.referral_code,
+                    'total_openings': openings_count,
+                    'total_referrals': total_referrals,
+                    'total_deposits': total_deposits,
+                    'available_referral_earnings': available_referral_earnings
+                }
+            })
+    except Exception as e:
+        print(f"❌ Error in get_profile: {e}")
+        return web.json_response({'success': False, 'error': str(e)}, status=500)
 
 async def withdraw_referrals(request):
-    """Вывод звезд с реферального счета на основной баланс"""
     data = await request.json()
     telegram_id = data.get('telegram_id')
 
-    async with async_session() as session:
-        user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
-        if not user: return web.json_response({'success': False, 'error': 'User not found'})
+    try:
+        async with async_session() as session:
+            user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
+            if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-        # Находим все невыведенные начисления
-        earnings_result = await session.execute(select(ReferralEarning).where(ReferralEarning.referrer_id == user.id, ReferralEarning.is_withdrawn == False))
-        earnings = earnings_result.scalars().all()
-        
-        total_amount = sum(e.amount for e in earnings)
+            # ИСПОЛЬЗУЕМ OR_ ДЛЯ ЗАЩИТЫ ОТ ПУСТОЙ КОЛОНКИ
+            earnings_result = await session.execute(
+                select(ReferralEarning).where(
+                    ReferralEarning.referrer_id == user.id, 
+                    or_(ReferralEarning.is_withdrawn == False, ReferralEarning.is_withdrawn.is_(None))
+                )
+            )
+            earnings = earnings_result.scalars().all()
+            
+            total_amount = sum(e.amount for e in earnings)
 
-        if total_amount == 0:
-            return web.json_response({'success': False, 'error': 'Нет доступных звезд для вывода'})
+            if total_amount == 0:
+                return web.json_response({'success': False, 'error': 'Нет доступных звезд для вывода'})
 
-        # Зачисляем на баланс
-        user.balance += total_amount
-        
-        # Помечаем как выведенные
-        for e in earnings:
-            e.is_withdrawn = True
+            user.balance += total_amount
+            
+            for e in earnings:
+                e.is_withdrawn = True
 
-        await session.commit()
-        
-        return web.json_response({
-            'success': True,
-            'withdrawn': total_amount,
-            'new_balance': user.balance
-        })
+            await session.commit()
+            
+            return web.json_response({
+                'success': True,
+                'withdrawn': total_amount,
+                'new_balance': user.balance
+            })
+    except Exception as e:
+        print(f"❌ Error in withdraw_referrals: {e}")
+        return web.json_response({'success': False, 'error': str(e)}, status=500)
 
 async def get_referrals(request):
     telegram_id = int(request.match_info['telegram_id'])
@@ -414,7 +441,7 @@ async def create_app():
     api_routes = [
         web.get('/api/user/{telegram_id}/profile', get_profile),
         web.get('/api/user/{telegram_id}/referrals', get_referrals),
-        web.post('/api/user/withdraw-referrals', withdraw_referrals), # <--- НОВЫЙ ЭНДПОИНТ ДЛЯ КНОПКИ ВЫВЕСТИ
+        web.post('/api/user/withdraw-referrals', withdraw_referrals),
         web.get('/api/user/{telegram_id}/free-case-check', check_free_case),
         web.post('/api/user/init', init_user),
         web.get('/api/cases/list', list_cases),

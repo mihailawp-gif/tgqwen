@@ -39,7 +39,7 @@ class ReferralEarning(Base):
     referred_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Integer, default=0)
     source = Column(String(50), default="deposit_bonus")
-    is_withdrawn = Column(Boolean, default=False) # <--- НОВОЕ ПОЛЕ
+    is_withdrawn = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[referrer_id], back_populates="referral_earnings")
@@ -147,16 +147,17 @@ async def init_db():
         async with engine.begin() as conn:
             await conn.run_sync(_migrate_columns)
     except Exception as e:
-        print(f"⚠️ Migration warning (non-critical): {e}")
+        print(f"⚠️ Migration warning: {e}")
 
 def _migrate_columns(conn):
+    # Убрали DEFAULT из миграции, чтобы PostgreSQL не ругался!
     migrations = [
         ("gifts",         "gift_number", "INTEGER"),
-        ("case_openings", "is_sold",     "BOOLEAN DEFAULT 0"),
+        ("case_openings", "is_sold",     "BOOLEAN"),
         ("users",         "photo_url",   "TEXT"),
         ("users",         "referrer_id", "INTEGER"),
         ("users",         "referral_code", "TEXT"),
-        ("referral_earnings", "is_withdrawn", "BOOLEAN DEFAULT 0"), # <--- МИГРАЦИЯ ДЛЯ НОВОГО ПОЛЯ
+        ("referral_earnings", "is_withdrawn", "BOOLEAN"),
     ]
     for table, col, col_type in migrations:
         try:
@@ -165,17 +166,3 @@ def _migrate_columns(conn):
             ))
         except Exception:
             pass
-    try:
-        conn.execute(__import__('sqlalchemy').text("""
-            CREATE TABLE IF NOT EXISTS referral_earnings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                referrer_id INTEGER,
-                referred_user_id INTEGER,
-                amount INTEGER DEFAULT 0,
-                source TEXT DEFAULT 'deposit_bonus',
-                is_withdrawn BOOLEAN DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-    except Exception:
-        pass

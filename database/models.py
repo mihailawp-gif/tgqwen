@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, String, Float, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, BigInteger, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, text
 from sqlalchemy.ext.asyncio import AsyncAttrs, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime
@@ -143,26 +143,39 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # 1. Сначала жестко создаем колонки с дефолтными значениями (без костылей)
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(_migrate_columns)
-    except Exception as e:
-        print(f"⚠️ Migration warning: {e}")
+            await conn.execute(text("ALTER TABLE referral_earnings ADD COLUMN is_withdrawn BOOLEAN DEFAULT FALSE"))
+    except Exception:
+        pass # Если уже есть - идем дальше
+        
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE case_openings ADD COLUMN is_sold BOOLEAN DEFAULT FALSE"))
+    except Exception:
+        pass
 
-def _migrate_columns(conn):
-    # Убрали DEFAULT из миграции, чтобы PostgreSQL не ругался!
+    # Остальные текстовые колонки
     migrations = [
-        ("gifts",         "gift_number", "INTEGER"),
-        ("case_openings", "is_sold",     "BOOLEAN"),
-        ("users",         "photo_url",   "TEXT"),
-        ("users",         "referrer_id", "INTEGER"),
-        ("users",         "referral_code", "TEXT"),
-        ("referral_earnings", "is_withdrawn", "BOOLEAN"),
+        ("gifts", "gift_number", "INTEGER"),
+        ("users", "photo_url", "TEXT"),
+        ("users", "referrer_id", "INTEGER"),
+        ("users", "referral_code", "TEXT"),
     ]
     for table, col, col_type in migrations:
         try:
-            conn.execute(__import__('sqlalchemy').text(
-                f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"
-            ))
+            async with engine.begin() as conn:
+                await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
         except Exception:
             pass
+
+    # 2. ПРЯМАЯ ПРАВКА БАЗЫ ДАННЫХ
+    # Если в базе остались старые пустые (NULL) значения - жестко переводим их в FALSE
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("UPDATE referral_earnings SET is_withdrawn = FALSE WHERE is_withdrawn IS NULL"))
+            await conn.execute(text("UPDATE case_openings SET is_sold = FALSE WHERE is_sold IS NULL"))
+    except Exception as e:
+        print(f"⚠️ Ошибка обновления NULL значений: {e}")

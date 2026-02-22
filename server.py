@@ -6,8 +6,7 @@ import os
 import ssl
 import asyncio
 from datetime import datetime, timedelta
-# ДОБАВЛЕН ИМПОРТ or_ для защиты от ошибок пустых колонок
-from sqlalchemy import select, desc, or_
+from sqlalchemy import select, desc
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import random
@@ -247,12 +246,11 @@ async def get_inventory(request):
             user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
             if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-            # Защита от пустой колонки is_sold
+            # КОСТЫЛЬ ВЫРЕЗАН, ТОЧНАЯ ПРОВЕРКА ПО БАЗЕ
             openings = (await session.execute(
-                select(CaseOpening).where(
-                    CaseOpening.user_id == user.id, 
-                    or_(CaseOpening.is_sold == False, CaseOpening.is_sold.is_(None))
-                ).order_by(desc(CaseOpening.created_at)).options(joinedload(CaseOpening.gift))
+                select(CaseOpening)
+                .where(CaseOpening.user_id == user.id, CaseOpening.is_sold == False)
+                .order_by(desc(CaseOpening.created_at)).options(joinedload(CaseOpening.gift))
             )).scalars().unique().all()
             
             items_data = []
@@ -266,7 +264,6 @@ async def get_inventory(request):
     except Exception as e:
         print(f"❌ Error in get_inventory: {e}")
         return web.json_response({'success': False, 'error': 'Internal server error'}, status=500)
-
 
 async def withdraw_item(request):
     data = await request.json()
@@ -319,7 +316,8 @@ async def check_free_case(request):
         available = time_diff >= timedelta(hours=24)
         return web.json_response({'available': available, 'remaining_seconds': max(0, (timedelta(hours=24) - time_diff).total_seconds()) if not available else 0})
 
-# === НОВАЯ ЛОГИКА ПРОФИЛЯ И РЕФЕРАЛОВ С ЗАЩИТОЙ ===
+
+# === ЧИСТАЯ ЛОГИКА ПРОФИЛЯ ===
 async def get_profile(request):
     telegram_id = int(request.match_info['telegram_id'])
     try:
@@ -331,16 +329,13 @@ async def get_profile(request):
             total_referrals = len((await session.execute(select(User).where(User.referrer_id == user.id))).scalars().all())
             
             deposits_result = await session.execute(select(Payment).where(Payment.user_id == user.id, Payment.status == 'completed'))
-            total_deposits = sum(p.amount for p in deposits_result.scalars().all())
+            total_deposits = sum((p.amount or 0) for p in deposits_result.scalars().all())
 
-            # ИСПОЛЬЗУЕМ OR_ ДЛЯ ЗАЩИТЫ ОТ ПУСТОЙ КОЛОНКИ
+            # КОСТЫЛЬ ВЫРЕЗАН, ТОЧНАЯ ПРОВЕРКА
             referral_earnings_result = await session.execute(
-                select(ReferralEarning).where(
-                    ReferralEarning.referrer_id == user.id, 
-                    or_(ReferralEarning.is_withdrawn == False, ReferralEarning.is_withdrawn.is_(None))
-                )
+                select(ReferralEarning).where(ReferralEarning.referrer_id == user.id, ReferralEarning.is_withdrawn == False)
             )
-            available_referral_earnings = sum(e.amount for e in referral_earnings_result.scalars().all())
+            available_referral_earnings = sum((e.amount or 0) for e in referral_earnings_result.scalars().all())
 
             return web.json_response({
                 'success': True,
@@ -366,16 +361,13 @@ async def withdraw_referrals(request):
             user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
             if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-            # ИСПОЛЬЗУЕМ OR_ ДЛЯ ЗАЩИТЫ ОТ ПУСТОЙ КОЛОНКИ
+            # КОСТЫЛЬ ВЫРЕЗАН
             earnings_result = await session.execute(
-                select(ReferralEarning).where(
-                    ReferralEarning.referrer_id == user.id, 
-                    or_(ReferralEarning.is_withdrawn == False, ReferralEarning.is_withdrawn.is_(None))
-                )
+                select(ReferralEarning).where(ReferralEarning.referrer_id == user.id, ReferralEarning.is_withdrawn == False)
             )
             earnings = earnings_result.scalars().all()
             
-            total_amount = sum(e.amount for e in earnings)
+            total_amount = sum((e.amount or 0) for e in earnings)
 
             if total_amount == 0:
                 return web.json_response({'success': False, 'error': 'Нет доступных звезд для вывода'})
@@ -406,13 +398,12 @@ async def get_referrals(request):
         referrals_data = []
         for ref in referrals:
             earnings = (await session.execute(select(ReferralEarning).where(ReferralEarning.referrer_id == user.id, ReferralEarning.referred_user_id == ref.id))).scalars().all()
-            total_earned = sum(e.amount for e in earnings)
+            total_earned = sum((e.amount or 0) for e in earnings)
             referrals_data.append({
                 'id': ref.id, 'first_name': ref.first_name, 'username': ref.username, 'photo_url': ref.photo_url,
                 'joined_at': ref.created_at.isoformat() if ref.created_at else None, 'total_earned': total_earned
             })
         return web.json_response({'success': True, 'referrals': referrals_data})
-
 
 async def create_invoice(request):
     data = await request.json()
@@ -457,6 +448,8 @@ async def create_app():
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))
     app.router.add_get('/', index)
     app.router.add_static('/static', 'static', show_index=False)
+    
+    # Жесткий фикс базы при старте
     await init_db()
     return app
 

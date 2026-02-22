@@ -26,7 +26,6 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const tg = window.Telegram.WebApp;
-            // Возвращен правильный и надежный скрипт!
             if (tg && tg.initData !== "") {
                 document.getElementById('desktop-guard').style.display = 'none';
             } else {
@@ -41,17 +40,14 @@
                 <div class="user-info">
                     <div class="user-name" id="userName">Загрузка...</div>
                     <div class="user-balance">
-                        <img src="/static/images/star.png" alt="⭐" class="balance-star-icon"
-                            onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                        <img src="/static/images/star.png" alt="⭐" class="balance-star-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
                         <span class="balance-star-fallback" style="display:none">⭐</span>
                         <span id="userBalance">0</span>
                     </div>
                 </div>
             </div>
             <button class="btn-topup" onclick="showTopupScreen()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
                 Пополнить
             </button>
         </div>
@@ -72,117 +68,55 @@
         <div class="live-history-section">
             <div class="live-history-header">
                 <span class="live-history-title">Последние выигрыши</span>
-                <div class="live-indicator">
-                    <span class="live-dot"></span>
-                    <span>LIVE</span>
-                </div>
+                <div class="live-indicator"><span class="live-dot"></span><span>LIVE</span></div>
             </div>
             <div class="live-history-scroll" id="liveHistoryScroll"></div>
         </div>
 
-        <div id="cases-tab" class="tab-content active">
-            <div class="cases-container">
-                <div class="cases-grid" id="casesGrid"></div>
-            </div>
-        </div>
-
-        <div id="inventory-tab" class="tab-content">
-            <div class="inventory-container">
-                <div class="inventory-grid" id="inventoryList"></div>
-            </div>
-        </div>
+        <div id="cases-tab" class="tab-content active"><div class="cases-container"><div class="cases-grid" id="casesGrid"></div></div></div>
+        <div id="inventory-tab" class="tab-content"><div class="inventory-container"><div class="inventory-grid" id="inventoryList"></div></div></div>
     </div>
 
     <div id="opening-screen" class="screen">
         <div class="preview-header">
-            <button class="btn-back" onclick="closeOpeningScreen()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-            </button>
+            <button class="btn-back" onclick="closeOpeningScreen()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
             <h2 id="openingCaseName">Название кейса</h2>
         </div>
-
         <div class="preview-roulette-wrapper">
             <div class="preview-roulette-fade preview-roulette-fade-left"></div>
-            <div class="preview-roulette-track-container">
-                <div class="preview-roulette-track" id="previewRouletteTrack"></div>
-            </div>
+            <div class="preview-roulette-track-container"><div class="preview-roulette-track" id="previewRouletteTrack"></div></div>
             <div class="preview-roulette-fade preview-roulette-fade-right"></div>
             <div class="preview-roulette-indicator-bottom"></div>
         </div>
-
         <div class="preview-scrollable">
             <p class="case-description" id="openingCaseDescription"></p>
-            <div class="items-preview-section">
-                <h3>Возможные награды</h3>
-                <div class="preview-rewards-box">
-                    <div class="preview-tiles-grid" id="caseItemsPreview"></div>
-                </div>
-            </div>
+            <div class="items-preview-section"><h3>Возможные награды</h3><div class="preview-rewards-box"><div class="preview-tiles-grid" id="caseItemsPreview"></div></div></div>
         </div>
-
         <div class="open-case-footer">
-            <div class="case-price-display" id="openingCasePrice">
-                <img src="/static/images/star.png" class="price-icon" onerror="this.outerHTML='⭐'" alt="star">
-                <span class="price-amount">50</span>
-            </div>
-            <button class="btn-open-case" id="btnOpenCase" onclick="confirmOpenCase()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-                Открыть кейс
-            </button>
+            <div class="case-price-display" id="openingCasePrice"><img src="/static/images/star.png" class="price-icon" onerror="this.outerHTML='⭐'" alt="star"><span class="price-amount">50</span></div>
+            <button class="btn-open-case" id="btnOpenCase" onclick="confirmOpenCase()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Открыть кейс</button>
         </div>
     </div>
 
     <div id="animation-screen" class="screen">
         <div class="animation-container">
-            <div class="roulette-wrapper">
-                <div class="roulette-indicator"></div>
-                <div class="roulette-track-container">
-                    <div class="roulette-track" id="rouletteTrack"></div>
-                </div>
-            </div>
-            <div class="opening-status">
-                <div class="spinner-icon"></div>
-                <span>Открываем кейс...</span>
-            </div>
+            <div class="roulette-wrapper"><div class="roulette-indicator"></div><div class="roulette-track-container"><div class="roulette-track" id="rouletteTrack"></div></div></div>
+            <div class="opening-status"><div class="spinner-icon"></div><span>Открываем кейс...</span></div>
         </div>
     </div>
 
     <div id="result-screen" class="screen">
         <div class="result-container">
-            <div class="result-header">
-                <h2 class="congrats-text">🎉 Поздравляем! 🎉</h2>
-            </div>
-            <div class="won-item-showcase">
-                <div class="item-glow-effect"></div>
-                <div class="won-item-card">
-                    <img id="wonItemImage" src="" alt="Приз" style="display:none">
-                    <div class="item-rarity-badge" id="wonItemRarity">LEGENDARY</div>
-                </div>
-            </div>
+            <div class="result-header"><h2 class="congrats-text">🎉 Поздравляем! 🎉</h2></div>
+            <div class="won-item-showcase"><div class="item-glow-effect"></div><div class="won-item-card"><img id="wonItemImage" src="" alt="Приз" style="display:none"><div class="item-rarity-badge" id="wonItemRarity">LEGENDARY</div></div></div>
             <div class="won-item-details">
                 <h3 id="wonItemName" class="item-name">Название предмета</h3>
-                <div class="item-value">
-                    <span>Ценность:</span>
-                    <span class="value-amount">
-                        <img src="/static/images/star.png" class="value-icon" onerror="this.outerHTML='⭐'" alt="star">
-                        <span id="wonItemValue">100</span>
-                    </span>
-                </div>
+                <div class="item-value"><span>Ценность:</span><span class="value-amount"><img src="/static/images/star.png" class="value-icon" onerror="this.outerHTML='⭐'" alt="star"><span id="wonItemValue">100</span></span></div>
             </div>
             <div class="result-actions">
-                <button class="btn-action btn-sell-result" onclick="sellResultItem()">
-                    Продать за <span id="resultSellPrice">0</span> <img src="/static/images/star.png" class="btn-sell-star-icon" alt="star">
-                </button>
-                <div id="starsAutoNotice" style="display:none;align-items:center;justify-content:center;gap:6px;padding:12px 16px;background:linear-gradient(135deg,rgba(255,200,0,.15),rgba(255,150,0,.1));border:1px solid rgba(255,200,0,.3);border-radius:14px;font-size:13px;font-weight:700;color:#ffd700;">
-                    <img src="/static/images/star.png" style="width:18px;height:18px" alt="⭐"> Звёзды зачислены на баланс!
-                </div>
-                <button class="btn-action btn-continue" onclick="closeResultScreen()">
-                    Продолжить
-                </button>
+                <button class="btn-action btn-sell-result" onclick="sellResultItem()">Продать за <span id="resultSellPrice">0</span> <img src="/static/images/star.png" class="btn-sell-star-icon" alt="star"></button>
+                <div id="starsAutoNotice" style="display:none;align-items:center;justify-content:center;gap:6px;padding:12px 16px;background:linear-gradient(135deg,rgba(255,200,0,.15),rgba(255,150,0,.1));border:1px solid rgba(255,200,0,.3);border-radius:14px;font-size:13px;font-weight:700;color:#ffd700;"><img src="/static/images/star.png" style="width:18px;height:18px" alt="⭐"> Звёзды зачислены на баланс!</div>
+                <button class="btn-action btn-continue" onclick="closeResultScreen()">Продолжить</button>
             </div>
         </div>
     </div>
@@ -191,20 +125,9 @@
         <div class="modal-overlay" onclick="closeTopupModal()"></div>
         <div class="modal-content topup-modal">
             <div class="modal-handle"></div>
-            <div class="modal-header">
-                <h3>Пополнение баланса</h3>
-                <button class="btn-close" onclick="closeTopupModal()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
+            <div class="modal-header"><h3>Пополнение баланса</h3><button class="btn-close" onclick="closeTopupModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
             <div class="payment-options">
-                <div class="payment-header">
-                    <img src="/static/images/star.png" class="stars-icon-large"
-                        onerror="this.outerHTML='<div style=\'font-size:48px\'>⭐</div>'" alt="star">
-                    <p>Выберите количество звёзд</p>
-                </div>
+                <div class="payment-header"><img src="/static/images/star.png" class="stars-icon-large" onerror="this.outerHTML='<div style=\'font-size:48px\'>⭐</div>'" alt="star"><p>Выберите количество звёзд</p></div>
                 <div class="amounts-grid" id="topupAmounts">
                     <button class="amount-card" onclick="createStarsInvoice(200)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 200</div></button>
                     <button class="amount-card" onclick="createStarsInvoice(500)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 500</div></button>
@@ -213,17 +136,9 @@
                     <button class="amount-card" onclick="createStarsInvoice(5000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 5000</div></button>
                     <button class="amount-card" onclick="createStarsInvoice(10000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 10000</div></button>
                 </div>
-                
                 <div class="custom-amount-section">
                     <p class="custom-amount-label">Или введите свою сумму:</p>
-                    <div class="custom-amount-input">
-                        <input type="number" id="customStarsAmount" placeholder="Мин. 1" min="1" max="100000" value="100">
-                        <button class="btn-custom-amount" onclick="createCustomStarsInvoice()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                        </button>
-                    </div>
+                    <div class="custom-amount-input"><input type="number" id="customStarsAmount" placeholder="Мин. 1" min="1" max="100000" value="100"><button class="btn-custom-amount" onclick="createCustomStarsInvoice()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
                 </div>
             </div>
         </div>
@@ -231,71 +146,23 @@
 
     <div id="confirmModal" class="modal">
         <div class="modal-overlay" onclick="closeConfirmModal()"></div>
-        <div class="modal-content confirm-modal">
-            <div class="modal-handle"></div>
-            <h3>Подтверждение</h3>
-            <p id="confirmText"></p>
-            <div class="modal-actions">
-                <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">Отмена</button>
-                <button class="btn-modal btn-confirm" onclick="executeOpenCase()">Открыть</button>
-            </div>
-        </div>
+        <div class="modal-content confirm-modal"><div class="modal-handle"></div><h3>Подтверждение</h3><p id="confirmText"></p><div class="modal-actions"><button class="btn-modal btn-cancel" onclick="closeConfirmModal()">Отмена</button><button class="btn-modal btn-confirm" onclick="executeOpenCase()">Открыть</button></div></div>
     </div>
 
     <div id="loader" class="loader hidden"><div class="loader-spinner"></div></div>
     <div id="toast" class="toast"></div>
 
     <div id="profile-screen" class="screen">
-        <div class="profile-header">
-            <button class="btn-back" onclick="closeProfile()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            <h2>Профиль</h2>
-        </div>
-        
+        <div class="profile-header"><button class="btn-back" onclick="closeProfile()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h2>Профиль</h2></div>
         <div class="profile-content">
-            <div class="profile-avatar-section">
-                <div class="profile-avatar" id="profileAvatar">👤</div>
-                <h3 id="profileName">Имя пользователя</h3>
-                <div class="profile-username" id="profileUsername">@username</div>
-            </div>
-            
-            <div class="profile-balance-card">
-                <div class="balance-label">Баланс</div>
-                <div class="balance-amount">
-                    <img src="/static/images/star.png" class="profile-star-icon" alt="star">
-                    <span id="profileBalance">0</span>
-                </div>
-            </div>
-            
+            <div class="profile-avatar-section"><div class="profile-avatar" id="profileAvatar">👤</div><h3 id="profileName">Имя пользователя</h3><div class="profile-username" id="profileUsername">@username</div></div>
+            <div class="profile-balance-card"><div class="balance-label">Баланс</div><div class="balance-amount"><img src="/static/images/star.png" class="profile-star-icon" alt="star"><span id="profileBalance">0</span></div></div>
             <div class="profile-stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="profileOpenings">0</div>
-                    <div class="stat-label">Открыто кейсов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="profileReferrals">0</div>
-                    <div class="stat-label">Рефералов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="profileEarnings">0</div>
-                    <div class="stat-label">Заработано ⭐</div>
-                </div>
+                <div class="stat-card"><div class="stat-value" id="profileOpenings">0</div><div class="stat-label">Открыто кейсов</div></div>
+                <div class="stat-card"><div class="stat-value" id="profileReferrals">0</div><div class="stat-label">Рефералов</div></div>
+                <div class="stat-card"><div class="stat-value" id="profileDeposits">0</div><div class="stat-label">Депозиты <img src="/static/images/star.png" style="width:12px;height:12px;vertical-align:baseline;position:relative;top:2px;"></div></div>
             </div>
-            
-            <div class="profile-actions">
-                <button class="btn-profile-action" onclick="showReferralsList()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    Мои рефералы
-                </button>
-            </div>
+            <div class="profile-actions"><button class="btn-profile-action" onclick="showReferralsList()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Мои рефералы</button></div>
         </div>
     </div>
 
@@ -304,44 +171,24 @@
         <div class="modal-content ref-new-modal">
             <div class="ref-header">
                 <h2>Рефералы</h2>
-                <div class="ref-balance-badge">
-                    <img src="/static/images/star.png" alt="⭐" style="width:16px;height:16px;"> <span id="refModalBalance">0</span>
-                </div>
+                <div class="ref-balance-badge"><img src="/static/images/star.png" alt="⭐" style="width:16px;height:16px;"> <span id="refModalBalance">0</span></div>
             </div>
-
             <div class="ref-body">
                 <div class="ref-block ref-link-block">
                     <div class="ref-title-sm">РЕФЕРАЛЬНАЯ ССЫЛКА</div>
-                    <div class="ref-desc">Вы получаете <span class="text-green">5%</span> с каждого пополнения баланса вашими друзьями</div>
-                    
-                    <div class="ref-warning">
-                        Важно: у вашего реферала должен быть установлен Telegram @username, иначе он может не засчитаться.
-                    </div>
-                    
+                    <div class="ref-desc">Вы получаете <span class="text-blue">5%</span> с каждого пополнения баланса вашими друзьями</div>
+                    <div class="ref-warning">Важно: у вашего реферала должен быть установлен Telegram @username, иначе он может не засчитаться.</div>
                     <div class="ref-input-group">
                         <input type="text" id="refModalLinkInput" readonly value="Загрузка...">
-                        <button class="btn-ref-copy" onclick="copyReferralLinkModal()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                        </button>
+                        <button class="btn-ref-copy" onclick="copyReferralLinkModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
                     </div>
                     <button class="btn-ref-share" onclick="shareReferralLink()">Поделиться в Telegram</button>
                 </div>
-
                 <div class="ref-stats-flex">
-                    <div class="ref-stat-box">
-                        <div class="ref-stat-label">ЛИЧНО<br>ПРИГЛАШЁННЫЕ</div>
-                        <div class="ref-stat-value" id="refModalCount">0</div>
-                        <div class="ref-stat-sub">5% с их пополнений</div>
-                    </div>
-                    <div class="ref-stat-box">
-                        <div class="ref-stat-label">ЗАРАБОТАНО<br>ЗВЁЗД</div>
-                        <div class="ref-stat-value text-green"><img src="/static/images/star.png" style="width:18px"> <span id="refModalEarned">0</span></div>
-                        <div class="ref-stat-sub">С рефералов</div>
-                    </div>
+                    <div class="ref-stat-box"><div class="ref-stat-label">ЛИЧНО<br>ПРИГЛАШЁННЫЕ</div><div class="ref-stat-value" id="refModalCount">0</div><div class="ref-stat-sub">5% с их пополнений</div></div>
+                    <div class="ref-stat-box"><div class="ref-stat-label">ДОСТУПНО<br>К ВЫВОДУ</div><div class="ref-stat-value text-blue"><img src="/static/images/star.png" style="width:18px"> <span id="refModalEarned">0</span></div><div class="ref-stat-sub">С рефералов</div></div>
                 </div>
+                <button class="btn-ref-withdraw" id="btnRefWithdraw" onclick="withdrawReferralEarnings()">Вывести на баланс</button>
 
                 <h3 class="ref-list-title">Ваши рефералы</h3>
                 <div class="referrals-list" id="referralsList"></div>
@@ -349,7 +196,7 @@
         </div>
     </div>
 
-	<script src="/static/js/tgs-manager.js?v=999"></script>
+    <script src="/static/js/tgs-manager.js?v=999"></script>
     <script src="/static/js/app.js?v=999"></script>
 </body>
 </html>

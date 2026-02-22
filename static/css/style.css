@@ -1,5 +1,5 @@
 /* ========================================
-   TELEGRAM CASES — PREMIUM UI/UX (FIXED)
+   TELEGRAM CASES — PREMIUM UI/UX (FIXED SIZES)
    Ultra-modern, glassmorphism, soft glow
 ======================================== */
 
@@ -106,9 +106,26 @@ body {
 /* ===== CASES GRID ===== */
 .cases-container { padding: 10px 16px 20px; }
 .cases-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.case-card { background: linear-gradient(145deg, var(--card) 0%, #0d0f14 100%); border-radius: 24px; overflow: hidden; cursor: pointer; border: 1px solid var(--border); transition: all .2s; position: relative; aspect-ratio: 0.85 / 1; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+.case-card { 
+    background: linear-gradient(145deg, var(--card) 0%, #0d0f14 100%); 
+    border-radius: 24px; 
+    overflow: hidden; 
+    cursor: pointer; 
+    border: 1px solid var(--border); 
+    transition: all .2s; 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
+}
 .case-card:active { transform: scale(0.95) translateY(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-color: var(--border-glow); }
-.case-image-wrapper { flex: 1; min-height: 0; background: radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, transparent 70%); display: flex; align-items: center; justify-content: center; padding: 16px; overflow: hidden; }
+.case-image-wrapper { 
+    width: 100%;
+    aspect-ratio: 1 / 1; 
+    background: radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, transparent 70%); 
+    display: flex; align-items: center; justify-content: center; 
+    padding: 16px; overflow: hidden; 
+}
 .case-image { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); transition: transform .3s; }
 .case-card:hover .case-image { transform: translateY(-4px) scale(1.05); }
 .case-info { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
@@ -203,10 +220,19 @@ body {
 /* ===== INVENTORY GRID ===== */
 .inventory-container { padding: 12px 16px 20px; }
 .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.inventory-item { background: linear-gradient(145deg, var(--card) 0%, #0d0f14 100%); border-radius: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; overflow: hidden; position: relative; aspect-ratio: 1 / 1; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+.inventory-item { 
+    background: linear-gradient(145deg, var(--card) 0%, #0d0f14 100%); 
+    border-radius: 20px; 
+    border: 1px solid var(--border); 
+    display: flex; flex-direction: column; align-items: center; overflow: hidden; 
+    position: relative; box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+}
 .inv-rarity { height: 4px; width: 100%; flex-shrink: 0; }
 .inv-rarity.common { background: var(--r-common); } .inv-rarity.rare { background: var(--r-rare); } .inv-rarity.epic { background: var(--r-epic); } .inv-rarity.legendary { background: linear-gradient(90deg, var(--r-legendary), #fff176, var(--r-legendary)); }
-.inv-img { padding: 8px; display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; width: 100%;}
+.inv-img { 
+    padding: 12px; display: flex; align-items: center; justify-content: center; 
+    width: 100%; aspect-ratio: 1 / 1; 
+}
 .inv-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .inv-name { font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700; color: var(--txt); text-align: center; padding: 0 8px 8px; line-height: 1.25; word-break: break-word; max-height: 32px; overflow: hidden; }
 .inv-actions { display: flex; width: 100%; border-top: 1px solid var(--border); margin-top: auto; }
@@ -262,7 +288,7 @@ body {
 .amount-card { background: var(--card); border: 1px solid var(--border2); border-radius: 20px; padding: 18px; cursor: pointer; transition: all .2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 .amount-card:active { border-color: var(--gold); transform: scale(0.95); }
 .amount-stars { font-family: 'Exo 2', sans-serif; font-size: 20px; font-weight: 800; color: var(--gold); display: flex; align-items: center; justify-content: center; gap: 8px; }
-.amount-star-icon { width: 22px; height: 22px; }
+.amount-star-icon { width: 22px; height: 22px; object-fit: contain;}
 .custom-amount-section { border-top: 1px solid var(--border); padding-top: 24px; }
 .custom-amount-label { font-size: 14px; color: var(--txt2); text-align: center; margin-bottom: 12px; }
 .custom-amount-input { display: flex; gap: 10px; align-items: center; }
@@ -276,7 +302,7 @@ body {
 .confirm-modal { padding: 24px 20px calc(20px + var(--safe-bottom)); text-align: center; }
 .confirm-modal h3 { font-family: 'Exo 2', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 12px; }
 .confirm-modal p { color: var(--txt2); margin-bottom: 24px; font-size: 15px; line-height: 1.5; }
-.confirm-star-icon { width: 18px; height: 18px; vertical-align: text-bottom; position: relative; top: -2px; }
+.confirm-star-icon { width: 18px; height: 18px; vertical-align: text-bottom; position: relative; top: -2px; object-fit: contain;}
 .modal-actions { display: flex; gap: 12px; }
 .btn-modal { flex: 1; padding: 16px; border: none; border-radius: 16px; font-family: 'Exo 2', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: transform .15s; }
 .btn-modal:active { transform: scale(0.96); }

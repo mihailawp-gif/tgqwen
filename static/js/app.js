@@ -16,6 +16,11 @@ const state = {
     currentOpening: null
 };
 
+function safeSetText(elementId, text) {
+    const el = document.getElementById(elementId);
+    if (el) el.textContent = text;
+}
+
 // API Base URL
 const API_URL = '/api';
 
@@ -1206,15 +1211,13 @@ function openProfile() {
                     avatar.textContent = '👤';
                 }
                 
-                // Заполняем данные профиля
+                // Вставляем данные напрямую (referralCode отсюда вырезан!)
                 document.getElementById('profileName').textContent = profile.first_name || 'Пользователь';
                 document.getElementById('profileUsername').textContent = profile.username ? `@${profile.username}` : '';
                 document.getElementById('profileBalance').textContent = profile.balance || 0;
                 document.getElementById('profileOpenings').textContent = profile.total_openings || 0;
                 document.getElementById('profileReferrals').textContent = profile.total_referrals || 0;
                 document.getElementById('profileEarnings').textContent = profile.total_referral_earnings || 0;
-                
-                // ВСЁ! Строку с referralCode мы просто удалили навсегда, так как её больше нет в HTML.
                 
                 switchScreen('profile-screen');
             } else {

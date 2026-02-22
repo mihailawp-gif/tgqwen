@@ -12,29 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 </head>
 <body>
-
-    <div id="desktop-guard" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #111111; z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: sans-serif; text-align: center; padding: 20px;">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2AABEE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
-            <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-8.609 3.33c-2.043.789-4.085 1.579-6.128 2.368-1.503.581-2.923 1.13-3.692 1.455-.733.31-1.341.68-1.393 1.25-.058.647.669.96 1.465 1.266l3.41 1.082c.241.077.514.154.808.21.758.144 1.637.214 2.506.012l7.04-3.921c.214-.119.39-.181.54-.158.14.022.227.108.232.25.005.152-.073.32-.234.468l-5.655 5.22c-.394.364-.78.718-1.129 1.054-.368.354-.7.674-.963 1.036-.376.518-.328 1.086.115 1.431.428.333.91.605 1.397.882.528.3 1.055.6 1.564.912 1.488.91 2.82 1.724 4.086 2.656.666.49 1.34 1.004 2.053 1.442.502.308 1.111.59 1.748.513.626-.075 1.155-.536 1.411-1.132l4.137-14.717c.18-.696.16-1.32-.085-1.74-.243-.418-.72-.638-1.306-.615z"></path>
-        </svg>
-        <h2 style="margin: 0 0 10px 0; font-size: 24px; font-weight: bold;">Доступ закрыт</h2>
-        <p style="margin: 0; font-size: 16px; color: #aaaaaa; max-width: 300px; line-height: 1.5;">
-            Пожалуйста, запустите это приложение через нашего бота внутри Telegram.
-        </p>
-    </div>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const tg = window.Telegram.WebApp;
-            if (tg && tg.initData !== "") {
-                document.getElementById('desktop-guard').style.display = 'none';
-            } else {
-                if (tg && typeof tg.expand === 'function') {
-                    tg.expand();
-                }
-            }
-        });
-    </script>
+    <!-- ===== ГЛАВНЫЙ ЭКРАН ===== -->
     <div id="main-screen" class="screen active">
         <div class="header">
             <div class="user-section" onclick="openProfile()" style="cursor:pointer">
@@ -60,11 +38,13 @@
         <div class="tabs-container">
             <div class="tabs">
                 <button class="tab active" data-tab="cases" onclick="switchTab('cases')">
+                    <!-- placeholder — замени src на свою иконку -->
                     <img src="/static/images/tab-cases.png" class="tab-icon-img"
                          onerror="this.style.opacity='0.4'" alt="">
                     <span class="tab-label">Кейсы</span>
                 </button>
                 <button class="tab" data-tab="inventory" onclick="switchTab('inventory')">
+                    <!-- placeholder — замени src на свою иконку -->
                     <img src="/static/images/tab-inventory.png" class="tab-icon-img"
                          onerror="this.style.opacity='0.4'" alt="">
                     <span class="tab-label">Инвентарь</span>
@@ -72,6 +52,7 @@
             </div>
         </div>
 
+        <!-- ИСТОРИЯ ВЫИГРЫШЕЙ — всегда под табами, горизонтальный скролл -->
         <div class="live-history-section">
             <div class="live-history-header">
                 <span class="live-history-title">Последние выигрыши</span>
@@ -81,9 +62,11 @@
                 </div>
             </div>
             <div class="live-history-scroll" id="liveHistoryScroll">
-                </div>
+                <!-- заполняется JS -->
+            </div>
         </div>
 
+        <!-- КЕЙСЫ -->
         <div id="cases-tab" class="tab-content active">
             <div class="cases-container">
                 <div class="cases-grid" id="casesGrid"></div>
@@ -96,6 +79,7 @@
             </div>
         </div>
 
+        <!-- история как вкладка оставлена скрытой для совместимости -->
         <div id="history-tab" class="tab-content" style="display:none">
             <div class="history-container">
                 <div class="history-list" id="historyList"></div>
@@ -103,6 +87,7 @@
         </div>
     </div>
 
+    <!-- ===== ЭКРАН ПРЕДПРОСМОТРА ===== -->
     <div id="opening-screen" class="screen">
         <div class="preview-header">
             <button class="btn-back" onclick="closeOpeningScreen()">
@@ -149,6 +134,7 @@
         </div>
     </div>
 
+    <!-- ===== ЭКРАН РУЛЕТКИ ===== -->
     <div id="animation-screen" class="screen">
         <div class="animation-container">
             <div class="roulette-wrapper">
@@ -164,6 +150,7 @@
         </div>
     </div>
 
+    <!-- ===== ЭКРАН РЕЗУЛЬТАТА ===== -->
     <div id="result-screen" class="screen">
         <div class="result-container">
             <div class="result-header">
@@ -200,6 +187,7 @@
         </div>
     </div>
 
+    <!-- ===== МОДАЛКА ПОПОЛНЕНИЯ ===== -->
     <div id="topupModal" class="modal">
         <div class="modal-overlay" onclick="closeTopupModal()"></div>
         <div class="modal-content topup-modal">
@@ -227,6 +215,7 @@
                     <button class="amount-card" onclick="createStarsInvoice(10000)"><div class="amount-stars"><img src="/static/images/star.png" class="amount-star-icon" onerror="this.outerHTML='⭐'" alt="star"> 10000</div></button>
                 </div>
                 
+                <!-- Поле для ввода своей суммы -->
                 <div class="custom-amount-section">
                     <p class="custom-amount-label">Или введите свою сумму:</p>
                     <div class="custom-amount-input">
@@ -242,6 +231,7 @@
         </div>
     </div>
 
+    <!-- ===== МОДАЛКА ПОДТВЕРЖДЕНИЯ ===== -->
     <div id="confirmModal" class="modal">
         <div class="modal-overlay" onclick="closeConfirmModal()"></div>
         <div class="modal-content confirm-modal">
@@ -258,6 +248,7 @@
     <div id="loader" class="loader hidden"><div class="loader-spinner"></div></div>
     <div id="toast" class="toast"></div>
 
+    <!-- ===== ЭКРАН ПРОФИЛЯ ===== -->
     <div id="profile-screen" class="screen">
         <div class="profile-header">
             <button class="btn-back" onclick="closeProfile()">
@@ -269,12 +260,14 @@
         </div>
         
         <div class="profile-content">
+            <!-- Аватарка и имя -->
             <div class="profile-avatar-section">
                 <div class="profile-avatar" id="profileAvatar">👤</div>
                 <h3 id="profileName">Имя пользователя</h3>
                 <div class="profile-username" id="profileUsername">@username</div>
             </div>
             
+            <!-- Баланс -->
             <div class="profile-balance-card">
                 <div class="balance-label">Баланс</div>
                 <div class="balance-amount">
@@ -283,6 +276,7 @@
                 </div>
             </div>
             
+            <!-- Статистика -->
             <div class="profile-stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="profileOpenings">0</div>
@@ -298,6 +292,7 @@
                 </div>
             </div>
             
+            <!-- Реферальная ссылка -->
             <div class="referral-section">
                 <h4>Пригласи друзей</h4>
                 <p class="referral-description">Получай 5% с каждого открытия кейса твоими друзьями!</p>
@@ -314,6 +309,7 @@
                 <p class="referral-hint">Нажми чтобы скопировать</p>
             </div>
             
+            <!-- Кнопки действий -->
             <div class="profile-actions">
                 <button class="btn-profile-action" onclick="showReferralsList()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -335,6 +331,7 @@
         </div>
     </div>
 
+    <!-- ===== МОДАЛКА РЕФЕРАЛОВ ===== -->
     <div id="referralsModal" class="modal">
         <div class="modal-overlay" onclick="closeReferralsModal()"></div>
         <div class="modal-content">
@@ -347,10 +344,12 @@
                 </button>
             </div>
             <div class="referrals-list" id="referralsList">
-                </div>
+                <!-- Заполняется JS -->
+            </div>
         </div>
     </div>
 
+    <!-- ===== МОДАЛКА ИСТОРИИ ЗАРАБОТКА ===== -->
     <div id="earningsModal" class="modal">
         <div class="modal-overlay" onclick="closeEarningsModal()"></div>
         <div class="modal-content">
@@ -363,7 +362,8 @@
                 </button>
             </div>
             <div class="earnings-list" id="earningsList">
-                </div>
+                <!-- Заполняется JS -->
+            </div>
         </div>
     </div>
 

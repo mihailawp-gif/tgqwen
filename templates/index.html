@@ -61,56 +61,49 @@
         </div>
 
         <div id="main-tab" class="tab-content active">
-            <div class="main-games-grid">
-                <!-- Crash -->
-                <div class="game-block block-crash align-right" onclick="showToast('В разработке!')">
-                    <div class="art-left"></div>
-                    <div class="info">
-                        <h2>КРАШ</h2>
-                        <p>УМНОЖЬ ЗВЁЗДЫ</p>
-                        <div class="badge">ОНЛАЙН-ИГРА</div>
-                    </div>
-                </div>
+			 <div class="main-games-grid">
+				<div class="game-block block-crash align-right" onclick="showToast('В разработке!')">
+					<div class="art-left">
+						<div class="anim-placeholder">🚀</div>
+					</div>
+					<div class="info">
+						<h2>КРАШ</h2>
+						<p>УМНОЖЬ ЗВЁЗДЫ</p>
+						<div class="badge">ОНЛАЙН-ИГРА</div>
+					</div>
+				</div>
 
-                <!-- Roulette -->
-                <div class="game-block block-roulette align-right" onclick="showToast('В разработке!')">
-                    <div class="art-left">
-                        <svg class="roulette-wheel-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="45" fill="#fff" stroke="#ff9a00" stroke-width="4"/>
-                            <path d="M50 50 L50 5 A45 45 0 0 1 95 50 Z" fill="#ffc107"/>
-                            <path d="M50 50 L95 50 A45 45 0 0 1 50 95 Z" fill="#03a9f4"/>
-                            <path d="M50 50 L50 95 A45 45 0 0 1 5 50 Z" fill="#4caf50"/>
-                            <path d="M50 50 L5 50 A45 45 0 0 1 50 5 Z" fill="#e91e63"/>
-                            <circle cx="50" cy="50" r="10" fill="#00bcd4"/>
-                        </svg>
-                    </div>
-                    <div class="info">
-                        <h2>РУЛЕТКА</h2>
-                        <p>ИСПЫТАЙ УДАЧУ</p>
-                    </div>
-                </div>
+				<div class="game-block block-roulette align-right" onclick="showToast('В разработке!')">
+					<div class="art-left">
+						<div class="css-wheel"></div>
+					</div>
+					<div class="info">
+						<h2>РУЛЕТКА</h2>
+						<p>ИСПЫТАЙ УДАЧУ</p>
+					</div>
+				</div>
 
-                <!-- Cases -->
-                <div class="game-block block-cases align-right" onclick="switchTab('cases')">
-                    <div class="art-left">
-                        <div id="main_pepe" data-tgs="8" data-sz="110" style="width:110px;height:110px;transform: scale(1.1); margin-left: -10px;"></div>
-                    </div>
-                    <div class="info">
-                        <h2>КЕЙСЫ</h2>
-                        <p>ИСПЫТАЙ УДАЧУ</p>
-                        <div class="badge-gold">ДОСТУПЕН БЕСПЛАТНЫЙ КЕЙС</div>
-                    </div>
-                </div>
+				<div class="game-block block-cases align-right" onclick="switchTab('cases')">
+					<div class="art-left">
+						<div id="main_pepe" data-tgs="8" data-sz="110" style="width:110px;height:110px;"></div>
+					</div>
+					<div class="info">
+						<h2>КЕЙСЫ</h2>
+						<p>ИСПЫТАЙ УДАЧУ</p>
+						<div class="badge-gold">ДОСТУПЕН БЕСПЛАТНЫЙ КЕЙС</div>
+					</div>
+				</div>
 
-                <!-- Dice -->
-                <div class="game-block block-dice align-left" onclick="showToast('В разработке!')">
-                    <div class="info">
-                        <h2>ДАЙС</h2>
-                        <p>УГАДАЙ ЧИСЛО</p>
-                    </div>
-                    <div class="art-right"></div>
-                </div>
-            </div>
+				<div class="game-block block-dice align-right" onclick="showToast('В разработке!')">
+					<div class="art-left">
+						<div class="anim-placeholder">🎲</div>
+					</div>
+					<div class="info">
+						<h2>ДАЙС</h2>
+						<p>УГАДАЙ ЧИСЛО</p>
+					</div>
+				</div>
+			</div>
         </div>
 
         <div id="cases-tab" class="tab-content"><div class="cases-container"><div class="cases-grid" id="casesGrid"></div></div></div>
@@ -130,20 +123,20 @@
             </div>
         </div>
 
-        <div class="bottom-nav">
-            <button class="nav-item active" data-tab="main" onclick="switchTab('main')">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21.58 8.08l-2.45-5.06A2 2 0 0 0 17.33 2H6.67a2 2 0 0 0-1.8 1.02L2.42 8.08a2.5 2.5 0 0 0-.15 2.37l4 8.5A2.5 2.5 0 0 0 8.54 20h6.92a2.5 2.5 0 0 0 2.27-1.05l4-8.5a2.5 2.5 0 0 0-.15-2.37zM8 12H6v2H4v-2H2v-2h2V8h2v2h2v2zm7-2a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
-                <span class="nav-label">Играть</span>
-            </button>
-            <button class="nav-item" data-tab="inventory" onclick="switchTab('inventory')">
-                <img src="/static/images/tab-inventory.png" alt="">
-                <span class="nav-label">Инвентарь</span>
-            </button>
-            <button class="nav-item" data-tab="profile" onclick="openProfileTab()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                <span class="nav-label">Профиль</span>
-            </button>
-        </div>
+		<div class="bottom-nav">
+			<button class="nav-item active" data-tab="main" onclick="switchTab('main')">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 12h.01M8 12h.01M6 12v.01"></path></svg>
+				<span class="nav-label">Играть</span>
+			</button>
+			<button class="nav-item" data-tab="inventory" onclick="switchTab('inventory')">
+				<img src="/static/images/tab-inventory.png" alt="">
+				<span class="nav-label">Инвентарь</span>
+			</button>
+			<button class="nav-item" data-tab="profile" onclick="openProfileTab()">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+				<span class="nav-label">Профиль</span>
+			</button>
+		</div>
     </div>
 
     <div id="opening-screen" class="screen">

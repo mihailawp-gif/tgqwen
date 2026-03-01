@@ -338,7 +338,9 @@ function switchTab(tabName) {
     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    const activeTab = document.querySelector(`.nav-item[data-tab="${tabName}"]`); 
+    // Фикс: если мы переходим в кейсы, оставляем активной вкладку "Играть" (main)
+    const navTab = tabName === 'cases' ? 'main' : tabName;
+    const activeTab = document.querySelector(`.nav-item[data-tab="${navTab}"]`); 
     if (activeTab) activeTab.classList.add('active');
     
     const tabContent = document.getElementById(`${tabName}-tab`); 

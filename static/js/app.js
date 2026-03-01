@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await syncFreeTimer(); startFreeSyncLoop(); startHistoryPolling();
     const liveHistorySection = document.querySelector('.live-history-section');
     if (liveHistorySection) liveHistorySection.style.display = 'block';
+    if (window.initAllTGS) setTimeout(() => initAllTGS(), 200);
 });
 
 async function initUser() {
@@ -334,11 +335,20 @@ function startHistoryPolling() { setInterval(loadHistory, 5000); }
 
 // === TABS & SCREENS ===
 function switchTab(tabName) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    const activeTab = document.querySelector(`[data-tab="${tabName}"]`); if (activeTab) activeTab.classList.add('active');
-    const tabContent = document.getElementById(`${tabName}-tab`); if (tabContent) tabContent.classList.add('active');
-    const ls = document.querySelector('.live-history-section'); if (ls) ls.style.display = (tabName === 'cases') ? 'block' : 'none';
+    
+    const activeTab = document.querySelector(`.nav-item[data-tab="${tabName}"]`); 
+    if (activeTab) activeTab.classList.add('active');
+    
+    const tabContent = document.getElementById(`${tabName}-tab`); 
+    if (tabContent) tabContent.classList.add('active');
+    
+    const ls = document.getElementById('liveHistorySection'); 
+    if (ls) ls.style.display = (tabName === 'main' || tabName === 'cases') ? 'block' : 'none';
+
+    const header = document.getElementById('mainHeader');
+    if (header) header.style.display = (tabName === 'profile') ? 'none' : 'flex';
 }
 function switchScreen(screenName) {
     if (window.tgsManager) window.tgsManager.destroyAll();
@@ -393,7 +403,7 @@ function getRarityText(rarity) { return { 'common': 'Обычный', 'rare': '�
 tg.BackButton.onClick(() => {
     const currentScreen = document.querySelector('.screen.active'); if (!currentScreen) return;
     if (currentScreen.id === 'opening-screen') closeOpeningScreen();
-    else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen' || currentScreen.id === 'profile-screen') switchScreen('main-screen');
+    else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen') switchScreen('main-screen');
 });
 const observer = new MutationObserver(() => {
     const mainScreen = document.getElementById('main-screen');
@@ -404,6 +414,10 @@ document.addEventListener('click', (e) => { if (e.target.closest('button') || e.
 
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
+    openProfileTab();
+}
+
+function openProfileTab() {
     if (!state.user?.telegram_id) return;
     showLoader();
     apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET')
@@ -422,14 +436,12 @@ function openProfile() {
                 // Вставляем депозиты
                 document.getElementById('profileDeposits').textContent = profile.total_deposits || 0;
                 
-                switchScreen('profile-screen');
+                switchTab('profile');
             } else { showToast('❌ Ошибка загрузки профиля'); }
         })
         .catch(error => showToast('❌ Ошибка: ' + error.message))
         .finally(() => hideLoader());
 }
-
-function closeProfile() { switchScreen('main-screen'); }
 
 async function showReferralsList() {
     if (!state.user?.telegram_id) return;

@@ -34,7 +34,7 @@
         });
     </script>
     <div id="main-screen" class="screen active">
-        <div class="header">
+        <div class="header" id="mainHeader">
             <div class="user-section" onclick="openProfile()" style="cursor:pointer">
                 <div class="user-avatar" id="userAvatar">👤</div>
                 <div class="user-info">
@@ -52,20 +52,7 @@
             </button>
         </div>
 
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab active" data-tab="cases" onclick="switchTab('cases')">
-                    <img src="/static/images/tab-cases.png" class="tab-icon-img" onerror="this.style.opacity='0.4'" alt="">
-                    <span class="tab-label">Кейсы</span>
-                </button>
-                <button class="tab" data-tab="inventory" onclick="switchTab('inventory')">
-                    <img src="/static/images/tab-inventory.png" class="tab-icon-img" onerror="this.style.opacity='0.4'" alt="">
-                    <span class="tab-label">Инвентарь</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="live-history-section">
+        <div class="live-history-section" id="liveHistorySection">
             <div class="live-history-header">
                 <span class="live-history-title">Последние выигрыши</span>
                 <div class="live-indicator"><span class="live-dot"></span><span>LIVE</span></div>
@@ -73,8 +60,90 @@
             <div class="live-history-scroll" id="liveHistoryScroll"></div>
         </div>
 
-        <div id="cases-tab" class="tab-content active"><div class="cases-container"><div class="cases-grid" id="casesGrid"></div></div></div>
+        <div id="main-tab" class="tab-content active">
+            <div class="main-games-grid">
+                <!-- Crash -->
+                <div class="game-block block-crash align-right" onclick="showToast('В разработке!')">
+                    <div class="art-left"></div>
+                    <div class="info">
+                        <h2>КРАШ</h2>
+                        <p>УМНОЖЬ ЗВЁЗДЫ</p>
+                        <div class="badge">ОНЛАЙН-ИГРА</div>
+                    </div>
+                </div>
+
+                <!-- Roulette -->
+                <div class="game-block block-roulette align-right" onclick="showToast('В разработке!')">
+                    <div class="art-left">
+                        <svg class="roulette-wheel-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="45" fill="#fff" stroke="#ff9a00" stroke-width="4"/>
+                            <path d="M50 50 L50 5 A45 45 0 0 1 95 50 Z" fill="#ffc107"/>
+                            <path d="M50 50 L95 50 A45 45 0 0 1 50 95 Z" fill="#03a9f4"/>
+                            <path d="M50 50 L50 95 A45 45 0 0 1 5 50 Z" fill="#4caf50"/>
+                            <path d="M50 50 L5 50 A45 45 0 0 1 50 5 Z" fill="#e91e63"/>
+                            <circle cx="50" cy="50" r="10" fill="#00bcd4"/>
+                        </svg>
+                    </div>
+                    <div class="info">
+                        <h2>РУЛЕТКА</h2>
+                        <p>ИСПЫТАЙ УДАЧУ</p>
+                    </div>
+                </div>
+
+                <!-- Cases -->
+                <div class="game-block block-cases align-right" onclick="switchTab('cases')">
+                    <div class="art-left">
+                        <div id="main_pepe" data-tgs="8" data-sz="110" style="width:110px;height:110px;transform: scale(1.1); margin-left: -10px;"></div>
+                    </div>
+                    <div class="info">
+                        <h2>КЕЙСЫ</h2>
+                        <p>ИСПЫТАЙ УДАЧУ</p>
+                        <div class="badge-gold">ДОСТУПЕН БЕСПЛАТНЫЙ КЕЙС</div>
+                    </div>
+                </div>
+
+                <!-- Dice -->
+                <div class="game-block block-dice align-left" onclick="showToast('В разработке!')">
+                    <div class="info">
+                        <h2>ДАЙС</h2>
+                        <p>УГАДАЙ ЧИСЛО</p>
+                    </div>
+                    <div class="art-right"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cases-tab" class="tab-content"><div class="cases-container"><div class="cases-grid" id="casesGrid"></div></div></div>
         <div id="inventory-tab" class="tab-content"><div class="inventory-container"><div class="inventory-grid" id="inventoryList"></div></div></div>
+        
+        <div id="profile-tab" class="tab-content">
+            <div class="profile-header"><h2 style="margin:0; font-family:'Exo 2',sans-serif; font-weight:800; font-size:18px;">Профиль</h2></div>
+            <div class="profile-content" style="padding-bottom: 100px;">
+                <div class="profile-avatar-section"><div class="profile-avatar" id="profileAvatar">👤</div><h3 id="profileName">Имя пользователя</h3><div class="profile-username" id="profileUsername">@username</div></div>
+                <div class="profile-balance-card"><div class="balance-label">Баланс</div><div class="balance-amount"><img src="/static/images/star.png" class="profile-star-icon" alt="star"><span id="profileBalance">0</span></div></div>
+                <div class="profile-stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="profileOpenings">0</div><div class="stat-label">Открыто кейсов</div></div>
+                    <div class="stat-card"><div class="stat-value" id="profileReferrals">0</div><div class="stat-label">Рефералов</div></div>
+                    <div class="stat-card"><div class="stat-value" id="profileDeposits">0</div><div class="stat-label">Депозиты <img src="/static/images/star.png" style="width:12px;height:12px;vertical-align:baseline;position:relative;top:2px;"></div></div>
+                </div>
+                <div class="profile-actions"><button class="btn-profile-action" onclick="showReferralsList()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Мои рефералы</button></div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="nav-item active" data-tab="main" onclick="switchTab('main')">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21.58 8.08l-2.45-5.06A2 2 0 0 0 17.33 2H6.67a2 2 0 0 0-1.8 1.02L2.42 8.08a2.5 2.5 0 0 0-.15 2.37l4 8.5A2.5 2.5 0 0 0 8.54 20h6.92a2.5 2.5 0 0 0 2.27-1.05l4-8.5a2.5 2.5 0 0 0-.15-2.37zM8 12H6v2H4v-2H2v-2h2V8h2v2h2v2zm7-2a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+                <span class="nav-label">Играть</span>
+            </button>
+            <button class="nav-item" data-tab="inventory" onclick="switchTab('inventory')">
+                <img src="/static/images/tab-inventory.png" alt="">
+                <span class="nav-label">Инвентарь</span>
+            </button>
+            <button class="nav-item" data-tab="profile" onclick="openProfileTab()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <span class="nav-label">Профиль</span>
+            </button>
+        </div>
     </div>
 
     <div id="opening-screen" class="screen">
@@ -152,19 +221,6 @@
     <div id="loader" class="loader hidden"><div class="loader-spinner"></div></div>
     <div id="toast" class="toast"></div>
 
-    <div id="profile-screen" class="screen">
-        <div class="profile-header"><button class="btn-back" onclick="closeProfile()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><h2>Профиль</h2></div>
-        <div class="profile-content">
-            <div class="profile-avatar-section"><div class="profile-avatar" id="profileAvatar">👤</div><h3 id="profileName">Имя пользователя</h3><div class="profile-username" id="profileUsername">@username</div></div>
-            <div class="profile-balance-card"><div class="balance-label">Баланс</div><div class="balance-amount"><img src="/static/images/star.png" class="profile-star-icon" alt="star"><span id="profileBalance">0</span></div></div>
-            <div class="profile-stats-grid">
-                <div class="stat-card"><div class="stat-value" id="profileOpenings">0</div><div class="stat-label">Открыто кейсов</div></div>
-                <div class="stat-card"><div class="stat-value" id="profileReferrals">0</div><div class="stat-label">Рефералов</div></div>
-                <div class="stat-card"><div class="stat-value" id="profileDeposits">0</div><div class="stat-label">Депозиты <img src="/static/images/star.png" style="width:12px;height:12px;vertical-align:baseline;position:relative;top:2px;"></div></div>
-            </div>
-            <div class="profile-actions"><button class="btn-profile-action" onclick="showReferralsList()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Мои рефералы</button></div>
-        </div>
-    </div>
 
     <div id="referralsModal" class="modal">
         <div class="modal-overlay" onclick="closeReferralsModal()"></div>

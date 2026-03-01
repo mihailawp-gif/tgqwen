@@ -68,7 +68,7 @@ async def populate_sample_data():
             await session.refresh(gift)
         
         # Создаем кейсы
-        # НОВЫЙ: Бесплатный кейс с Telegram Stars
+        # НОВЫЙ: Бесплатный кейс с Telegram s
         case_free_stars = Case(
             name="⭐ Free Stars Case",
             description="Получай от 1 до 10 звезд бесплатно каждый день!",
@@ -96,7 +96,7 @@ async def populate_sample_data():
         free_stars_items = [
             CaseItem(case_id=case_free_stars.id, gift_id=gifts[8].id, drop_chance=30.0),   # 1 Star
             CaseItem(case_id=case_free_stars.id, gift_id=gifts[9].id, drop_chance=25.0),   # 2 Stars
-            CaseItem(case_id=case_free_stars.id, gift_id=gifts[10].id, drop_chance=20.0),  # 3 Stars
+            CaseItem(case_id=case_free_s.id, gift_id=gifts[10].id, drop_chance=20.0),  # 3 Stars
             CaseItem(case_id=case_free_stars.id, gift_id=gifts[11].id, drop_chance=15.0),  # 5 Stars
             CaseItem(case_id=case_free_stars.id, gift_id=gifts[12].id, drop_chance=7.0),   # 7 Stars
             CaseItem(case_id=case_free_stars.id, gift_id=gifts[13].id, drop_chance=3.0),   # 10 Stars

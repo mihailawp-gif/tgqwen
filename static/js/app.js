@@ -1,6 +1,8 @@
 // Telegram Web App API
 let tg = window.Telegram.WebApp;
-tg.expand();
+if (tg && typeof tg.expand === 'function') {
+    tg.expand();
+}
 
 // Global state
 const state = {
@@ -20,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initUser() {
-    const initData = tg.initDataUnsafe;
+    const initData = tg?.initDataUnsafe || {};
     const referrerCode = initData?.start_param || null;
 
     if (initData.user) {
@@ -52,7 +54,7 @@ function updateUserDisplay() {
     document.getElementById('userBalance').textContent = state.user.balance || 0;
     const userAvatar = document.getElementById('userAvatar');
     if (userAvatar) {
-        const photoUrl = state.user.photo_url || (tg.initDataUnsafe?.user?.photo_url);
+        const photoUrl = state.user.photo_url || (tg?.initDataUnsafe?.user?.photo_url);
         if (photoUrl) userAvatar.innerHTML = `<img src="${photoUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
         else userAvatar.textContent = '👤';
     }
@@ -346,18 +348,21 @@ function switchTab(tabName) {
     // Показываем контент вкладки
     const tabContent = document.getElementById(`${tabName}-tab`); 
     if (tabContent) tabContent.classList.add('active');
-    
+
     // Скрываем шапку в профиле
     const header = document.getElementById('mainHeader');
     if (header) header.style.display = (tabName === 'profile') ? 'none' : 'flex';
 
-    // Управление нативной кнопкой "Назад"
-    if (tabName === 'cases' || tabName === 'inventory' || tabName === 'profile') {
-        tg.BackButton.show();
-    } else {
-        tg.BackButton.hide();
+    // Управление нативной кнопкой "Назад" (с проверкой на наличие tg.BackButton)
+    if (tg && tg.BackButton) {
+        if (tabName === 'cases' || tabName === 'inventory' || tabName === 'profile') {
+            tg.BackButton.show();
+        } else {
+            tg.BackButton.hide();
+        }
     }
 }
+
 function switchScreen(screenName) {
     if (window.tgsManager) window.tgsManager.destroyAll();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -408,22 +413,25 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 }
 async function checkFreeCaseAvailable() { const response = await apiRequest(`/user/${state.user.telegram_id}/free-case-check`, 'GET'); return response.available; }
 function getRarityText(rarity) { return { 'common': 'Обычный', 'rare': 'Редкий', 'epic': 'Эпический', 'legendary': 'Легендарный' }[rarity] || 'Обычный'; }
-tg.BackButton.onClick(() => {
-    const currentScreen = document.querySelector('.screen.active'); 
-    if (!currentScreen) return;
-    
-    if (currentScreen.id === 'opening-screen') {
-        closeOpeningScreen();
-    } else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen') {
-        switchScreen('main-screen');
-    } else if (currentScreen.id === 'main-screen') {
-        // Если мы внутри вкладки, возвращаемся на Главную
-        const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab && (activeTab.id === 'cases-tab' || activeTab.id === 'inventory-tab' || activeTab.id === 'profile-tab')) {
-            switchTab('main');
+
+if (tg && tg.BackButton) {
+    tg.BackButton.onClick(() => {
+        const currentScreen = document.querySelector('.screen.active'); 
+        if (!currentScreen) return;
+        
+        if (currentScreen.id === 'opening-screen') {
+            closeOpeningScreen();
+        } else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen') {
+            switchScreen('main-screen');
+        } else if (currentScreen.id === 'main-screen') {
+            // Если мы внутри вкладки, возвращаемся на Главную
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && (activeTab.id === 'cases-tab' || activeTab.id === 'inventory-tab' || activeTab.id === 'profile-tab')) {
+                switchTab('main');
+            }
         }
-    }
-});
+    });
+}
 
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
 
@@ -451,9 +459,7 @@ function openProfileTab() {
                 document.getElementById('profileOpenings').textContent = profile.total_openings || 0;
                 document.getElementById('profileReferrals').textContent = profile.total_referrals || 0;
                 document.getElementById('profileDeposits').textContent = profile.total_deposits || 0;
-            } else { 
-                showToast('❌ Ошибка загрузки профиля'); 
-            }
+            } else { showToast('❌ Ошибка загрузки профиля'); }
         })
         .catch(error => showToast('❌ Ошибка: ' + error.message))
         .finally(() => hideLoader());
@@ -470,12 +476,10 @@ async function showReferralsList() {
 
     const profileRes = await apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET');
     if (profileRes.success) {
-        // Подставляем доступные к выводу звезды
         const available = profileRes.profile.available_referral_earnings || 0;
         document.getElementById('refModalEarned').textContent = available;
         document.getElementById('refModalCount').textContent = profileRes.profile.total_referrals || 0;
         
-        // Включаем или выключаем кнопку вывода
         const btnWithdraw = document.getElementById('btnRefWithdraw');
         if (btnWithdraw) {
             btnWithdraw.disabled = available <= 0;
@@ -493,7 +497,6 @@ async function showReferralsList() {
         response.referrals.forEach(ref => {
             const regDate = new Date(ref.joined_at || new Date()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
             const avatarHtml = ref.photo_url ? `<img src="${ref.photo_url}" style="width:100%;height:100%;object-fit:cover;">` : `👤`;
-            // Заменили эмодзи на картинку звездочки
             listContainer.innerHTML += `<div class="modern-list-item"><div class="ml-left"><div class="ml-avatar">${avatarHtml}</div><div class="ml-info"><div class="ml-title">${ref.first_name || 'Игрок'}</div><div class="ml-subtitle">Регистрация: ${regDate}</div></div></div><div class="ml-right"><div class="ml-value positive">+${ref.total_earned || 0} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;"></div></div></div>`;
         });
     } else {
@@ -519,7 +522,7 @@ async function withdrawReferralEarnings() {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } else {
         showToast('❌ ' + (res.error || 'Ошибка вывода'));
-        if (btn) btn.disabled = false; // Возвращаем кнопку если была ошибка
+        if (btn) btn.disabled = false; 
     }
 }
 

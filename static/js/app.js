@@ -338,19 +338,25 @@ function switchTab(tabName) {
     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    // Фикс: если мы переходим в кейсы, оставляем активной вкладку "Играть" (main)
+    // Правильно подсвечиваем кнопку в меню
     const navTab = tabName === 'cases' ? 'main' : tabName;
     const activeTab = document.querySelector(`.nav-item[data-tab="${navTab}"]`); 
     if (activeTab) activeTab.classList.add('active');
     
+    // Показываем контент вкладки
     const tabContent = document.getElementById(`${tabName}-tab`); 
     if (tabContent) tabContent.classList.add('active');
     
-    const ls = document.getElementById('liveHistorySection'); 
-    if (ls) ls.style.display = (tabName === 'main' || tabName === 'cases') ? 'block' : 'none';
-
+    // Скрываем шапку в профиле
     const header = document.getElementById('mainHeader');
     if (header) header.style.display = (tabName === 'profile') ? 'none' : 'flex';
+
+    // Управление нативной кнопкой "Назад"
+    if (tabName === 'cases' || tabName === 'inventory' || tabName === 'profile') {
+        tg.BackButton.show();
+    } else {
+        tg.BackButton.hide();
+    }
 }
 function switchScreen(screenName) {
     if (window.tgsManager) window.tgsManager.destroyAll();
@@ -403,15 +409,22 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 async function checkFreeCaseAvailable() { const response = await apiRequest(`/user/${state.user.telegram_id}/free-case-check`, 'GET'); return response.available; }
 function getRarityText(rarity) { return { 'common': 'Обычный', 'rare': 'Редкий', 'epic': 'Эпический', 'legendary': 'Легендарный' }[rarity] || 'Обычный'; }
 tg.BackButton.onClick(() => {
-    const currentScreen = document.querySelector('.screen.active'); if (!currentScreen) return;
-    if (currentScreen.id === 'opening-screen') closeOpeningScreen();
-    else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen') switchScreen('main-screen');
+    const currentScreen = document.querySelector('.screen.active'); 
+    if (!currentScreen) return;
+    
+    if (currentScreen.id === 'opening-screen') {
+        closeOpeningScreen();
+    } else if (currentScreen.id === 'animation-screen' || currentScreen.id === 'result-screen') {
+        switchScreen('main-screen');
+    } else if (currentScreen.id === 'main-screen') {
+        // Если мы внутри вкладки, возвращаемся на Главную
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && (activeTab.id === 'cases-tab' || activeTab.id === 'inventory-tab' || activeTab.id === 'profile-tab')) {
+            switchTab('main');
+        }
+    }
 });
-const observer = new MutationObserver(() => {
-    const mainScreen = document.getElementById('main-screen');
-    if (mainScreen && mainScreen.classList.contains('active')) tg.BackButton.hide(); else tg.BackButton.show();
-});
-if (document.getElementById('main-screen')) observer.observe(document.getElementById('main-screen'), { attributes: true, attributeFilter: ['class'] });
+
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
 
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
@@ -420,7 +433,10 @@ function openProfile() {
 }
 
 function openProfileTab() {
+    switchTab('profile'); // Сразу переключаем вкладку, чтобы не было пустой страницы
+    
     if (!state.user?.telegram_id) return;
+    
     showLoader();
     apiRequest(`/user/${state.user.telegram_id}/profile`, 'GET')
         .then(response => {
@@ -434,12 +450,10 @@ function openProfileTab() {
                 document.getElementById('profileBalance').textContent = profile.balance || 0;
                 document.getElementById('profileOpenings').textContent = profile.total_openings || 0;
                 document.getElementById('profileReferrals').textContent = profile.total_referrals || 0;
-                
-                // Вставляем депозиты
                 document.getElementById('profileDeposits').textContent = profile.total_deposits || 0;
-                
-                switchTab('profile');
-            } else { showToast('❌ Ошибка загрузки профиля'); }
+            } else { 
+                showToast('❌ Ошибка загрузки профиля'); 
+            }
         })
         .catch(error => showToast('❌ Ошибка: ' + error.message))
         .finally(() => hideLoader());

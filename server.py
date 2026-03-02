@@ -10,6 +10,12 @@ from sqlalchemy import select, desc
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import random
+import json
+MINES_BANK = 10000
+
+MINES_COEFS = {
+    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300]
+}
 
 from database.models import (
     async_session, User, Case, CaseOpening,
@@ -424,7 +430,114 @@ async def create_invoice(request):
 
 async def index(request):
     with open('templates/index.html', 'r', encoding='utf-8') as f: return web.Response(text=f.read(), content_type='text/html')
+    
+async def mines_start(request):
+    data = await request.json()
+    user_id = data.get('user_id')
+    bet = int(data.get('bet', 0))
+    bombs = int(data.get('bombs', 3))
 
+    if bet < 1 or bombs not in MINES_COEFS:
+        return web.json_response({'success': False, 'error': 'Неверная ставка или кол-во мин'})
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        if not user or user.balance < bet:
+            return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
+
+        # Закрываем старые активные игры
+        old_games = (await session.execute(select(MinesGame).where(MinesGame.user_id == user.id, MinesGame.is_active == True))).scalars().all()
+        for og in old_games:
+            og.is_active = False
+
+        user.balance -= bet
+        
+        # Генерируем поле (ячейки от 0 до 24)
+        all_cells = list(range(25))
+        mines_pos = random.sample(all_cells, bombs)
+
+        new_game = MinesGame(
+            user_id=user.id,
+            bet=bet,
+            bombs=bombs,
+            mines_positions=json.dumps(mines_pos),
+            clicked_positions="[]",
+            win_amount=bet # Начальный выигрыш равен ставке (пока не кликнул)
+        )
+        session.add(new_game)
+        await session.commit()
+
+        return web.json_response({'success': True, 'game_id': new_game.id, 'balance': user.balance})
+
+async def mines_click(request):
+    global MINES_BANK
+    data = await request.json()
+    user_id = data.get('user_id')
+    cell = int(data.get('cell'))
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        game = (await session.execute(select(MinesGame).where(MinesGame.user_id == user.id, MinesGame.is_active == True))).scalar_one_or_none()
+
+        if not game:
+            return web.json_response({'success': False, 'error': 'Нет активной игры'})
+
+        mines_pos = json.loads(game.mines_positions)
+        clicked = json.loads(game.clicked_positions)
+
+        if cell in clicked:
+            return web.json_response({'success': False, 'error': 'Ячейка уже открыта'})
+
+        # АНТИ-МИНУС ЛОГИКА
+        if cell not in mines_pos:
+            coefs = MINES_COEFS.get(game.bombs, [])
+            next_win = int(game.bet * coefs[game.step])
+            
+            # Если выигрыш превышает кассу проекта -> принудительный слив
+            if (next_win - game.bet) > MINES_BANK:
+                # Перемещаем мину в кликнутую ячейку
+                empty_cells = [c for c in range(25) if c not in clicked and c not in mines_pos and c != cell]
+                if empty_cells:
+                    mines_pos.remove(random.choice(mines_pos)) # Убираем одну случайную мину
+                    mines_pos.append(cell) # Ставим её туда, куда кликнул юзер
+                    game.mines_positions = json.dumps(mines_pos)
+
+        clicked.append(cell)
+        game.clicked_positions = json.dumps(clicked)
+
+        if cell in mines_pos:
+            # БАБАХ! Проигрыш
+            game.is_active = False
+            MINES_BANK += int(game.bet * 0.9) # 90% идет в банк проекта
+            await session.commit()
+            return web.json_response({'success': True, 'status': 'lose', 'mines': mines_pos})
+        else:
+            # УСПЕХ!
+            game.step += 1
+            coefs = MINES_COEFS.get(game.bombs, [])
+            game.win_amount = int(game.bet * coefs[game.step - 1])
+            await session.commit()
+            return web.json_response({'success': True, 'status': 'continue', 'win_amount': game.win_amount, 'step': game.step})
+
+async def mines_collect(request):
+    global MINES_BANK
+    data = await request.json()
+    user_id = data.get('user_id')
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        game = (await session.execute(select(MinesGame).where(MinesGame.user_id == user.id, MinesGame.is_active == True))).scalar_one_or_none()
+
+        if not game or game.step == 0:
+            return web.json_response({'success': False, 'error': 'Нечего забирать'})
+
+        game.is_active = False
+        user.balance += game.win_amount
+        MINES_BANK -= int(game.win_amount - game.bet) # Вычитаем профит юзера из банка
+
+        mines_pos = json.loads(game.mines_positions)
+        await session.commit()
+        return web.json_response({'success': True, 'win_amount': game.win_amount, 'balance': user.balance, 'mines': mines_pos})
 async def create_app():
     app = web.Application(middlewares=[log_middleware, error_middleware])
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")})
@@ -443,6 +556,9 @@ async def create_app():
         web.post('/api/sell', sell_item),
         web.get('/api/history/recent', get_history),
         web.post('/api/payment/create-invoice', create_invoice),
+        web.post('/api/mines/start', mines_start),
+        web.post('/api/mines/click', mines_click),
+        web.post('/api/mines/collect', mines_collect),
     ]
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))

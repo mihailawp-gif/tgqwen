@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0d0d17">
     <title>Кейсы — Telegram</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="/static/css/style.css?v=1004">
+    <link rel="stylesheet" href="/static/css/style.css?v=1005">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
@@ -93,6 +93,15 @@
                     <div class="info">
                         <h2>ДАЙС</h2>
                         <p>УГАДАЙ ЧИСЛО</p>
+                    </div>
+                </div>
+				<div class="game-block block-mines align-right" onclick="showMinesScreen()">
+                    <div class="art-left">
+                        <div class="anim-placeholder">💣</div>
+                    </div>
+                    <div class="info">
+                        <h2>МИНЫ</h2>
+                        <p>ОБХОДИ БОМБЫ</p>
                     </div>
                 </div>
             </div>
@@ -184,7 +193,29 @@
             </div>
         </div>
     </div>
+	<div id="mines-screen" class="screen">
+    <div class="preview-header">
+        <button class="btn-back" onclick="switchScreen('main-screen')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <h2>Мины</h2>
+    </div>
+    <div class="mines-container" style="padding: 20px;">
+        <div class="mines-controls" style="display:flex; gap:10px; margin-bottom:20px;">
+            <div style="flex:1;">
+                <label style="font-size:12px;color:var(--txt2);">Ставка (⭐)</label>
+                <input type="number" id="minesBet" value="10" style="width:100%; padding:12px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:#fff; margin-top:5px;">
+            </div>
+            <div style="flex:1;">
+                <label style="font-size:12px;color:var(--txt2);">Мин</label>
+                <input type="number" id="minesCount" value="3" readonly style="width:100%; padding:12px; border-radius:12px; background:var(--card2); border:1px solid var(--border); color:#fff; margin-top:5px;">
+            </div>
+        </div>
+        
+        <div class="mines-grid" id="minesGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-bottom:20px;">
+            </div>
 
+        <button class="btn-open-case" id="btnMinesAction" onclick="startMines()">Начать игру</button>
+    </div>
+</div>
     <div id="topupModal" class="modal">
         <div class="modal-overlay" onclick="closeTopupModal()"></div>
         <div class="modal-content topup-modal">

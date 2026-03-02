@@ -434,7 +434,117 @@ if (tg && tg.BackButton) {
 }
 
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
+// === ЛОГИКА МИН ===
+let minesGameActive = false;
 
+function showMinesScreen() {
+    switchScreen('mines-screen');
+    renderMinesGrid();
+    document.getElementById('btnMinesAction').textContent = 'Начать игру';
+    document.getElementById('btnMinesAction').onclick = startMines;
+    document.getElementById('btnMinesAction').className = 'btn-open-case';
+    minesGameActive = false;
+}
+
+function renderMinesGrid(minesArray = []) {
+    const grid = document.getElementById('minesGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 25; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'mine-cell';
+        cell.id = `mine-${i}`;
+        
+        // Если передали массив мин (конец игры)
+        if (minesArray.length > 0) {
+            cell.classList.add('disabled');
+            if (minesArray.includes(i)) {
+                cell.innerHTML = '💣';
+                if (!cell.classList.contains('bomb')) cell.style.opacity = '0.5'; // Показываем остальные мины прозрачными
+            }
+        } else {
+            cell.onclick = () => clickMine(i);
+        }
+        grid.appendChild(cell);
+    }
+}
+
+async function startMines() {
+    const bet = parseInt(document.getElementById('minesBet').value);
+    const bombs = parseInt(document.getElementById('minesCount').value);
+    
+    if (bet > state.user.balance) return showToast('❌ Недостаточно звезд!');
+
+    showLoader();
+    const res = await apiRequest('/mines/start', 'POST', { user_id: state.user.telegram_id, bet, bombs });
+    hideLoader();
+
+    if (res.success) {
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        minesGameActive = true;
+        renderMinesGrid();
+        
+        const btn = document.getElementById('btnMinesAction');
+        btn.innerHTML = `Забрать: ${bet} ⭐`;
+        btn.onclick = collectMines;
+        btn.className = 'btn-open-case free'; // Зеленая кнопка
+    } else { showToast(res.error); }
+}
+
+async function clickMine(index) {
+    if (!minesGameActive) return;
+    const cell = document.getElementById(`mine-${index}`);
+    if (cell.classList.contains('success')) return;
+
+    showLoader();
+    const res = await apiRequest('/mines/click', 'POST', { user_id: state.user.telegram_id, cell: index });
+    hideLoader();
+
+    if (res.success) {
+        if (res.status === 'lose') {
+            minesGameActive = false;
+            cell.classList.add('bomb');
+            cell.innerHTML = '💥';
+            renderMinesGrid(res.mines); // Раскрываем все мины
+            
+            const btn = document.getElementById('btnMinesAction');
+            btn.textContent = 'Попробовать еще раз';
+            btn.onclick = startMines;
+            btn.className = 'btn-open-case';
+            
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        } else {
+            cell.classList.add('success');
+            cell.innerHTML = '💎';
+            document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+    } else { showToast(res.error); }
+}
+
+async function collectMines() {
+    if (!minesGameActive) return;
+    
+    showLoader();
+    const res = await apiRequest('/mines/collect', 'POST', { user_id: state.user.telegram_id });
+    hideLoader();
+
+    if (res.success) {
+        minesGameActive = false;
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        renderMinesGrid(res.mines);
+        
+        const btn = document.getElementById('btnMinesAction');
+        btn.textContent = 'Начать игру';
+        btn.onclick = startMines;
+        btn.className = 'btn-open-case';
+        
+        showToast(`🎉 Вы забрали ${res.win_amount} ⭐`);
+        if (window.playSuccessAnimation) window.playSuccessAnimation();
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else { showToast(res.error); }
+}
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
     openProfileTab();

@@ -435,10 +435,8 @@ if (tg && tg.BackButton) {
 
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
 // === ЛОГИКА МИН ===
-// === ЛОГИКА МИН ===
 let minesGameActive = false;
 
-// Полная матрица иксов для фронта
 const MINES_COEFS_JS = {
     1: [1.04, 1.09, 1.14, 1.19, 1.25, 1.32, 1.39, 1.47, 1.56, 1.67, 1.79, 1.92, 2.08, 2.27, 2.50, 2.78, 3.12, 3.57, 4.17, 5.00, 6.25, 8.33, 12.50, 25.00],
     2: [1.09, 1.19, 1.3, 1.43, 1.58, 1.75, 1.96, 2.21, 2.5, 2.86, 3.3, 3.85, 4.55, 5.45, 6.67, 8.33, 10.71, 14.29, 20, 30, 50, 100, 300],
@@ -466,7 +464,6 @@ const MINES_COEFS_JS = {
     24: [25]
 };
 
-// Открытие экрана
 function showMinesScreen() {
     switchScreen('mines-screen');
     renderMinesGrid();
@@ -477,7 +474,6 @@ function showMinesScreen() {
     minesGameActive = false;
 }
 
-// Управление ставкой
 function modifyBet(action, val) {
     if (minesGameActive) return;
     const input = document.getElementById('minesBet');
@@ -492,29 +488,24 @@ function modifyBet(action, val) {
     if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
-// Быстрые кнопки мин
 function setBombs(val) {
     if (minesGameActive) return;
     document.getElementById('minesCount').value = val;
-    customBombsInput(); // Вызываем ручной ввод для обновления визуала
+    customBombsInput();
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
-// Ручной ввод количества мин
 function customBombsInput() {
     if (minesGameActive) return;
     let input = document.getElementById('minesCount');
     let val = parseInt(input.value);
 
-    // Убираем подсветку со всех кнопок
     document.querySelectorAll('.bombs-buttons button').forEach(b => b.classList.remove('active'));
 
-    if (isNaN(val)) return; 
+    if (isNaN(val)) return;
+    if (val < 1) { val = 1; input.value = 1; }
+    if (val > 24) { val = 24; input.value = 24; }
     
-    // Ограничиваем от 1 до 24
-    if (val < 1) val = 1;
-    if (val > 24) val = 24;
-    
-    // Подсвечиваем кнопку, если число совпало с пресетом
     document.querySelectorAll('.bombs-buttons button').forEach(b => {
         if (parseInt(b.textContent) === val) b.classList.add('active');
     });
@@ -522,11 +513,11 @@ function customBombsInput() {
     renderMultipliers(0);
 }
 
-// Отрисовка ленты иксов
 function renderMultipliers(currentStep = 0) {
     const container = document.getElementById('minesMultipliers');
-    // Если поле пустое, берем 1 мину
-    const bombs = parseInt(document.getElementById('minesCount').value) || 1; 
+    if (!container) return;
+    
+    let bombs = parseInt(document.getElementById('minesCount').value) || 3; 
     const coefs = MINES_COEFS_JS[bombs] || [];
 
     container.innerHTML = '';
@@ -543,10 +534,11 @@ function renderMultipliers(currentStep = 0) {
     });
 }
 
-// Отрисовка сетки
 function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');
+    if (!grid) return;
     grid.innerHTML = '';
+    
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'mine-cell';
@@ -554,17 +546,21 @@ function renderMinesGrid(minesArray = [], clickedArray = []) {
         
         if (minesArray.length > 0) {
             cell.classList.add('disabled');
+            
             if (minesArray.includes(i)) {
                 cell.innerHTML = '💣';
                 if (clickedArray.includes(i)) {
-                    cell.classList.add('bomb');
+                    cell.classList.add('bomb'); // Мина, на которой подорвались
                     cell.style.opacity = '1';
                 } else {
-                    cell.style.opacity = '0.5';
+                    cell.style.opacity = '0.5'; // Остальные мины
                 }
             } else if (clickedArray.includes(i)) {
                 cell.innerHTML = '💎';
-                cell.classList.add('success');
+                cell.classList.add('success'); // Успешно открытые кристаллы
+                cell.style.opacity = '1';
+            } else {
+                cell.style.opacity = '0.3'; // Неоткрытые пустые ячейки
             }
         } else {
             cell.onclick = () => clickMine(i);
@@ -573,7 +569,6 @@ function renderMinesGrid(minesArray = [], clickedArray = []) {
     }
 }
 
-// Старт игры
 async function startMines() {
     const bet = parseInt(document.getElementById('minesBet').value);
     const bombs = parseInt(document.getElementById('minesCount').value);
@@ -600,7 +595,6 @@ async function startMines() {
     } else { showToast(res.error); }
 }
 
-// Клик по ячейке
 async function clickMine(index) {
     if (!minesGameActive) return;
     const cell = document.getElementById(`mine-${index}`);
@@ -625,13 +619,12 @@ async function clickMine(index) {
             cell.classList.add('success');
             cell.innerHTML = '💎';
             document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
-            renderMultipliers(res.step); // Двигаем ленту
+            renderMultipliers(res.step); 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
     } else { showToast(res.error); }
 }
 
-// Забрать выигрыш
 async function collectMines() {
     if (!minesGameActive) return;
     
@@ -656,60 +649,6 @@ async function collectMines() {
     } else { showToast(res.error); }
 }
 
-// Коэффициенты для ленты шагов
-
-// Логика кнопок управления ставкой
-function modifyBet(action, val) {
-    if (minesGameActive) return; // Запрещаем менять ставку в игре
-    const input = document.getElementById('minesBet');
-    let current = parseInt(input.value) || 0;
-    
-    if (action === 'add') current += val;
-    if (action === 'mult') current = Math.floor(current * val);
-    if (action === 'clear') current = 0;
-    if (current < 0) current = 0;
-    
-    input.value = current;
-    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-}
-
-// Логика кнопок количества мин
-function setBombs(val) {
-    if (minesGameActive) return; // Запрещаем менять мины в игре
-    document.getElementById('minesCount').value = val;
-    
-    // Меняем подсветку кнопок
-    document.querySelectorAll('.bombs-buttons button').forEach(b => {
-        b.classList.remove('active');
-        if (parseInt(b.textContent) === val) b.classList.add('active');
-    });
-    
-    renderMultipliers(0); // Перерисовываем ленту иксов
-    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-}
-
-// Отрисовка ленты Иксов
-function renderMultipliers(currentStep = 0) {
-    const container = document.getElementById('minesMultipliers');
-    const bombs = parseInt(document.getElementById('minesCount').value);
-    const coefs = MINES_COEFS_JS[bombs] || [];
-
-    container.innerHTML = '';
-    coefs.forEach((coef, index) => {
-        const stepNum = index + 1;
-        const el = document.createElement('div');
-        el.className = `mult-step ${index === currentStep ? 'active' : ''}`;
-        el.innerHTML = `<div class="mult-step-label">Шаг ${stepNum}</div>x${coef}`;
-        container.appendChild(el);
-
-        // Если это текущий шаг, плавно прокручиваем ленту к нему
-        if (index === currentStep) {
-            setTimeout(() => {
-                el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }, 50);
-        }
-    });
-}
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
     openProfileTab();

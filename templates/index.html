@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0d0d17">
     <title>Кейсы — Telegram</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="/static/css/style.css?v=1046">
+    <link rel="stylesheet" href="/static/css/style.css?v=1044">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
@@ -200,38 +200,38 @@
 		</div>
 		<div class="mines-container" style="padding: 16px;">
 			
-			<div class="mines-controls-panel">
-				<div class="control-group">
-					<label>Сумма ставки</label>
-					<div class="input-with-icon">
-						<input type="number" id="minesBet" value="10" min="0">
-						<img src="/static/images/star.png" alt="⭐">
-					</div>
-					<div class="quick-buttons">
-						<button onclick="modifyBet('add', 1)">+1</button>
-						<button onclick="modifyBet('add', 10)">+10</button>
-						<button onclick="modifyBet('add', 100)">+100</button>
-						<button onclick="modifyBet('add', 1000)">+1k</button>
-						<button onclick="modifyBet('mult', 0.5)">1/2</button>
-						<button onclick="modifyBet('mult', 2)">x2</button>
-						<button onclick="modifyBet('clear')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></button>
-					</div>
+		<div class="mines-controls-panel">
+			<div class="control-group">
+				<label>Сумма ставки</label>
+				<div class="input-with-icon">
+					<input type="number" id="minesBet" value="10" min="0">
+					<img src="/static/images/star.png" alt="⭐">
 				</div>
-
-				<div class="control-group">
-					<label>Количество мин</label>
-					<div class="input-with-icon">
-						<input type="number" id="minesCount" value="3" readonly>
-					</div>
-					<div class="quick-buttons bombs-buttons">
-						<button onclick="setBombs(3)" class="active">3</button>
-						<button onclick="setBombs(5)">5</button>
-						<button onclick="setBombs(10)">10</button>
-						<button onclick="setBombs(20)">20</button>
-						<button onclick="setBombs(24)">24</button>
-					</div>
+				<div class="quick-buttons">
+					<button onclick="modifyBet('add', 1)">+1</button>
+					<button onclick="modifyBet('add', 10)">+10</button>
+					<button onclick="modifyBet('add', 100)">+100</button>
+					<button onclick="modifyBet('add', 1000)">+1k</button>
+					<button onclick="modifyBet('mult', 0.5)">1/2</button>
+					<button onclick="modifyBet('mult', 2)">x2</button>
+					<button onclick="modifyBet('clear')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></button>
 				</div>
 			</div>
+
+			<div class="control-group">
+				<label>Количество мин</label>
+				<div class="input-with-icon">
+					<input type="number" id="minesCount" value="3" min="1" max="24" oninput="customBombsInput()">
+				</div>
+				<div class="quick-buttons bombs-buttons">
+					<button onclick="setBombs(3)" class="active">3</button>
+					<button onclick="setBombs(5)">5</button>
+					<button onclick="setBombs(10)">10</button>
+					<button onclick="setBombs(20)">20</button>
+					<button onclick="setBombs(24)">24</button>
+				</div>
+			</div>
+		</div>
 		</div>
         <div class="mines-grid" id="minesGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:16px;"></div>
 
@@ -302,6 +302,6 @@
     </div>
 
     <script src="/static/js/tgs-manager.js?v=1001"></script>
-    <script src="/static/js/app.js?v=1001"></script>
+    <script src="/static/js/app.js?v=1041"></script>
 </body>
 </html>

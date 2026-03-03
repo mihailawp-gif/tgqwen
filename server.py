@@ -19,7 +19,7 @@ MINES_COEFS = {
 
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame
 )
 
 load_dotenv()

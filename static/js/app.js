@@ -540,8 +540,10 @@ function renderMultipliers(currentStep = 0) {
 }
 
 // Крутые SVG иконки вместо эмодзи
-const ICON_DIAMOND = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.5L2 9.5L12 21.5L22 9.5L12 2.5Z" fill="url(#gemGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/><path d="M2 9.5H22M12 2.5V21.5M7 2.5L12 9.5M17 2.5L12 9.5M7 21.5L12 9.5M17 21.5L12 9.5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/><defs><linearGradient id="gemGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00f2fe"/><stop offset="100%" stop-color="#4facfe"/></linearGradient></defs></svg>`;
-const ICON_BOMB = `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11.5" cy="13.5" r="7.5" fill="url(#bombGrad)" stroke="#111" stroke-width="1.5"/><path d="M11.5 6V3M15 7.5L17.5 5" stroke="#999" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="4" r="2" fill="#ef4444"><animate attributeName="r" values="1.5;3;1.5" dur="0.4s" repeatCount="indefinite"/></circle><path d="M8.5 10.5C9.5 9.5 11 9.5 11.5 10" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/><defs><linearGradient id="bombGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46"/><stop offset="100%" stop-color="#09090b"/></linearGradient></defs></svg>`;
+// Чистые статичные иконки
+const ICON_DIAMOND = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 8L12 22L21 8L12 2Z" fill="#34D399" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 8H21" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 2V22" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 5L12 12L16.5 5" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+const ICON_BOMB = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="7" fill="#1F2937" stroke="#111" stroke-width="2"/><path d="M12 6V3M15.5 8.5L18 6" stroke="#4B5563" stroke-width="2" stroke-linecap="round"/><circle cx="19" cy="5" r="2.5" fill="#EF4444"/></svg>`;
 
 function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');
@@ -635,7 +637,7 @@ async function clickMine(index) {
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         } else {
             cell.classList.add('success');
-            cell.innerHTML = '💎';
+            cell.innerHTML = ICON_DIAMOND; // <--- ИСПРАВЛЕНО ЗДЕСЬ (теперь сразу ставит SVG, а не эмодзи)
             document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
             renderMultipliers(res.step); 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');

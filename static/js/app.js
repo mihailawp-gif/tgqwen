@@ -52,6 +52,11 @@ function updateUserDisplay() {
     if (!state.user) return;
     document.getElementById('userName').textContent = state.user.first_name || 'Пользователь';
     document.getElementById('userBalance').textContent = state.user.balance || 0;
+    
+    // Обновляем баланс в минах
+    const minesBal = document.getElementById('minesBalanceDisplay');
+    if (minesBal) minesBal.textContent = state.user.balance || 0;
+
     const userAvatar = document.getElementById('userAvatar');
     if (userAvatar) {
         const photoUrl = state.user.photo_url || (tg?.initDataUnsafe?.user?.photo_url);
@@ -534,6 +539,10 @@ function renderMultipliers(currentStep = 0) {
     });
 }
 
+// Крутые SVG иконки вместо эмодзи
+const ICON_DIAMOND = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.5L2 9.5L12 21.5L22 9.5L12 2.5Z" fill="url(#gemGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/><path d="M2 9.5H22M12 2.5V21.5M7 2.5L12 9.5M17 2.5L12 9.5M7 21.5L12 9.5M17 21.5L12 9.5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/><defs><linearGradient id="gemGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00f2fe"/><stop offset="100%" stop-color="#4facfe"/></linearGradient></defs></svg>`;
+const ICON_BOMB = `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11.5" cy="13.5" r="7.5" fill="url(#bombGrad)" stroke="#111" stroke-width="1.5"/><path d="M11.5 6V3M15 7.5L17.5 5" stroke="#999" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="4" r="2" fill="#ef4444"><animate attributeName="r" values="1.5;3;1.5" dur="0.4s" repeatCount="indefinite"/></circle><path d="M8.5 10.5C9.5 9.5 11 9.5 11.5 10" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/><defs><linearGradient id="bombGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46"/><stop offset="100%" stop-color="#09090b"/></linearGradient></defs></svg>`;
+
 function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');
     if (!grid) return;
@@ -547,22 +556,31 @@ function renderMinesGrid(minesArray = [], clickedArray = []) {
         if (minesArray.length > 0) {
             cell.classList.add('disabled');
             
+            // Если это бомба
             if (minesArray.includes(i)) {
-                cell.innerHTML = '💣';
+                cell.innerHTML = ICON_BOMB;
                 if (clickedArray.includes(i)) {
-                    cell.classList.add('bomb'); // Мина, на которой подорвались
+                    cell.classList.add('bomb'); // Та самая бомба, на которой подорвались
+                    cell.style.opacity = '1';
+                    cell.style.transform = 'scale(1.05)';
+                } else {
+                    cell.style.opacity = '0.6'; // Остальные нераскрытые бомбы
+                }
+            } 
+            // Если это алмаз
+            else {
+                cell.innerHTML = ICON_DIAMOND;
+                if (clickedArray.includes(i)) {
+                    cell.classList.add('success'); // Успешно открытый алмаз
                     cell.style.opacity = '1';
                 } else {
-                    cell.style.opacity = '0.5'; // Остальные мины
+                    // НЕОТКРЫТЫЙ АЛМАЗ (показываем полупрозрачным)
+                    cell.style.opacity = '0.3';
+                    cell.style.transform = 'scale(0.85)'; // Чуть уменьшаем для эффекта "осталось под землей"
                 }
-            } else if (clickedArray.includes(i)) {
-                cell.innerHTML = '💎';
-                cell.classList.add('success'); // Успешно открытые кристаллы
-                cell.style.opacity = '1';
-            } else {
-                cell.style.opacity = '0.3'; // Неоткрытые пустые ячейки
             }
         } else {
+            // Игра идет
             cell.onclick = () => clickMine(i);
         }
         grid.appendChild(cell);

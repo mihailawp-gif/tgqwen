@@ -435,18 +435,115 @@ if (tg && tg.BackButton) {
 
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
 // === ЛОГИКА МИН ===
+// === ЛОГИКА МИН ===
 let minesGameActive = false;
 
+// Полная матрица иксов для фронта
+const MINES_COEFS_JS = {
+    1: [1.04, 1.09, 1.14, 1.19, 1.25, 1.32, 1.39, 1.47, 1.56, 1.67, 1.79, 1.92, 2.08, 2.27, 2.50, 2.78, 3.12, 3.57, 4.17, 5.00, 6.25, 8.33, 12.50, 25.00],
+    2: [1.09, 1.19, 1.3, 1.43, 1.58, 1.75, 1.96, 2.21, 2.5, 2.86, 3.3, 3.85, 4.55, 5.45, 6.67, 8.33, 10.71, 14.29, 20, 30, 50, 100, 300],
+    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300],
+    4: [1.19, 1.43, 1.73, 2.11, 2.61, 3.26, 4.13, 5.32, 6.95, 9.27, 12.64, 17.69, 25.56, 38.33, 60.24, 100.4, 180.71, 361.43, 843.33, 2530, 12650],
+    5: [1.25, 1.58, 2.02, 2.61, 3.43, 4.57, 6.2, 8.59, 12.16, 17.69, 26.54, 41.28, 67.08, 115, 210.83, 421.67, 948.75, 2530, 8855, 53130],
+    6: [1.32, 1.75, 2.37, 3.26, 4.57, 6.53, 9.54, 14.31, 22.12, 35.38, 58.97, 103.21, 191.67, 383.33, 843.33, 2108.33],
+    7: [1.39, 1.96, 2.82, 4.13, 6.2, 9.54, 15.1, 24.72, 42.02, 74.7, 140.06, 280.13, 606.94, 1456.67, 4005.83, 13352.78],
+    8: [1.47, 2.21, 3.38, 5.32, 8.59, 14.31, 24.72, 44.49, 84.04, 168.08, 360.16, 840.38, 2185, 6555, 24035, 120175, 1081575],
+    9: [1.56, 2.5, 4.11, 6.95, 12.16, 22.12, 42.02, 84.04, 178.58, 408.19, 1020.47, 2857.31, 9286.25, 37145, 204297.5, 2042975],
+    10: [1.67, 2.86, 5.05, 9.27, 17.69, 35.38, 74.7, 168.08, 408.19, 1088.5, 3265.49, 11429.23, 49526.67, 297160, 3268760],
+    11: [1.79, 3.3, 6.32, 12.64, 26.54, 58.97, 140.06, 360.16, 1020.47, 3265.49, 12245.6, 57146.15, 371450, 4457400],
+    12: [1.92, 3.85, 8.04, 17.69, 41.28, 103.21, 280.13, 840.38, 2857.31, 11429.23, 57146.15, 400023.08, 5200300],
+    13: [2.08, 4.55, 10.45, 25.56, 67.08, 191.67, 606.94, 2185, 9286.25, 49526.67, 371450, 5200300],
+    14: [2.27, 5.45, 13.94, 38.33, 115, 383.33, 1456.67, 6555, 37145, 297160, 4457400],
+    15: [2.5, 6.67, 19.17, 60.24, 210.83, 843.33, 4005.83, 24035, 204297.5, 3268760],
+    16: [2.78, 8.33, 27.38, 100.4, 421.67, 2108.33, 13352.78, 120175, 2042975],
+    17: [3.13, 10.71, 41.07, 180.71, 948.75, 6325, 60087.5, 1081575],
+    18: [3.57, 14.29, 65.71, 361.43, 2530, 25300, 480700],
+    19: [4.17, 20, 115, 843.33, 8855, 177100],
+    20: [5, 30, 230, 2530, 53130],
+    21: [6.25, 50, 575, 12650],
+    22: [8.33, 100, 2300],
+    23: [12.5, 300],
+    24: [25]
+};
+
+// Открытие экрана
 function showMinesScreen() {
     switchScreen('mines-screen');
     renderMinesGrid();
-	renderMultipliers(0);
-    document.getElementById('btnMinesAction').textContent = 'Начать игру';
+    renderMultipliers(0);
+    document.getElementById('btnMinesAction').textContent = 'Играть';
     document.getElementById('btnMinesAction').onclick = startMines;
     document.getElementById('btnMinesAction').className = 'btn-open-case';
     minesGameActive = false;
 }
 
+// Управление ставкой
+function modifyBet(action, val) {
+    if (minesGameActive) return;
+    const input = document.getElementById('minesBet');
+    let current = parseInt(input.value) || 0;
+    
+    if (action === 'add') current += val;
+    if (action === 'mult') current = Math.floor(current * val);
+    if (action === 'clear') current = 0;
+    if (current < 0) current = 0;
+    
+    input.value = current;
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+// Быстрые кнопки мин
+function setBombs(val) {
+    if (minesGameActive) return;
+    document.getElementById('minesCount').value = val;
+    customBombsInput(); // Вызываем ручной ввод для обновления визуала
+}
+
+// Ручной ввод количества мин
+function customBombsInput() {
+    if (minesGameActive) return;
+    let input = document.getElementById('minesCount');
+    let val = parseInt(input.value);
+
+    // Убираем подсветку со всех кнопок
+    document.querySelectorAll('.bombs-buttons button').forEach(b => b.classList.remove('active'));
+
+    if (isNaN(val)) return; 
+    
+    // Ограничиваем от 1 до 24
+    if (val < 1) val = 1;
+    if (val > 24) val = 24;
+    
+    // Подсвечиваем кнопку, если число совпало с пресетом
+    document.querySelectorAll('.bombs-buttons button').forEach(b => {
+        if (parseInt(b.textContent) === val) b.classList.add('active');
+    });
+
+    renderMultipliers(0);
+}
+
+// Отрисовка ленты иксов
+function renderMultipliers(currentStep = 0) {
+    const container = document.getElementById('minesMultipliers');
+    // Если поле пустое, берем 1 мину
+    const bombs = parseInt(document.getElementById('minesCount').value) || 1; 
+    const coefs = MINES_COEFS_JS[bombs] || [];
+
+    container.innerHTML = '';
+    coefs.forEach((coef, index) => {
+        const stepNum = index + 1;
+        const el = document.createElement('div');
+        el.className = `mult-step ${index === currentStep ? 'active' : ''}`;
+        el.innerHTML = `<div class="mult-step-label">Шаг ${stepNum}</div>x${coef}`;
+        container.appendChild(el);
+
+        if (index === currentStep) {
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+        }
+    });
+}
+
+// Отрисовка сетки
 function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');
     grid.innerHTML = '';
@@ -455,36 +552,34 @@ function renderMinesGrid(minesArray = [], clickedArray = []) {
         cell.className = 'mine-cell';
         cell.id = `mine-${i}`;
         
-        // Если игра окончена (передали массив мин)
         if (minesArray.length > 0) {
             cell.classList.add('disabled');
-            
             if (minesArray.includes(i)) {
                 cell.innerHTML = '💣';
-                // Если это та самая мина, на которую мы кликнули
                 if (clickedArray.includes(i)) {
                     cell.classList.add('bomb');
                     cell.style.opacity = '1';
                 } else {
-                    cell.style.opacity = '0.5'; // Остальные мины делаем полупрозрачными
+                    cell.style.opacity = '0.5';
                 }
             } else if (clickedArray.includes(i)) {
-                // Если ячейки нет в минах, но она есть в кликах — это наш кристалл!
                 cell.innerHTML = '💎';
                 cell.classList.add('success');
             }
         } else {
-            // Игра идет, вешаем слушатель клика
             cell.onclick = () => clickMine(i);
         }
         grid.appendChild(cell);
     }
 }
 
+// Старт игры
 async function startMines() {
     const bet = parseInt(document.getElementById('minesBet').value);
     const bombs = parseInt(document.getElementById('minesCount').value);
     
+    if (isNaN(bet) || bet <= 0) return showToast('❌ Введите корректную ставку');
+    if (isNaN(bombs) || bombs < 1 || bombs > 24) return showToast('❌ Количество мин: от 1 до 24');
     if (bet > state.user.balance) return showToast('❌ Недостаточно звезд!');
 
     showLoader();
@@ -496,14 +591,16 @@ async function startMines() {
         updateUserDisplay();
         minesGameActive = true;
         renderMinesGrid();
+        renderMultipliers(0);
         
         const btn = document.getElementById('btnMinesAction');
-        btn.innerHTML = `Забрать: ${bet} <img src="/static/images/star.png" class="confirm-star-icon" alt="star">`;
+        btn.innerHTML = `Забрать: ${bet} ⭐`;
         btn.onclick = collectMines;
-        btn.className = 'btn-open-case free'; // Зеленая кнопка
+        btn.className = 'btn-open-case free'; 
     } else { showToast(res.error); }
 }
 
+// Клик по ячейке
 async function clickMine(index) {
     if (!minesGameActive) return;
     const cell = document.getElementById(`mine-${index}`);
@@ -516,7 +613,6 @@ async function clickMine(index) {
     if (res.success) {
         if (res.status === 'lose') {
             minesGameActive = false;
-            // Передаем и мины, и открытые ячейки
             renderMinesGrid(res.mines, res.clicked);
             
             const btn = document.getElementById('btnMinesAction');
@@ -529,12 +625,13 @@ async function clickMine(index) {
             cell.classList.add('success');
             cell.innerHTML = '💎';
             document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
-			renderMultipliers(res.step);
+            renderMultipliers(res.step); // Двигаем ленту
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
     } else { showToast(res.error); }
 }
 
+// Забрать выигрыш
 async function collectMines() {
     if (!minesGameActive) return;
     
@@ -546,8 +643,6 @@ async function collectMines() {
         minesGameActive = false;
         state.user.balance = res.balance;
         updateUserDisplay();
-        
-        // Передаем оба массива, чтобы красиво показать результат
         renderMinesGrid(res.mines, res.clicked);
         
         const btn = document.getElementById('btnMinesAction');
@@ -555,20 +650,14 @@ async function collectMines() {
         btn.onclick = startMines;
         btn.className = 'btn-open-case';
         
-        showToast(`🎉 Вы забрали ${res.win_amount} <img src="/static/images/star.png" class="confirm-star-icon" alt="star">`);
+        showToast(`🎉 Вы забрали ${res.win_amount} ⭐`);
         if (window.playSuccessAnimation) window.playSuccessAnimation();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } else { showToast(res.error); }
 }
 
 // Коэффициенты для ленты шагов
-const MINES_COEFS_JS = {
-    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300],
-    5: [1.25, 1.58, 2.02, 2.61, 3.43, 4.57, 6.2, 8.59, 12.16, 17.69, 26.54, 41.28, 67.08, 115, 210.83, 421.67, 948.75, 2530, 8855, 53130],
-    10: [1.67, 2.86, 5.05, 9.27, 17.69, 35.38, 74.7, 168.08, 408.19, 1088.5, 3265.49, 11429.23, 49526.67, 297160, 3268760],
-    20: [5, 30, 230, 2530, 53130],
-    24: [25]
-};
+
 // Логика кнопок управления ставкой
 function modifyBet(action, val) {
     if (minesGameActive) return; // Запрещаем менять ставку в игре

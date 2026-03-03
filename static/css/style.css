@@ -547,3 +547,11 @@ body {
 .mult-step { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; min-width: 85px; text-align: center; background: #1a1b26; color: var(--txt2); font-family: 'Exo 2', sans-serif; font-weight: 800; font-size: 14px; transition: all 0.3s; flex-shrink: 0; }
 .mult-step.active { border-color: var(--gold); background: rgba(245, 158, 11, 0.1); color: var(--gold); transform: scale(1.05); z-index: 2; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); }
 .mult-step-label { position: absolute; top: -8px; left: 10px; background: var(--bg); padding: 0 4px; font-size: 10px; color: var(--txt3); font-weight: 600; font-family: 'Inter', sans-serif; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}

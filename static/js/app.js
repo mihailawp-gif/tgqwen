@@ -441,6 +441,7 @@ if (tg && tg.BackButton) {
 document.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.case-card')) { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } });
 // === ЛОГИКА МИН ===
 let minesGameActive = false;
+let isMineClicking = false;
 
 const MINES_COEFS_JS = {
     1: [1.04, 1.09, 1.14, 1.19, 1.25, 1.32, 1.39, 1.47, 1.56, 1.67, 1.79, 1.92, 2.08, 2.27, 2.50, 2.78, 3.12, 3.57, 4.17, 5.00, 6.25, 8.33, 12.50, 25.00],
@@ -636,13 +637,19 @@ async function startMines() {
 }
 
 async function clickMine(index) {
-    if (!minesGameActive) return;
+    // Если игра не активна или уже идет обработка клика — игнорируем
+    if (!minesGameActive || isMineClicking) return; 
     const cell = document.getElementById(`mine-${index}`);
     if (cell.classList.contains('success')) return;
 
-    showLoader();
+    isMineClicking = true; // Блокируем новые клики
+    cell.style.opacity = '0.5'; // Визуально показываем юзеру, что клик принят
+
+    // УБРАЛИ showLoader();
     const res = await apiRequest('/mines/click', 'POST', { user_id: state.user.telegram_id, cell: index });
-    hideLoader();
+    // УБРАЛИ hideLoader();
+
+    isMineClicking = false; // Снимаем блокировку
 
     if (res.success) {
         if (res.status === 'lose') {
@@ -656,13 +663,17 @@ async function clickMine(index) {
             
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         } else {
+            cell.style.opacity = '1'; // Возвращаем нормальную прозрачность
             cell.classList.add('success');
-            cell.innerHTML = ICON_DIAMOND; // <--- ИСПРАВЛЕНО ЗДЕСЬ (теперь сразу ставит SVG, а не эмодзи)
+            cell.innerHTML = ICON_DIAMOND;
             document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
             renderMultipliers(res.step); 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
-    } else { showToast(res.error); }
+    } else { 
+        cell.style.opacity = '1'; // В случае ошибки тоже возвращаем как было
+        showToast(res.error); 
+    }
 }
 
 async function collectMines() {

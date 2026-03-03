@@ -440,13 +440,14 @@ let minesGameActive = false;
 function showMinesScreen() {
     switchScreen('mines-screen');
     renderMinesGrid();
+	renderMultipliers(0);
     document.getElementById('btnMinesAction').textContent = 'Начать игру';
     document.getElementById('btnMinesAction').onclick = startMines;
     document.getElementById('btnMinesAction').className = 'btn-open-case';
     minesGameActive = false;
 }
 
-function renderMinesGrid(minesArray = []) {
+function renderMinesGrid(minesArray = [], clickedArray = []) {
     const grid = document.getElementById('minesGrid');
     grid.innerHTML = '';
     for (let i = 0; i < 25; i++) {
@@ -454,14 +455,26 @@ function renderMinesGrid(minesArray = []) {
         cell.className = 'mine-cell';
         cell.id = `mine-${i}`;
         
-        // Если передали массив мин (конец игры)
+        // Если игра окончена (передали массив мин)
         if (minesArray.length > 0) {
             cell.classList.add('disabled');
+            
             if (minesArray.includes(i)) {
                 cell.innerHTML = '💣';
-                if (!cell.classList.contains('bomb')) cell.style.opacity = '0.5'; // Показываем остальные мины прозрачными
+                // Если это та самая мина, на которую мы кликнули
+                if (clickedArray.includes(i)) {
+                    cell.classList.add('bomb');
+                    cell.style.opacity = '1';
+                } else {
+                    cell.style.opacity = '0.5'; // Остальные мины делаем полупрозрачными
+                }
+            } else if (clickedArray.includes(i)) {
+                // Если ячейки нет в минах, но она есть в кликах — это наш кристалл!
+                cell.innerHTML = '💎';
+                cell.classList.add('success');
             }
         } else {
+            // Игра идет, вешаем слушатель клика
             cell.onclick = () => clickMine(i);
         }
         grid.appendChild(cell);
@@ -485,7 +498,7 @@ async function startMines() {
         renderMinesGrid();
         
         const btn = document.getElementById('btnMinesAction');
-        btn.innerHTML = `Забрать: ${bet} ⭐`;
+        btn.innerHTML = `Забрать: ${bet} <img src="/static/images/star.png" class="confirm-star-icon" alt="star">`;
         btn.onclick = collectMines;
         btn.className = 'btn-open-case free'; // Зеленая кнопка
     } else { showToast(res.error); }
@@ -503,9 +516,8 @@ async function clickMine(index) {
     if (res.success) {
         if (res.status === 'lose') {
             minesGameActive = false;
-            cell.classList.add('bomb');
-            cell.innerHTML = '💥';
-            renderMinesGrid(res.mines); // Раскрываем все мины
+            // Передаем и мины, и открытые ячейки
+            renderMinesGrid(res.mines, res.clicked);
             
             const btn = document.getElementById('btnMinesAction');
             btn.textContent = 'Попробовать еще раз';
@@ -517,6 +529,7 @@ async function clickMine(index) {
             cell.classList.add('success');
             cell.innerHTML = '💎';
             document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} ⭐`;
+			renderMultipliers(res.step);
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
     } else { showToast(res.error); }
@@ -533,17 +546,80 @@ async function collectMines() {
         minesGameActive = false;
         state.user.balance = res.balance;
         updateUserDisplay();
-        renderMinesGrid(res.mines);
+        
+        // Передаем оба массива, чтобы красиво показать результат
+        renderMinesGrid(res.mines, res.clicked);
         
         const btn = document.getElementById('btnMinesAction');
         btn.textContent = 'Начать игру';
         btn.onclick = startMines;
         btn.className = 'btn-open-case';
         
-        showToast(`🎉 Вы забрали ${res.win_amount} ⭐`);
+        showToast(`🎉 Вы забрали ${res.win_amount} <img src="/static/images/star.png" class="confirm-star-icon" alt="star">`);
         if (window.playSuccessAnimation) window.playSuccessAnimation();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } else { showToast(res.error); }
+}
+
+// Коэффициенты для ленты шагов
+const MINES_COEFS_JS = {
+    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300],
+    5: [1.25, 1.58, 2.02, 2.61, 3.43, 4.57, 6.2, 8.59, 12.16, 17.69, 26.54, 41.28, 67.08, 115, 210.83, 421.67, 948.75, 2530, 8855, 53130],
+    10: [1.67, 2.86, 5.05, 9.27, 17.69, 35.38, 74.7, 168.08, 408.19, 1088.5, 3265.49, 11429.23, 49526.67, 297160, 3268760],
+    20: [5, 30, 230, 2530, 53130],
+    24: [25]
+};
+// Логика кнопок управления ставкой
+function modifyBet(action, val) {
+    if (minesGameActive) return; // Запрещаем менять ставку в игре
+    const input = document.getElementById('minesBet');
+    let current = parseInt(input.value) || 0;
+    
+    if (action === 'add') current += val;
+    if (action === 'mult') current = Math.floor(current * val);
+    if (action === 'clear') current = 0;
+    if (current < 0) current = 0;
+    
+    input.value = current;
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+// Логика кнопок количества мин
+function setBombs(val) {
+    if (minesGameActive) return; // Запрещаем менять мины в игре
+    document.getElementById('minesCount').value = val;
+    
+    // Меняем подсветку кнопок
+    document.querySelectorAll('.bombs-buttons button').forEach(b => {
+        b.classList.remove('active');
+        if (parseInt(b.textContent) === val) b.classList.add('active');
+    });
+    
+    renderMultipliers(0); // Перерисовываем ленту иксов
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+// Отрисовка ленты Иксов
+function renderMultipliers(currentStep = 0) {
+    const container = document.getElementById('minesMultipliers');
+    const bombs = parseInt(document.getElementById('minesCount').value);
+    const coefs = MINES_COEFS_JS[bombs] || [];
+
+    container.innerHTML = '';
+    coefs.forEach((coef, index) => {
+        const stepNum = index + 1;
+        const el = document.createElement('div');
+        el.className = `mult-step ${index === currentStep ? 'active' : ''}`;
+        el.innerHTML = `<div class="mult-step-label">Шаг ${stepNum}</div>x${coef}`;
+        container.appendChild(el);
+
+        // Если это текущий шаг, плавно прокручиваем ленту к нему
+        if (index === currentStep) {
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }, 50);
+        }
+    });
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

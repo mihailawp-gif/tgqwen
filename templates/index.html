@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0d0d17">
     <title>Кейсы — Telegram</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="/static/css/style.css?v=1005">
+    <link rel="stylesheet" href="/static/css/style.css?v=1006">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
@@ -193,29 +193,51 @@
             </div>
         </div>
     </div>
-	<div id="mines-screen" class="screen">
-    <div class="preview-header">
+<div class="preview-header">
         <button class="btn-back" onclick="switchScreen('main-screen')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
         <h2>Мины</h2>
     </div>
-    <div class="mines-container" style="padding: 20px;">
-        <div class="mines-controls" style="display:flex; gap:10px; margin-bottom:20px;">
-            <div style="flex:1;">
-                <label style="font-size:12px;color:var(--txt2);">Ставка (⭐)</label>
-                <input type="number" id="minesBet" value="10" style="width:100%; padding:12px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:#fff; margin-top:5px;">
-            </div>
-            <div style="flex:1;">
-                <label style="font-size:12px;color:var(--txt2);">Мин</label>
-                <input type="number" id="minesCount" value="3" readonly style="width:100%; padding:12px; border-radius:12px; background:var(--card2); border:1px solid var(--border); color:#fff; margin-top:5px;">
-            </div>
-        </div>
+    <div class="mines-container" style="padding: 16px;">
         
-        <div class="mines-grid" id="minesGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-bottom:20px;">
+        <div class="mines-controls-panel">
+            <div class="control-group">
+                <label>Сумма ставки</label>
+                <div class="input-with-icon">
+                    <input type="number" id="minesBet" value="10" min="0">
+                    <img src="/static/images/star.png" alt="⭐">
+                </div>
+                <div class="quick-buttons">
+                    <button onclick="modifyBet('add', 1)">+1</button>
+                    <button onclick="modifyBet('add', 10)">+10</button>
+                    <button onclick="modifyBet('add', 100)">+100</button>
+                    <button onclick="modifyBet('add', 1000)">+1k</button>
+                    <button onclick="modifyBet('mult', 0.5)">1/2</button>
+                    <button onclick="modifyBet('mult', 2)">x2</button>
+                    <button onclick="modifyBet('clear')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></button>
+                </div>
             </div>
 
-        <button class="btn-open-case" id="btnMinesAction" onclick="startMines()">Начать игру</button>
+            <div class="control-group">
+                <label>Количество мин</label>
+                <div class="input-with-icon">
+                    <input type="number" id="minesCount" value="3" readonly>
+                </div>
+                <div class="quick-buttons bombs-buttons">
+                    <button onclick="setBombs(3)" class="active">3</button>
+                    <button onclick="setBombs(5)">5</button>
+                    <button onclick="setBombs(10)">10</button>
+                    <button onclick="setBombs(20)">20</button>
+                    <button onclick="setBombs(24)">24</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mines-grid" id="minesGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:16px;"></div>
+
+        <div class="mines-multipliers" id="minesMultipliers"></div>
+
+        <button class="btn-open-case" id="btnMinesAction" onclick="startMines()" style="margin-top: 10px;">Играть</button>
     </div>
-</div>
     <div id="topupModal" class="modal">
         <div class="modal-overlay" onclick="closeTopupModal()"></div>
         <div class="modal-content topup-modal">

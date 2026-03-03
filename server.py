@@ -13,8 +13,13 @@ import random
 import json
 MINES_BANK = 10000
 
+
 MINES_COEFS = {
-    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300]
+    3: [1.14, 1.3, 1.49, 1.73, 2.02, 2.37, 2.82, 3.38, 4.11, 5.05, 6.32, 8.04, 10.45, 13.94, 19.17, 27.38, 41.07, 65.71, 115, 230, 575, 2300],
+    5: [1.25, 1.58, 2.02, 2.61, 3.43, 4.57, 6.2, 8.59, 12.16, 17.69, 26.54, 41.28, 67.08, 115, 210.83, 421.67, 948.75, 2530, 8855, 53130],
+    10: [1.67, 2.86, 5.05, 9.27, 17.69, 35.38, 74.7, 168.08, 408.19, 1088.5, 3265.49, 11429.23, 49526.67, 297160, 3268760],
+    20: [5, 30, 230, 2530, 53130],
+    24: [25]
 }
 
 from database.models import (
@@ -510,7 +515,7 @@ async def mines_click(request):
             game.is_active = False
             MINES_BANK += int(game.bet * 0.9) # 90% идет в банк проекта
             await session.commit()
-            return web.json_response({'success': True, 'status': 'lose', 'mines': mines_pos})
+            return web.json_response({'success': True, 'status': 'lose', 'mines': mines_pos, 'clicked': clicked})
         else:
             # УСПЕХ!
             game.step += 1
@@ -536,8 +541,9 @@ async def mines_collect(request):
         MINES_BANK -= int(game.win_amount - game.bet) # Вычитаем профит юзера из банка
 
         mines_pos = json.loads(game.mines_positions)
+        clicked = json.loads(game.clicked_positions)
         await session.commit()
-        return web.json_response({'success': True, 'win_amount': game.win_amount, 'balance': user.balance, 'mines': mines_pos})
+        return web.json_response({'success': True, 'win_amount': game.win_amount, 'balance': user.balance, 'mines': mines_pos, 'clicked': clicked})
 async def create_app():
     app = web.Application(middlewares=[log_middleware, error_middleware])
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")})

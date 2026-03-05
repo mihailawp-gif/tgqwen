@@ -192,8 +192,11 @@ async function showCasePreview(caseId) {
 function buildPreviewRoulette(caseId, items) {
     const track = document.getElementById('previewRouletteTrack');
     if (!track) return;
-    track.innerHTML = ''; track.style.transition = 'none'; track.style.transform = 'translateX(0)';
-    for (let i = 0; i < 40; i++) {
+    track.innerHTML = ''; track.style.transition = 'none'; 
+    track.style.transform = 'translate3d(0,0,0)'; // GPU Ускорение
+    
+    // Снизили кол-во элементов с 40 до 20 (снимает 50% нагрузки с процессора!)
+    for (let i = 0; i < 20; i++) {
         const item = items[i % items.length];
         const tgsNum = item.gift.gift_number || ((item.gift.id - 1) % 120) + 1;
         const el = document.createElement('div');
@@ -251,13 +254,15 @@ async function playOpeningAnimation(result) {
     if (!items.success) return;
 
     const track = document.getElementById('rouletteTrack');
-    track.innerHTML = ''; track.style.transition = 'none'; track.style.transform  = 'translateX(0)';
+    track.innerHTML = ''; track.style.transition = 'none'; 
+    track.style.transform  = 'translate3d(0,0,0)'; // GPU Ускорение
 
     const itemsList = items.items;
     const wonItemData = itemsList.find(it => it.gift.id === result.gift.id) || itemsList[0];
 
-    for (let i = 0; i < 60; i++) {
-        const itemData = (i === 48) ? wonItemData : itemsList[Math.floor(Math.random() * itemsList.length)];
+    // Снизили кол-во элементов с 60 до 35! Выигрышный предмет теперь 25-й.
+    for (let i = 0; i < 35; i++) {
+        const itemData = (i === 25) ? wonItemData : itemsList[Math.floor(Math.random() * itemsList.length)];
         const tgsNum = itemData.gift.gift_number || ((itemData.gift.id - 1) % 120) + 1;
         const itemEl = document.createElement('div');
         itemEl.className = 'roulette-item';
@@ -265,13 +270,17 @@ async function playOpeningAnimation(result) {
         track.appendChild(itemEl);
     }
     setTimeout(() => initAllTGS(), 100);
+    
     setTimeout(() => {
-        const container = document.querySelector('.roulette-track-container'); const wonEl = track.children[48];
+        const container = document.querySelector('.roulette-track-container'); 
+        const wonEl = track.children[25]; // Ищем 25-й элемент
         if (!wonEl || !container) return;
         const offset = -(wonEl.getBoundingClientRect().left - container.getBoundingClientRect().left + wonEl.getBoundingClientRect().width / 2 - container.getBoundingClientRect().width / 2);
-        track.style.transition = `transform 5000ms cubic-bezier(0.15, 0, 0.25, 1)`; track.style.transform  = `translateX(${offset}px)`;
+        track.style.transition = `transform 5000ms cubic-bezier(0.15, 0, 0.25, 1)`; 
+        track.style.transform  = `translate3d(${offset}px, 0, 0)`; // GPU Ускорение сдвига
     }, 300);
-    setTimeout(() => { const wonEl = track.children[48]; if (wonEl) wonEl.classList.add('roulette-item-won'); }, 5700);
+    
+    setTimeout(() => { const wonEl = track.children[25]; if (wonEl) wonEl.classList.add('roulette-item-won'); }, 5700);
     setTimeout(() => showResult(result), 6500);
 }
 

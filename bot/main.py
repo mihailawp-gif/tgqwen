@@ -197,7 +197,7 @@ async def approve_withdrawal(callback: CallbackQuery):
     async with async_session() as session:
         wd = await session.get(Withdrawal, wd_id)
         if not wd or wd.status != 'pending':
-            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Уже обработано</i>", parse_mode="HTML")
+            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Заявка уже была обработана</i>", parse_mode="HTML")
             
         wd.status = 'completed'
         wd.completed_at = datetime.utcnow()
@@ -209,7 +209,11 @@ async def approve_withdrawal(callback: CallbackQuery):
             
         await session.commit()
         
-    await callback.message.edit_text(callback.message.html_text + "\n\n✅ <b>ОДОБРЕНО</b>", parse_mode="HTML")
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➡️ К списку заявок", callback_data="admin_pending_wd_1")],
+        [InlineKeyboardButton(text="🏠 В меню", callback_data="admin_back")]
+    ])
+    await callback.message.edit_text(f"✅ <b>Заявка #{wd_id} успешно ОДОБРЕНА!</b>\nПредмет исчез из инвентаря игрока.", parse_mode="HTML", reply_markup=kb)
 
 @router.callback_query(F.data.startswith("wd_rej_"))
 async def reject_withdrawal(callback: CallbackQuery):
@@ -219,13 +223,17 @@ async def reject_withdrawal(callback: CallbackQuery):
     async with async_session() as session:
         wd = await session.get(Withdrawal, wd_id)
         if not wd or wd.status != 'pending':
-            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Уже обработано</i>", parse_mode="HTML")
+            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Заявка уже была обработана</i>", parse_mode="HTML")
             
         wd.status = 'rejected'
         wd.completed_at = datetime.utcnow()
         await session.commit()
         
-    await callback.message.edit_text(callback.message.html_text + "\n\n❌ <b>ОТКЛОНЕНО</b>", parse_mode="HTML")
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➡️ К списку заявок", callback_data="admin_pending_wd_1")],
+        [InlineKeyboardButton(text="🏠 В меню", callback_data="admin_back")]
+    ])
+    await callback.message.edit_text(f"❌ <b>Заявка #{wd_id} ОТКЛОНЕНА!</b>\nИгрок увидит статус 'Отклонено' в инвентаре.", parse_mode="HTML", reply_markup=kb)
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     """Стартовое сообщение"""
@@ -549,24 +557,128 @@ def get_admin_keyboard():
             InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast_start"),
             InlineKeyboardButton(text="💸 Бонус ВСЕМ", callback_data="admin_mass_bonus")
         ],
-        [InlineKeyboardButton(text="📤 Заявки на вывод", callback_data="admin_pending_wd")],
+        [
+            InlineKeyboardButton(text="📤 Новые выводы", callback_data="admin_pending_wd_1"),
+            InlineKeyboardButton(text="🗄 История выводов", callback_data="admin_history_wd_1")
+        ],
         [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
     
-@router.callback_query(F.data == "admin_pending_wd")
+@router.callback_query(F.data.startswith("admin_pending_wd_"))
 async def show_pending_withdrawals(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS: return
     
+    page = int(callback.data.split("_")[3])
+    
     async with async_session() as session:
-        pending = (await session.execute(
-            select(Withdrawal).where(Withdrawal.status == 'pending').limit(10)
+        # Считаем сколько всего нерассмотренных заявок
+        total = await session.scalar(select(func.count(Withdrawal.id)).where(Withdrawal.status == 'pending'))
+        
+        if total == 0:
+            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]])
+            return await callback.message.edit_text("🎉 <b>Активных заявок нет!</b>\nВсе выводы обработаны.", parse_mode="HTML", reply_markup=kb)
+            
+        if page > total: page = total
+        if page < 1: page = 1
+        
+        # Получаем 1 конкретную заявку для текущей страницы
+        withdrawals = (await session.execute(
+            select(Withdrawal)
+            .where(Withdrawal.status == 'pending')
+            .order_by(Withdrawal.created_at)
+            .limit(1)
+            .offset(page - 1)
         )).scalars().all()
         
-    if not pending:
-        return await callback.answer("Активных заявок нет!", show_alert=True)
+        if not withdrawals:
+            return await callback.answer("Ошибка загрузки", show_alert=True)
+            
+        wd = withdrawals[0]
+        user = await session.get(User, wd.user_id)
+        opening = await session.get(CaseOpening, wd.opening_id)
+        gift = await session.get(Gift, opening.gift_id) if opening else None
         
-    await callback.message.answer("⚠️ Обратите внимание: Уведомления о выводах приходят вам в личку автоматически. Выше показаны последние сообщения.")
-    await callback.answer()
+        gift_name = gift.name if gift else "Неизвестно"
+        gift_val = gift.value if gift else 0
+        uname = f"@{user.username}" if user.username else user.first_name
+        user_link = f"<a href='tg://user?id={user.telegram_id}'>{uname}</a>"
+        
+        text = (
+            f"📤 <b>ЗАЯВКА НА ВЫВОД #{wd.id}</b>\n\n"
+            f"🎁 Предмет: <b>{gift_name}</b>\n"
+            f"💰 Ценность: {gift_val} ⭐\n"
+            f"👤 Игрок: {user_link} (ID: <code>{user.telegram_id}</code>)\n"
+            f"🕒 Создана: {wd.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
+            f"<i>Заявка {page} из {total}</i>"
+        )
+        
+        kb = [
+            [
+                InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"wd_appr_{wd.id}"),
+                InlineKeyboardButton(text="❌ Отклонить", callback_data=f"wd_rej_{wd.id}")
+            ]
+        ]
+        
+        # Кнопки навигации
+        nav = []
+        if page > 1:
+            nav.append(InlineKeyboardButton(text="⬅️ Пред.", callback_data=f"admin_pending_wd_{page-1}"))
+        if page < total:
+            nav.append(InlineKeyboardButton(text="След. ➡️", callback_data=f"admin_pending_wd_{page+1}"))
+            
+        if nav: kb.append(nav)
+        kb.append([InlineKeyboardButton(text="🏠 В меню", callback_data="admin_back")])
+        
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
+@router.callback_query(F.data.startswith("admin_history_wd_"))
+async def show_history_withdrawals(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS: return
+    
+    page = int(callback.data.split("_")[3])
+    limit = 10 # Показываем по 10 штук на странице
+    
+    async with async_session() as session:
+        # Ищем все, кроме 'pending' (то есть completed и rejected)
+        total = await session.scalar(select(func.count(Withdrawal.id)).where(Withdrawal.status != 'pending'))
+        
+        if total == 0:
+            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]])
+            return await callback.message.edit_text("🗄 <b>История пуста.</b>\nВы еще не обработали ни одной заявки.", parse_mode="HTML", reply_markup=kb)
+            
+        total_pages = math.ceil(total / limit)
+        if page > total_pages: page = total_pages
+        if page < 1: page = 1
+        
+        withdrawals = (await session.execute(
+            select(Withdrawal)
+            .where(Withdrawal.status != 'pending')
+            .order_by(desc(Withdrawal.completed_at))
+            .limit(limit)
+            .offset((page - 1) * limit)
+        )).scalars().all()
+        
+        text = f"🗄 <b>История обработанных заявок</b>\n<i>Страница {page} из {total_pages}</i>\n\n"
+        
+        for wd in withdrawals:
+            status_icon = "✅" if wd.status == 'completed' else "❌"
+            user = await session.get(User, wd.user_id)
+            uname = f"@{user.username}" if user and user.username else f"ID: {wd.user_id}"
+            date_str = wd.completed_at.strftime('%d.%m %H:%M') if wd.completed_at else '—'
+            
+            text += f"{status_icon} <b>#{wd.id}</b> | {uname} | {date_str}\n"
+            
+        kb = []
+        nav = []
+        if page > 1:
+            nav.append(InlineKeyboardButton(text="⬅️", callback_data=f"admin_history_wd_{page-1}"))
+        nav.append(InlineKeyboardButton(text=f"{page}/{total_pages}", callback_data="ignore"))
+        if page < total_pages:
+            nav.append(InlineKeyboardButton(text="➡️", callback_data=f"admin_history_wd_{page+1}"))
+            
+        if nav: kb.append(nav)
+        kb.append([InlineKeyboardButton(text="🏠 В меню", callback_data="admin_back")])
+        
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
 @router.message(Command("admin"))
 async def admin_panel(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:

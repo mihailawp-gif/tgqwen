@@ -813,7 +813,24 @@ function updateCrashUI(data) {
     const btn = document.getElementById('btnCrashAction');
     const rocket = document.getElementById('crashRocket');
 
+    // Отрисовка графики
     drawCrashCanvas(data.multiplier, data.state);
+
+    // --- 1. ГЛОБАЛЬНАЯ ПРОВЕРКА АВТОВЫВОДА (Даже при краше) ---
+    if (didIbet && !didIcashout) {
+        const myData = data.players.find(p => p.user_id === state.user.telegram_id);
+        if (myData && myData.cashout !== null) {
+            didIcashout = true;
+            state.user.balance += myData.profit; // Моментально обновляем визуал
+            updateUserDisplay();
+            document.getElementById('crashBalanceDisplay').textContent = state.user.balance;
+            loadUserBalance(); // Фоново синхронизируем с БД для 100% надежности
+            
+            showToast(`🚀 Автовывод! Вы забрали ${myData.profit} ⭐`);
+            if (window.playSuccessAnimation) window.playSuccessAnimation();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+    }
 
     if (data.state === 'WAITING') {
         rocket.style.display = 'none';
@@ -839,22 +856,6 @@ function updateCrashUI(data) {
         mulEl.textContent = data.multiplier.toFixed(2) + 'x';
         timerEl.style.display = 'none';
 
-        // --- ЛОГИКА АВТОВЫВОДА: Читаем с сервера, не вывели ли нас автоматически ---
-        if (didIbet && !didIcashout) {
-            const myData = data.players.find(p => p.user_id === state.user.telegram_id);
-            if (myData && myData.cashout !== null) {
-                // Сервер зафиксировал автовывод!
-                didIcashout = true;
-                state.user.balance += myData.profit;
-                updateUserDisplay();
-                document.getElementById('crashBalanceDisplay').textContent = state.user.balance;
-                
-                showToast(`🚀 Автовывод! Вы забрали ${myData.profit} ⭐`);
-                if (window.playSuccessAnimation) window.playSuccessAnimation();
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }
-        }
-
         if (didIbet && !didIcashout) {
             const currentProfit = Math.floor(myCrashBetAmount * data.multiplier);
             btn.innerHTML = `ЗАБРАТЬ ${currentProfit} <img src="/static/images/star.png" style="width:16px;height:16px;vertical-align:middle;position:relative;top:-2px;">`;
@@ -868,7 +869,8 @@ function updateCrashUI(data) {
     } 
     else if (data.state === 'CRASHED') {
         rocket.style.display = 'none';
-        mulEl.textContent = 'КРАШ @ ' + data.multiplier.toFixed(2) + 'x';
+        // --- 2. УБРАЛИ СИМВОЛ @ ИЗ ТЕКСТА ---
+        mulEl.textContent = 'КРАШ ' + data.multiplier.toFixed(2) + 'x';
         mulEl.classList.add('crashed');
         btn.textContent = 'РАУНД ЗАВЕРШЕН';
         btn.className = 'btn-open-case disabled';

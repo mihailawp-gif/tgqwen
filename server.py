@@ -239,6 +239,16 @@ async def crash_bet(request):
     data = await request.json()
     user_id = data.get('user_id')
     bet = int(data.get('bet', 0))
+    # ДОЛЖНО БЫТЬ ЭТО:
+    auto_cashout = data.get('auto_cashout') 
+
+    if auto_cashout is not None:
+        try:
+            auto_cashout = float(auto_cashout)
+            if auto_cashout < 1.01:
+                auto_cashout = None
+        except:
+            auto_cashout = None
 
     if crash_game.state != 'WAITING':
         return web.json_response({'success': False, 'error': 'Раунд уже начался!'})
@@ -252,25 +262,23 @@ async def crash_bet(request):
         if not user or user.balance < bet:
             return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
         
-        # Списываем баланс и создаем запись в БД
         user.balance -= bet
         new_bet = CrashBet(user_id=user.id, bet_amount=bet)
         session.add(new_bet)
         await session.commit()
         await session.refresh(new_bet)
 
-        # Добавляем в память движка (включая ID из БД)
         crash_game.players[user_id] = {
             'user_id': user_id,
-            'db_bet_id': new_bet.id, # <--- Сохранили ID ставки из базы
+            'db_bet_id': new_bet.id,
             'name': user.first_name or 'Игрок',
             'avatar': user.photo_url,
             'bet': bet,
             'cashout': None,
-            'profit': 0
+            'profit': 0,
+            'auto_cashout': auto_cashout # <--- И ВОТ ЭТА СТРОЧКА ДОЛЖНА БЫТЬ ТУТ
         }
         return web.json_response({'success': True, 'balance': user.balance})
-
 
 async def crash_cashout(request):
     """Забрать выигрыш (Вывод)"""

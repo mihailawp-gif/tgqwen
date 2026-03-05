@@ -757,7 +757,277 @@ async function collectMines() {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } else { showToast(res.error); }
 }
+// === ЛОГИКА CRASH (MULTIPLAYER) ===
+let crashSocket = null;
+let currentCrashState = 'WAITING';
+let myCrashBetAmount = 0;
+let didIbet = false;
+let didIcashout = false;
 
+function showCrashScreen() {
+    switchScreen('crash-screen');
+    document.getElementById('crashBalanceDisplay').textContent = state.user.balance || 0;
+    connectCrashWebSocket();
+    initCrashCanvas();
+}
+
+function connectCrashWebSocket() {
+    if (crashSocket) return; // Уже подключен
+    
+    // Определяем протокол (ws:// для локалки, wss:// для продакшена)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    crashSocket = new WebSocket(`${protocol}//${host}/api/crash/ws`);
+
+    crashSocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateCrashUI(data);
+    };
+
+    crashSocket.onclose = () => {
+        crashSocket = null;
+        // Переподключение если экран все еще открыт
+        if (document.getElementById('crash-screen').classList.contains('active')) {
+            setTimeout(connectCrashWebSocket, 2000);
+        }
+    };
+}
+
+function updateCrashUI(data) {
+    currentCrashState = data.state;
+    const mulEl = document.getElementById('crashMultiplier');
+    const timerEl = document.getElementById('crashTimer');
+    const btn = document.getElementById('btnCrashAction');
+
+    // Отрисовка графики
+    drawCrashCanvas(data.multiplier, data.state);
+
+    if (data.state === 'WAITING') {
+        mulEl.textContent = '1.00x';
+        mulEl.classList.remove('crashed');
+        timerEl.style.display = 'block';
+        timerEl.textContent = `Запуск через ${data.timer.toFixed(1)}s`;
+        
+        // Сброс кнопок в начале раунда
+        if (data.timer > 7.5) { // Самое начало таймера
+            didIbet = false;
+            didIcashout = false;
+        }
+
+        if (!didIbet) {
+            btn.textContent = 'СДЕЛАТЬ СТАВКУ';
+            btn.className = 'btn-open-case';
+            btn.disabled = false;
+        } else {
+            btn.textContent = 'ОЖИДАНИЕ ИГРЫ...';
+            btn.className = 'btn-open-case disabled';
+            btn.disabled = true;
+        }
+    } 
+    else if (data.state === 'FLYING') {
+        mulEl.textContent = data.multiplier.toFixed(2) + 'x';
+        timerEl.style.display = 'none';
+
+        if (didIbet && !didIcashout) {
+            const currentProfit = Math.floor(myCrashBetAmount * data.multiplier);
+            btn.innerHTML = `ЗАБРАТЬ ${currentProfit} ⭐`;
+            btn.className = 'btn-open-case btn-cashout';
+            btn.disabled = false;
+        } else {
+            btn.textContent = 'ИДЕТ ИГРА...';
+            btn.className = 'btn-open-case disabled';
+            btn.disabled = true;
+        }
+    } 
+    else if (data.state === 'CRASHED') {
+        mulEl.textContent = 'CRASHED @ ' + data.multiplier.toFixed(2) + 'x';
+        mulEl.classList.add('crashed');
+        btn.textContent = 'РАУНД ЗАВЕРШЕН';
+        btn.className = 'btn-open-case disabled';
+        btn.disabled = true;
+        if (didIbet && !didIcashout) {
+            // Проиграли
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            didIbet = false;
+        }
+    }
+
+    // Отрисовка ленты истории
+    const histContainer = document.getElementById('crashHistory');
+    histContainer.innerHTML = '';
+    data.history.forEach(x => {
+        const el = document.createElement('div');
+        el.className = `crash-hist-item ${x >= 10 ? 'epic' : (x >= 2 ? 'good' : '')}`;
+        el.textContent = x.toFixed(2) + 'x';
+        histContainer.appendChild(el);
+    });
+
+    // Отрисовка игроков
+    document.getElementById('crashTotalPlayers').textContent = data.players.length;
+    const list = document.getElementById('crashPlayersList');
+    list.innerHTML = '';
+    
+    // Сортировка: выведшие сверху
+    const sortedPlayers = data.players.sort((a, b) => {
+        if (a.cashout && !b.cashout) return -1;
+        if (!a.cashout && b.cashout) return 1;
+        return b.bet - a.bet;
+    });
+
+    sortedPlayers.forEach(p => {
+        const pEl = document.createElement('div');
+        pEl.className = 'crash-player-item';
+        
+        let statusHtml = `<div class="crash-player-bet"><img src="/static/images/star.png">${p.bet}</div>`;
+        if (p.cashout) {
+            statusHtml = `<div class="crash-player-win">${p.cashout.toFixed(2)}x (+${p.profit} ⭐)</div>`;
+        } else if (data.state === 'CRASHED') {
+            statusHtml = `<div class="crash-player-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
+        }
+
+        const avatar = p.avatar ? `<img src="${p.avatar}">` : '👤';
+        pEl.innerHTML = `
+            <div class="crash-player-left">
+                <div class="crash-player-avatar">${avatar}</div>
+                <div class="crash-player-name">${p.name}</div>
+            </div>
+            ${statusHtml}
+        `;
+        list.appendChild(pEl);
+    });
+}
+
+function modifyCrashBet(action, val) {
+    if (didIbet && currentCrashState === 'WAITING') return;
+    const input = document.getElementById('crashBet');
+    let current = parseInt(input.value) || 0;
+    if (action === 'add') current += val;
+    if (action === 'mult') current = Math.floor(current * val);
+    if (action === 'clear') current = 0;
+    input.value = current;
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+async function actionCrash() {
+    if (currentCrashState === 'WAITING' && !didIbet) {
+        // Делаем ставку
+        const bet = parseInt(document.getElementById('crashBet').value);
+        if (isNaN(bet) || bet <= 0) return showToast('❌ Введите ставку');
+        if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
+
+        const btn = document.getElementById('btnCrashAction');
+        btn.disabled = true;
+
+        const res = await apiRequest('/crash/bet', 'POST', { user_id: state.user.telegram_id, bet });
+        if (res.success) {
+            myCrashBetAmount = bet;
+            didIbet = true;
+            state.user.balance = res.balance;
+            updateUserDisplay();
+            document.getElementById('crashBalanceDisplay').textContent = state.user.balance;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        } else {
+            showToast(res.error);
+            btn.disabled = false;
+        }
+    } 
+    else if (currentCrashState === 'FLYING' && didIbet && !didIcashout) {
+        // Забираем (Cashout)
+        const res = await apiRequest('/crash/cashout', 'POST', { user_id: state.user.telegram_id });
+        if (res.success) {
+            didIcashout = true;
+            state.user.balance = res.balance;
+            updateUserDisplay();
+            document.getElementById('crashBalanceDisplay').textContent = state.user.balance;
+            showToast(`Успех! Выведено ${res.win_amount} ⭐`);
+            if (window.playSuccessAnimation) window.playSuccessAnimation();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            showToast(res.error); // Скорее всего сервер уже крашнулся
+        }
+    }
+}
+
+// Отрисовка графика Canvas
+let crashCtx = null, crashCanvas = null;
+function initCrashCanvas() {
+    crashCanvas = document.getElementById('crashCanvas');
+    crashCtx = crashCanvas.getContext('2d');
+    const resize = () => {
+        crashCanvas.width = crashCanvas.parentElement.clientWidth;
+        crashCanvas.height = crashCanvas.parentElement.clientHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+}
+
+function drawCrashCanvas(multiplier, stateStr) {
+    if (!crashCtx) return;
+    const w = crashCanvas.width;
+    const h = crashCanvas.height;
+    
+    crashCtx.clearRect(0, 0, w, h);
+    
+    if (stateStr === 'WAITING') {
+        // Рисуем плоскую стартовую линию
+        crashCtx.beginPath();
+        crashCtx.moveTo(0, h - 10);
+        crashCtx.lineTo(w, h - 10);
+        crashCtx.strokeStyle = 'rgba(255,255,255,0.1)';
+        crashCtx.lineWidth = 2;
+        crashCtx.stroke();
+        return;
+    }
+
+    // Вычисляем высоту кривой на основе множителя
+    // Чем больше множитель, тем выше линия задирается
+    let progress = Math.min((multiplier - 1) / 3, 1); // Максимальный изгиб достигается к x4.00
+    
+    const startX = 0;
+    const startY = h - 10;
+    const endX = w * 0.9; // Линия идет до 90% ширины
+    const endY = h - 10 - (h - 40) * progress;
+    const ctrlX = w * 0.6 * progress; // Точка изгиба
+    const ctrlY = h - 10;
+
+    // Градиент для линии
+    const grad = crashCtx.createLinearGradient(0, h, w, 0);
+    grad.addColorStop(0, '#f59e0b');
+    grad.addColorStop(1, stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6');
+
+    // Рисуем заливку (свечение)
+    crashCtx.beginPath();
+    crashCtx.moveTo(startX, h);
+    crashCtx.lineTo(startX, startY);
+    crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+    crashCtx.lineTo(endX, h);
+    crashCtx.closePath();
+    
+    const fillGrad = crashCtx.createLinearGradient(0, 0, 0, h);
+    fillGrad.addColorStop(0, stateStr === 'CRASHED' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.3)');
+    fillGrad.addColorStop(1, 'transparent');
+    crashCtx.fillStyle = fillGrad;
+    crashCtx.fill();
+
+    // Рисуем саму кривую
+    crashCtx.beginPath();
+    crashCtx.moveTo(startX, startY);
+    crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+    crashCtx.strokeStyle = grad;
+    crashCtx.lineWidth = 4;
+    crashCtx.lineCap = 'round';
+    crashCtx.stroke();
+
+    // Рисуем "Комету" на конце
+    crashCtx.beginPath();
+    crashCtx.arc(endX, endY, 6, 0, Math.PI * 2);
+    crashCtx.fillStyle = '#fff';
+    crashCtx.fill();
+    crashCtx.shadowColor = stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6';
+    crashCtx.shadowBlur = 15;
+    crashCtx.fill();
+    crashCtx.shadowBlur = 0; // Сброс
+}
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
     openProfileTab();

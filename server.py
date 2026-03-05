@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import random
 import json
+import math
 MINES_BANK = 10000
 
 
@@ -130,7 +131,153 @@ async def init_user(request):
                 'referrer_id': user.referrer_id
             }
         })
+import math
 
+# === ДВИЖОК ИГРЫ КРАШ (LIVE MULTIPLAYER) ===
+class CrashEngine:
+    def __init__(self):
+        self.state = 'WAITING'  # Состояния: WAITING, FLYING, CRASHED
+        self.multiplier = 1.00
+        self.crash_point = 1.00
+        self.timer = 10.0       # Время на ставки (секунды)
+        self.players = {}       # Активные ставки (telegram_id -> данные)
+        self.history = []       # История последних иксов
+        self.clients = set()    # Подключенные WebSocket клиенты
+        self.start_time = 0
+
+    def generate_crash(self):
+        # Алгоритм честного рандома с выгодой казино ~5%
+        if random.random() < 0.05: 
+            return 1.00 # 5% шанс на моментальный взрыв (x1.00)
+        
+        # Математика рулеток: 0.99 / (1 - random)
+        val = 0.99 / (1.0 - random.random())
+        return round(max(1.00, val), 2)
+
+    async def broadcast(self):
+        if not self.clients: return
+        msg = json.dumps({
+            'state': self.state,
+            'multiplier': round(self.multiplier, 2),
+            'timer': round(self.timer, 1),
+            'players': list(self.players.values()),
+            'history': self.history
+        })
+        # Копируем сет, чтобы избежать ошибки изменения во время итерации
+        for ws in list(self.clients):
+            try:
+                await ws.send_str(msg)
+            except:
+                self.clients.discard(ws)
+
+    async def run_loop(self):
+        while True:
+            if self.state == 'WAITING':
+                self.multiplier = 1.00
+                self.players = {}
+                self.timer = 8.0 # 8 секунд между раундами
+                
+                while self.timer > 0:
+                    await self.broadcast()
+                    await asyncio.sleep(0.1)
+                    self.timer -= 0.1
+                
+                self.crash_point = self.generate_crash()
+                self.state = 'FLYING'
+                self.start_time = asyncio.get_event_loop().time()
+                
+            elif self.state == 'FLYING':
+                t = asyncio.get_event_loop().time() - self.start_time
+                # Плавный экспоненциальный рост икса (как в настоящих казино)
+                self.multiplier = max(1.0, math.pow(math.e, t / 10.0))
+                
+                if self.multiplier >= self.crash_point:
+                    self.multiplier = self.crash_point
+                    self.state = 'CRASHED'
+                    self.history.insert(0, self.crash_point)
+                    if len(self.history) > 15: self.history.pop() # Храним 15 игр
+                    
+                    await self.broadcast()
+                    await asyncio.sleep(4.0) # Пауза перед новым раундом
+                    self.state = 'WAITING'
+                else:
+                    await self.broadcast()
+                    await asyncio.sleep(0.1) # 10 тиков в секунду (оптимально)
+
+crash_game = CrashEngine()
+
+# --- API ЭНДПОИНТЫ КРАША ---
+async def crash_ws(request):
+    """Подключение по WebSocket для получения Live-данных"""
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+    crash_game.clients.add(ws)
+    try:
+        async for msg in ws: pass # Просто держим соединение
+    finally:
+        crash_game.clients.discard(ws)
+    return ws
+
+async def crash_bet(request):
+    """Сделать ставку"""
+    data = await request.json()
+    user_id = data.get('user_id')
+    bet = int(data.get('bet', 0))
+
+    if crash_game.state != 'WAITING':
+        return web.json_response({'success': False, 'error': 'Раунд уже начался!'})
+    if bet < 1:
+        return web.json_response({'success': False, 'error': 'Минимальная ставка 1 ⭐'})
+    if user_id in crash_game.players:
+        return web.json_response({'success': False, 'error': 'Вы уже поставили в этом раунде!'})
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        if not user or user.balance < bet:
+            return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
+        
+        user.balance -= bet
+        await session.commit()
+
+        # Добавляем в память движка
+        crash_game.players[user_id] = {
+            'user_id': user_id,
+            'name': user.first_name or 'Игрок',
+            'avatar': user.photo_url,
+            'bet': bet,
+            'cashout': None,
+            'profit': 0
+        }
+        return web.json_response({'success': True, 'balance': user.balance})
+
+async def crash_cashout(request):
+    """Забрать выигрыш (Вывод)"""
+    data = await request.json()
+    user_id = data.get('user_id')
+
+    if crash_game.state != 'FLYING':
+        return web.json_response({'success': False, 'error': 'Раунд завершен!'})
+    if user_id not in crash_game.players:
+        return web.json_response({'success': False, 'error': 'Вы не делали ставку!'})
+    
+    player = crash_game.players[user_id]
+    if player['cashout'] is not None:
+        return web.json_response({'success': False, 'error': 'Уже забрали!'})
+
+    # Фиксируем выигрыш по текущему иксу сервера (защита от читов)
+    current_mul = crash_game.multiplier
+    win_amount = int(player['bet'] * current_mul)
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        user.balance += win_amount
+        await session.commit()
+
+        player['cashout'] = current_mul
+        player['profit'] = win_amount
+        
+        return web.json_response({'success': True, 'balance': user.balance, 'win_amount': win_amount, 'multiplier': current_mul})
+        
 async def list_cases(request):
     async with async_session() as session:
         result = await session.execute(select(Case).where(Case.is_active == True))
@@ -607,6 +754,9 @@ async def create_app():
         web.post('/api/mines/start', mines_start),
         web.post('/api/mines/click', mines_click),
         web.post('/api/mines/collect', mines_collect),
+        web.get('/api/crash/ws', crash_ws),
+        web.post('/api/crash/bet', crash_bet),
+        web.post('/api/crash/cashout', crash_cashout),
     ]
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))
@@ -623,6 +773,7 @@ async def init_app():
     await runner.setup()
     host, port = os.getenv('HOST', '0.0.0.0'), int(os.getenv('PORT', 8443))
     site = web.TCPSite(runner, host, port)
+    asyncio.create_task(crash_game.run_loop())
     await site.start()
     print("🚀 Server Started!")
     try:

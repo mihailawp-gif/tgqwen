@@ -416,51 +416,48 @@ function showToast(message) {
     const toast = document.getElementById('toast'); 
     if(!toast) return;
     
-    // Очищаем предыдущий таймер, чтобы анимации не наслаивались
     if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    toast.innerHTML = ''; 
     
-    toast.innerHTML = ''; // Очищаем старое содержимое
+    // АВТОМАТИЧЕСКИ МЕНЯЕМ ВСЕ ЭМОДЗИ ЗВЕЗД НА КАРТИНКУ
+    const starImg = '<img src="/static/images/star.png" style="width:16px;height:16px;vertical-align:middle;position:relative;top:-2px;">';
+    let formattedMessage = message.replace(/⭐/g, starImg);
     
-    // Проверяем, есть ли крестик в сообщении (означает ошибку)
-    if (message.includes('❌')) {
-        // Настраиваем Flexbox для ровного выравнивания иконки и текста
+    if (formattedMessage.includes('❌')) {
         toast.style.display = 'flex';
         toast.style.alignItems = 'center';
         toast.style.justifyContent = 'center';
         toast.style.gap = '8px';
         
-        // Создаем контейнер для Lottie-анимации
         const animDiv = document.createElement('div');
         animDiv.style.width = '24px';
         animDiv.style.height = '24px';
         animDiv.style.flexShrink = '0';
         
-        // Создаем текстовый блок (вырезаем сам крестик из текста)
         const textSpan = document.createElement('span');
-        textSpan.innerHTML = message.replace('❌', '').trim();
+        // Вставляем как HTML, чтобы картинка отрендерилась
+        textSpan.innerHTML = formattedMessage.replace('❌', '').trim();
         
         toast.appendChild(animDiv);
         toast.appendChild(textSpan);
         
-        // Запускаем Lottie-анимацию
         try {
             bodymovin.loadAnimation({
                 container: animDiv,
                 renderer: 'svg',
-                loop: false,      // Не зацикливаем, проигрываем 1 раз
-                autoplay: true,   // Запускаем сразу при появлении
+                loop: false,
+                autoplay: true,
                 animationData: ERROR_ANIMATION_JSON
             });
         } catch (e) {
             console.error("Ошибка загрузки Lottie-анимации:", e);
         }
     } else {
-        // Обычное сообщение (например, успешное действие)
-        toast.style.display = 'block'; // Сбрасываем flex
-        toast.textContent = message;
+        toast.style.display = 'block'; 
+        // ИСПРАВЛЕНИЕ: Используем innerHTML вместо textContent
+        toast.innerHTML = formattedMessage; 
     }
 
-    // Показываем уведомление
     toast.classList.add('show'); 
     window.toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
 }
@@ -724,7 +721,7 @@ async function clickMine(index) {
             cell.style.opacity = '1'; // Возвращаем нормальную прозрачность
             cell.classList.add('success');
             cell.innerHTML = ICON_DIAMOND;
-            document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`;
+            document.getElementById('btnMinesAction').innerHTML = `Забрать: ${res.win_amount} <img src="/static/images/star.png" style="width:18px;height:18px;vertical-align:middle;position:relative;top:-1px;">`;
             renderMultipliers(res.step); 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
@@ -752,7 +749,7 @@ async function collectMines() {
         btn.onclick = startMines;
         btn.className = 'btn-open-case';
         
-        showToast(`Вы забрали ${res.win_amount} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+        showToast(`Вы забрали ${res.win_amount} ⭐`);
         if (window.playSuccessAnimation) window.playSuccessAnimation();
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     } else { showToast(res.error); }

@@ -1,20 +1,25 @@
 /**
- * TGS Manager v12 — ULTRA FAST & NON-BLOCKING
+ * TGS Manager v13 — LAZY LOAD & ANTI-BLANK FIX
  */
 
 const _inst  = new Map();
-const _cache = new Map(); // Promises of JSON data
+const _cache = new Map();
 
-// Умная пауза для анимаций вне зоны видимости экрана
+// Наблюдатель: ставит на паузу анимации, которые ушли за пределы экрана при скролле
 const _obs = new IntersectionObserver(entries => {
     entries.forEach(e => {
         const it = _inst.get(e.target.id);
         if (!it) return;
-        try { e.isIntersecting ? it.play() : it.pause(); } catch(_){}
+        try {
+            if (e.isIntersecting) {
+                it.play();
+            } else {
+                it.pause();
+            }
+        } catch(_){}
     });
-}, { rootMargin: '300px', threshold: 0 });
+}, { rootMargin: '200px', threshold: 0 });
 
-// Распаковщик (с поддержкой нативного DecompressionStream)
 async function _gunzip(buf) {
     if (typeof DecompressionStream !== 'undefined') {
         try {
@@ -32,7 +37,7 @@ async function _gunzip(buf) {
             const merged = new Uint8Array(out.reduce((n,c)=>n+c.length,0));
             let i = 0; for (const c of out) { merged.set(c,i); i+=c.length; }
             return new TextDecoder().decode(merged);
-        } catch(e) { /* fallback */ }
+        } catch(e) { /* fallthrough */ }
     }
     if (window.fflate) {
         return new Promise((res,rej) =>
@@ -42,7 +47,6 @@ async function _gunzip(buf) {
     throw new Error('no decompressor');
 }
 
-// Загрузка с форсированным кэшированием браузера
 function _load(url) {
     if (!_cache.has(url)) {
         const promise = fetch(url, { cache: 'force-cache', priority: 'high' })
@@ -53,7 +57,7 @@ function _load(url) {
             .then(_gunzip)
             .then(JSON.parse)
             .catch(e => {
-                _cache.delete(url); // Если ошибка сети - удаляем из кэша для повторной попытки
+                _cache.delete(url);
                 throw e;
             });
         _cache.set(url, promise);
@@ -61,7 +65,6 @@ function _load(url) {
     return _cache.get(url);
 }
 
-// Асинхронная очередь рендеринга (спасает от зависания UI при спавне рулетки)
 const _renderQueue = [];
 let _queueRunning = false;
 
@@ -69,17 +72,14 @@ async function _processQueue() {
     if (_queueRunning) return;
     _queueRunning = true;
     while (_renderQueue.length > 0) {
-        // Отрисовываем по 4 иконки за 1 кадр экрана, чтобы телефон не "подавился"
-        const batch = _renderQueue.splice(0, 4);
+        const batch = _renderQueue.splice(0, 5); // Рендерим по 5 штук за кадр
         batch.forEach(task => task());
         await new Promise(r => requestAnimationFrame(r));
     }
     _queueRunning = false;
 }
 
-// Главная функция рендера
 async function renderTGS(id, num) {
-    // Очистка старой инстанции
     if (_inst.has(id)) {
         try { _inst.get(id).destroy(); } catch(_) {}
         const el = document.getElementById(id);
@@ -93,12 +93,9 @@ async function renderTGS(id, num) {
     let px = parseInt(el.dataset.sz || el.style.width) || 80;
 
     try {
-        // Моментально запускаем скачивание
         const data = await _load(`/static/images/gift_limited_${num}.tgs`);
-        
-        if (!document.getElementById(id)) return; // Элемент удалили пока шла загрузка
+        if (!document.getElementById(id)) return;
 
-        // Закидываем тяжелую сборку SVG в очередь
         _renderQueue.push(() => {
             const targetEl = document.getElementById(id);
             if (!targetEl) return;
@@ -113,7 +110,7 @@ async function renderTGS(id, num) {
                 container: targetEl,
                 renderer: 'svg',
                 loop: true,
-                autoplay: false, // Отключаем автоплей (запустит Observer)
+                autoplay: true, // Запускаем сразу, чтобы не было пустых черных дыр
                 animationData: data,
                 rendererSettings: { preserveAspectRatio: 'xMidYMid meet' }
             });
@@ -123,18 +120,16 @@ async function renderTGS(id, num) {
                 if (!svg) return;
                 svg.setAttribute('width', px);
                 svg.setAttribute('height', px);
-                // translate3d(0,0,0) включает аппаратное ускорение GPU на телефонах
                 svg.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translate3d(0,0,0);`;
             };
 
             anim.addEventListener('DOMLoaded', () => {
                 fixSvg();
-                _obs.observe(targetEl); // Смотрим за элементом (старт/пауза)
+                _obs.observe(targetEl);
             });
 
             _inst.set(id, anim);
         });
-        
         _processQueue();
 
     } catch(e) {
@@ -147,7 +142,13 @@ async function renderTGS(id, num) {
 
 function initAllTGS() {
     document.querySelectorAll('[data-tgs]').forEach(el => {
-        if (!el.id || _inst.has(el.id)) return;
+        // МЕГА-ФИКС: Игнорируем гифты, которые сейчас спрятаны на других вкладках/экранах!
+        if (el.closest('.screen:not(.active)') || el.closest('.tab-content:not(.active)')) return;
+
+        // Если у контейнера нет id (например, в инвентаре), генерируем случайный
+        if (!el.id) el.id = 'tgs_' + Math.random().toString(36).substr(2, 9);
+        
+        if (_inst.has(el.id)) return;
         const n = parseInt(el.dataset.tgs, 10);
         if (n >= 1) renderTGS(el.id, n);
     });
@@ -160,13 +161,7 @@ function destroyAllTGS() {
         if (el) { _obs.unobserve(el); el.innerHTML=''; }
     });
     _inst.clear();
-    _renderQueue.length = 0; // Очищаем очередь
-}
-
-// Предзагрузка (сохраняет в кэш заранее)
-function preloadTGS(nums) {
-    const unique = [...new Set(nums)].filter(n => n >= 1);
-    unique.forEach(n => _load(`/static/images/gift_limited_${n}.tgs`).catch(()=>{}));
+    _renderQueue.length = 0;
 }
 
 function tgsEl(id, num, size='80px') {
@@ -174,17 +169,15 @@ function tgsEl(id, num, size='80px') {
     return `<div id="${id}" data-tgs="${num}" data-sz="${px}" style="width:${px}px;height:${px}px;display:block;overflow:hidden;flex-shrink:0;"></div>`;
 }
 
-window.tgsManager    = { initAllOnPage: initAllTGS, destroyAll: destroyAllTGS, preload: preloadTGS };
+window.tgsManager    = { initAllOnPage: initAllTGS, destroyAll: destroyAllTGS };
 window.renderTGS     = renderTGS;
 window.initAllTGS    = initAllTGS;
 window.destroyAllTGS = destroyAllTGS;
 window.tgsEl         = tgsEl;
-window.preloadTGS    = preloadTGS;
 
 // ── SUCCESS ANIMATION (FIREWORKS) ──
 function playSuccessAnimation() {
     let container = document.getElementById('celebration-container');
-    
     if (!container) {
         container = document.createElement('div');
         container.id = 'celebration-container';
@@ -218,5 +211,4 @@ function playSuccessAnimation() {
         setTimeout(() => { container.innerHTML = ''; }, 300);
     }, 2500);
 }
-
 window.playSuccessAnimation = playSuccessAnimation;

@@ -141,7 +141,17 @@ class MinesGame(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
+class CrashBet(Base):
+    __tablename__ = "crash_bets"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    bet_amount = Column(Integer, nullable=False)
+    cashout_multiplier = Column(Float, nullable=True) # Икс вывода (None, если не успел и сгорел)
+    win_amount = Column(Integer, nullable=True)       # Сумма выигрыша (None, если сгорел)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
+    user = relationship("User")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./database/cases.db")
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):

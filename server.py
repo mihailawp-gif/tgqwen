@@ -44,7 +44,7 @@ MINES_COEFS = {
 
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet
 )
 
 load_dotenv()
@@ -236,12 +236,17 @@ async def crash_bet(request):
         if not user or user.balance < bet:
             return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
         
+        # Списываем баланс и создаем запись в БД
         user.balance -= bet
+        new_bet = CrashBet(user_id=user.id, bet_amount=bet)
+        session.add(new_bet)
         await session.commit()
+        await session.refresh(new_bet)
 
-        # Добавляем в память движка
+        # Добавляем в память движка (включая ID из БД)
         crash_game.players[user_id] = {
             'user_id': user_id,
+            'db_bet_id': new_bet.id, # <--- Сохранили ID ставки из базы
             'name': user.first_name or 'Игрок',
             'avatar': user.photo_url,
             'bet': bet,
@@ -249,6 +254,7 @@ async def crash_bet(request):
             'profit': 0
         }
         return web.json_response({'success': True, 'balance': user.balance})
+
 
 async def crash_cashout(request):
     """Забрать выигрыш (Вывод)"""
@@ -264,12 +270,19 @@ async def crash_cashout(request):
     if player['cashout'] is not None:
         return web.json_response({'success': False, 'error': 'Уже забрали!'})
 
-    # Фиксируем выигрыш по текущему иксу сервера (защита от читов)
+    # Фиксируем выигрыш по текущему иксу сервера
     current_mul = crash_game.multiplier
     win_amount = int(player['bet'] * current_mul)
 
     async with async_session() as session:
         user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        
+        # Находим ставку в БД и обновляем её статус (победа)
+        bet_record = await session.get(CrashBet, player['db_bet_id'])
+        if bet_record:
+            bet_record.cashout_multiplier = current_mul
+            bet_record.win_amount = win_amount
+            
         user.balance += win_amount
         await session.commit()
 

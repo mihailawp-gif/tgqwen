@@ -758,6 +758,7 @@ async function collectMines() {
     } else { showToast(res.error); }
 }
 // === ЛОГИКА CRASH (MULTIPLAYER) ===
+// === ЛОГИКА CRASH (MULTIPLAYER) ===
 let crashSocket = null;
 let currentCrashState = 'WAITING';
 let myCrashBetAmount = 0;
@@ -772,9 +773,8 @@ function showCrashScreen() {
 }
 
 function connectCrashWebSocket() {
-    if (crashSocket) return; // Уже подключен
+    if (crashSocket) return; 
     
-    // Определяем протокол (ws:// для локалки, wss:// для продакшена)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     crashSocket = new WebSocket(`${protocol}//${host}/api/crash/ws`);
@@ -786,7 +786,6 @@ function connectCrashWebSocket() {
 
     crashSocket.onclose = () => {
         crashSocket = null;
-        // Переподключение если экран все еще открыт
         if (document.getElementById('crash-screen').classList.contains('active')) {
             setTimeout(connectCrashWebSocket, 2000);
         }
@@ -799,7 +798,6 @@ function updateCrashUI(data) {
     const timerEl = document.getElementById('crashTimer');
     const btn = document.getElementById('btnCrashAction');
 
-    // Отрисовка графики
     drawCrashCanvas(data.multiplier, data.state);
 
     if (data.state === 'WAITING') {
@@ -808,8 +806,7 @@ function updateCrashUI(data) {
         timerEl.style.display = 'block';
         timerEl.textContent = `Запуск через ${data.timer.toFixed(1)}s`;
         
-        // Сброс кнопок в начале раунда
-        if (data.timer > 7.5) { // Самое начало таймера
+        if (data.timer > 7.5) { 
             didIbet = false;
             didIcashout = false;
         }
@@ -846,13 +843,11 @@ function updateCrashUI(data) {
         btn.className = 'btn-open-case disabled';
         btn.disabled = true;
         if (didIbet && !didIcashout) {
-            // Проиграли
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
             didIbet = false;
         }
     }
 
-    // Отрисовка ленты истории
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach(x => {
@@ -862,12 +857,10 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
-    // Отрисовка игроков
     document.getElementById('crashTotalPlayers').textContent = data.players.length;
     const list = document.getElementById('crashPlayersList');
     list.innerHTML = '';
     
-    // Сортировка: выведшие сверху
     const sortedPlayers = data.players.sort((a, b) => {
         if (a.cashout && !b.cashout) return -1;
         if (!a.cashout && b.cashout) return 1;
@@ -910,7 +903,6 @@ function modifyCrashBet(action, val) {
 
 async function actionCrash() {
     if (currentCrashState === 'WAITING' && !didIbet) {
-        // Делаем ставку
         const bet = parseInt(document.getElementById('crashBet').value);
         if (isNaN(bet) || bet <= 0) return showToast('❌ Введите ставку');
         if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
@@ -932,7 +924,6 @@ async function actionCrash() {
         }
     } 
     else if (currentCrashState === 'FLYING' && didIbet && !didIcashout) {
-        // Забираем (Cashout)
         const res = await apiRequest('/crash/cashout', 'POST', { user_id: state.user.telegram_id });
         if (res.success) {
             didIcashout = true;
@@ -943,12 +934,11 @@ async function actionCrash() {
             if (window.playSuccessAnimation) window.playSuccessAnimation();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         } else {
-            showToast(res.error); // Скорее всего сервер уже крашнулся
+            showToast(res.error); 
         }
     }
 }
 
-// Отрисовка графика Canvas
 let crashCtx = null, crashCanvas = null;
 function initCrashCanvas() {
     crashCanvas = document.getElementById('crashCanvas');
@@ -969,7 +959,6 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.clearRect(0, 0, w, h);
     
     if (stateStr === 'WAITING') {
-        // Рисуем плоскую стартовую линию
         crashCtx.beginPath();
         crashCtx.moveTo(0, h - 10);
         crashCtx.lineTo(w, h - 10);
@@ -979,23 +968,19 @@ function drawCrashCanvas(multiplier, stateStr) {
         return;
     }
 
-    // Вычисляем высоту кривой на основе множителя
-    // Чем больше множитель, тем выше линия задирается
-    let progress = Math.min((multiplier - 1) / 3, 1); // Максимальный изгиб достигается к x4.00
+    let progress = Math.min((multiplier - 1) / 3, 1); 
     
     const startX = 0;
     const startY = h - 10;
-    const endX = w * 0.9; // Линия идет до 90% ширины
+    const endX = w * 0.9; 
     const endY = h - 10 - (h - 40) * progress;
-    const ctrlX = w * 0.6 * progress; // Точка изгиба
+    const ctrlX = w * 0.6 * progress; 
     const ctrlY = h - 10;
 
-    // Градиент для линии
     const grad = crashCtx.createLinearGradient(0, h, w, 0);
     grad.addColorStop(0, '#f59e0b');
     grad.addColorStop(1, stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6');
 
-    // Рисуем заливку (свечение)
     crashCtx.beginPath();
     crashCtx.moveTo(startX, h);
     crashCtx.lineTo(startX, startY);
@@ -1009,7 +994,6 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.fillStyle = fillGrad;
     crashCtx.fill();
 
-    // Рисуем саму кривую
     crashCtx.beginPath();
     crashCtx.moveTo(startX, startY);
     crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
@@ -1018,7 +1002,6 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.lineCap = 'round';
     crashCtx.stroke();
 
-    // Рисуем "Комету" на конце
     crashCtx.beginPath();
     crashCtx.arc(endX, endY, 6, 0, Math.PI * 2);
     crashCtx.fillStyle = '#fff';
@@ -1026,7 +1009,7 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.shadowColor = stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6';
     crashCtx.shadowBlur = 15;
     crashCtx.fill();
-    crashCtx.shadowBlur = 0; // Сброс
+    crashCtx.shadowBlur = 0; 
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

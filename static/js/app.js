@@ -207,8 +207,17 @@ function startPreviewRoulette() {
     const track = document.getElementById('previewRouletteTrack');
     if (!track) return;
     stopPreviewRoulette();
-    const loopWidth = (track.children.length / 2) * 126; let currentX = 0;
-    function loop() { currentX -= 0.35; if (Math.abs(currentX) >= loopWidth) currentX = 0; track.style.transform = `translateX(${currentX}px)`; window._previewRAFId = requestAnimationFrame(loop); }
+    const loopWidth = (track.children.length / 2) * 126; 
+    let currentX = 0;
+    
+    function loop() { 
+        currentX -= 0.35; 
+        if (Math.abs(currentX) >= loopWidth) currentX = 0; 
+        // ИСПОЛЬЗУЕМ 3D ТРАНСФОРМАЦИЮ ДЛЯ АППАРАТНОГО УСКОРЕНИЯ (GPU)
+        track.style.transform = `translate3d(${currentX}px, 0, 0)`; 
+        window._previewRAFId = requestAnimationFrame(loop); 
+    }
+    
     window._previewRAFId = requestAnimationFrame(loop);
 }
 

@@ -345,20 +345,16 @@ function switchTab(tabName) {
     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    // Правильно подсвечиваем кнопку в меню
     const navTab = tabName === 'cases' ? 'main' : tabName;
     const activeTab = document.querySelector(`.nav-item[data-tab="${navTab}"]`); 
     if (activeTab) activeTab.classList.add('active');
     
-    // Показываем контент вкладки
     const tabContent = document.getElementById(`${tabName}-tab`); 
     if (tabContent) tabContent.classList.add('active');
 
-    // Скрываем шапку в профиле
     const header = document.getElementById('mainHeader');
     if (header) header.style.display = (tabName === 'profile') ? 'none' : 'flex';
 
-    // Управление нативной кнопкой "Назад" (с проверкой на наличие tg.BackButton)
     if (tg && tg.BackButton) {
         if (tabName === 'cases' || tabName === 'inventory' || tabName === 'profile') {
             tg.BackButton.show();
@@ -366,12 +362,20 @@ function switchTab(tabName) {
             tg.BackButton.hide();
         }
     }
+
+    // ВАЖНО: Восстанавливаем анимации при переходе во вкладку (например, в Инвентарь)
+    setTimeout(() => { if (window.initAllTGS) window.initAllTGS(); }, 50);
 }
 
 function switchScreen(screenName) {
-    if (window.tgsManager) window.tgsManager.destroyAll();
+    if (window.tgsManager) window.tgsManager.destroyAll(); // Очищаем память от старого экрана
+    
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const screen = document.getElementById(screenName); if (screen) screen.classList.add('active');
+    const screen = document.getElementById(screenName); 
+    if (screen) screen.classList.add('active');
+
+    // ВАЖНО: Заново рендерим анимации для нового активного экрана (или при возврате на Главную)
+    setTimeout(() => { if (window.initAllTGS) window.initAllTGS(); }, 50);
 }
 
 // === TOPUP ===

@@ -134,48 +134,54 @@ async def init_user(request):
 import math
 
 # === ДВИЖОК ИГРЫ КРАШ (LIVE MULTIPLAYER) ===
+# === ДВИЖОК ИГРЫ КРАШ (LIVE MULTIPLAYER) ===
 class CrashEngine:
     def __init__(self):
-        self.state = 'WAITING'  # Состояния: WAITING, FLYING, CRASHED
+        self.state = 'WAITING'
         self.multiplier = 1.00
         self.crash_point = 1.00
-        self.timer = 10.0       # Время на ставки (секунды)
-        self.players = {}       # Активные ставки (telegram_id -> данные)
-        self.history = []       # История последних иксов
-        self.clients = set()    # Подключенные WebSocket клиенты
+        self.timer = 10.0       
+        self.players = {}       
+        self.history = []       
+        self.clients = set()    
         self.start_time = 0
 
     def generate_crash(self):
-        # Алгоритм честного рандома с выгодой казино ~5%
-        if random.random() < 0.05: 
-            return 1.00 # 5% шанс на моментальный взрыв (x1.00)
-        
-        # Математика рулеток: 0.99 / (1 - random)
+        if random.random() < 0.10: 
+            return 1.00
         val = 0.99 / (1.0 - random.random())
         return round(max(1.00, val), 2)
+
+    # Вспомогательная функция для записи автовывода в базу без зависания сервера
+    async def _process_auto_cashout_db(self, user_id, db_bet_id, win_amount, target_mul):
+        try:
+            async with async_session() as session:
+                user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+                bet_record = await session.get(CrashBet, db_bet_id)
+                if user and bet_record:
+                    user.balance += win_amount
+                    bet_record.cashout_multiplier = target_mul
+                    bet_record.win_amount = win_amount
+                    await session.commit()
+        except Exception as e:
+            print(f"Auto-cashout DB error: {e}")
 
     async def broadcast(self):
         if not self.clients: return
         msg = json.dumps({
-            'state': self.state,
-            'multiplier': round(self.multiplier, 2),
-            'timer': round(self.timer, 1),
-            'players': list(self.players.values()),
-            'history': self.history
+            'state': self.state, 'multiplier': round(self.multiplier, 2),
+            'timer': round(self.timer, 1), 'players': list(self.players.values()), 'history': self.history
         })
-        # Копируем сет, чтобы избежать ошибки изменения во время итерации
         for ws in list(self.clients):
-            try:
-                await ws.send_str(msg)
-            except:
-                self.clients.discard(ws)
+            try: await ws.send_str(msg)
+            except: self.clients.discard(ws)
 
     async def run_loop(self):
         while True:
             if self.state == 'WAITING':
                 self.multiplier = 1.00
                 self.players = {}
-                self.timer = 8.0 # 8 секунд между раундами
+                self.timer = 8.0 
                 
                 while self.timer > 0:
                     await self.broadcast()
@@ -188,21 +194,31 @@ class CrashEngine:
                 
             elif self.state == 'FLYING':
                 t = asyncio.get_event_loop().time() - self.start_time
-                # Плавный экспоненциальный рост икса (как в настоящих казино)
                 self.multiplier = max(1.0, math.pow(math.e, t / 10.0))
                 
+                # --- ЛОГИКА АВТОВЫВОДА НА СТОРОНЕ СЕРВЕРА ---
+                for uid, p in list(self.players.items()):
+                    if p['cashout'] is None and p.get('auto_cashout') and self.multiplier >= p['auto_cashout']:
+                        target_mul = p['auto_cashout']
+                        if target_mul <= self.crash_point:
+                            win_amount = int(p['bet'] * target_mul)
+                            p['cashout'] = target_mul
+                            p['profit'] = win_amount
+                            # Записываем в БД в фоне
+                            asyncio.create_task(self._process_auto_cashout_db(uid, p['db_bet_id'], win_amount, target_mul))
+
                 if self.multiplier >= self.crash_point:
                     self.multiplier = self.crash_point
                     self.state = 'CRASHED'
                     self.history.insert(0, self.crash_point)
-                    if len(self.history) > 15: self.history.pop() # Храним 15 игр
+                    if len(self.history) > 15: self.history.pop()
                     
                     await self.broadcast()
-                    await asyncio.sleep(4.0) # Пауза перед новым раундом
+                    await asyncio.sleep(4.0)
                     self.state = 'WAITING'
                 else:
                     await self.broadcast()
-                    await asyncio.sleep(0.1) # 10 тиков в секунду (оптимально)
+                    await asyncio.sleep(0.1)
 
 crash_game = CrashEngine()
 

@@ -791,25 +791,38 @@ function connectCrashWebSocket() {
         }
     };
 }
-
+function toggleAutoCashout() {
+    const toggle = document.getElementById('crashAutoToggle');
+    const input = document.getElementById('crashAutoVal');
+    const icon = document.getElementById('crashAutoIcon');
+    if (toggle.checked) {
+        input.disabled = false;
+        input.style.color = '#fff';
+        icon.style.color = '#fff';
+    } else {
+        input.disabled = true;
+        input.style.color = 'var(--txt3)';
+        icon.style.color = 'var(--txt3)';
+    }
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
 function updateCrashUI(data) {
     currentCrashState = data.state;
     const mulEl = document.getElementById('crashMultiplier');
     const timerEl = document.getElementById('crashTimer');
     const btn = document.getElementById('btnCrashAction');
+    const rocket = document.getElementById('crashRocket');
 
     drawCrashCanvas(data.multiplier, data.state);
 
     if (data.state === 'WAITING') {
+        rocket.style.display = 'none';
         mulEl.textContent = '1.00x';
         mulEl.classList.remove('crashed');
         timerEl.style.display = 'block';
         timerEl.textContent = `Запуск через ${data.timer.toFixed(1)}s`;
         
-        if (data.timer > 7.5) { 
-            didIbet = false;
-            didIcashout = false;
-        }
+        if (data.timer > 7.5) { didIbet = false; didIcashout = false; }
 
         if (!didIbet) {
             btn.textContent = 'СДЕЛАТЬ СТАВКУ';
@@ -822,12 +835,29 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'FLYING') {
+        rocket.style.display = 'block';
         mulEl.textContent = data.multiplier.toFixed(2) + 'x';
         timerEl.style.display = 'none';
 
+        // --- ЛОГИКА АВТОВЫВОДА: Читаем с сервера, не вывели ли нас автоматически ---
+        if (didIbet && !didIcashout) {
+            const myData = data.players.find(p => p.user_id === state.user.telegram_id);
+            if (myData && myData.cashout !== null) {
+                // Сервер зафиксировал автовывод!
+                didIcashout = true;
+                state.user.balance += myData.profit;
+                updateUserDisplay();
+                document.getElementById('crashBalanceDisplay').textContent = state.user.balance;
+                
+                showToast(`🚀 Автовывод! Вы забрали ${myData.profit} ⭐`);
+                if (window.playSuccessAnimation) window.playSuccessAnimation();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
         if (didIbet && !didIcashout) {
             const currentProfit = Math.floor(myCrashBetAmount * data.multiplier);
-            btn.innerHTML = `ЗАБРАТЬ ${currentProfit} ⭐`;
+            btn.innerHTML = `ЗАБРАТЬ ${currentProfit} <img src="/static/images/star.png" style="width:16px;height:16px;vertical-align:middle;position:relative;top:-2px;">`;
             btn.className = 'btn-open-case btn-cashout';
             btn.disabled = false;
         } else {
@@ -837,7 +867,8 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        mulEl.textContent = 'CRASHED @ ' + data.multiplier.toFixed(2) + 'x';
+        rocket.style.display = 'none';
+        mulEl.textContent = 'КРАШ @ ' + data.multiplier.toFixed(2) + 'x';
         mulEl.classList.add('crashed');
         btn.textContent = 'РАУНД ЗАВЕРШЕН';
         btn.className = 'btn-open-case disabled';
@@ -848,6 +879,7 @@ function updateCrashUI(data) {
         }
     }
 
+    // История и игроки
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach(x => {
@@ -860,7 +892,6 @@ function updateCrashUI(data) {
     document.getElementById('crashTotalPlayers').textContent = data.players.length;
     const list = document.getElementById('crashPlayersList');
     list.innerHTML = '';
-    
     const sortedPlayers = data.players.sort((a, b) => {
         if (a.cashout && !b.cashout) return -1;
         if (!a.cashout && b.cashout) return 1;
@@ -870,22 +901,14 @@ function updateCrashUI(data) {
     sortedPlayers.forEach(p => {
         const pEl = document.createElement('div');
         pEl.className = 'crash-player-item';
-        
         let statusHtml = `<div class="crash-player-bet"><img src="/static/images/star.png">${p.bet}</div>`;
         if (p.cashout) {
-            statusHtml = `<div class="crash-player-win">${p.cashout.toFixed(2)}x (+${p.profit} ⭐)</div>`;
+            statusHtml = `<div class="crash-player-win">${p.cashout.toFixed(2)}x (+${p.profit} <img src="/static/images/star.png" style="width:12px;vertical-align:middle;top:-1px;position:relative">)</div>`;
         } else if (data.state === 'CRASHED') {
             statusHtml = `<div class="crash-player-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
         }
-
         const avatar = p.avatar ? `<img src="${p.avatar}">` : '👤';
-        pEl.innerHTML = `
-            <div class="crash-player-left">
-                <div class="crash-player-avatar">${avatar}</div>
-                <div class="crash-player-name">${p.name}</div>
-            </div>
-            ${statusHtml}
-        `;
+        pEl.innerHTML = `<div class="crash-player-left"><div class="crash-player-avatar">${avatar}</div><div class="crash-player-name">${p.name}</div></div>${statusHtml}`;
         list.appendChild(pEl);
     });
 }
@@ -907,10 +930,24 @@ async function actionCrash() {
         if (isNaN(bet) || bet <= 0) return showToast('❌ Введите ставку');
         if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
 
+        // Читаем значение автовывода
+        let autoCashoutVal = null;
+        const autoToggle = document.getElementById('crashAutoToggle');
+        if (autoToggle && autoToggle.checked) {
+            autoCashoutVal = parseFloat(document.getElementById('crashAutoVal').value);
+            if (isNaN(autoCashoutVal) || autoCashoutVal < 1.01) return showToast('❌ Автовывод минимум 1.01x');
+        }
+
         const btn = document.getElementById('btnCrashAction');
         btn.disabled = true;
 
-        const res = await apiRequest('/crash/bet', 'POST', { user_id: state.user.telegram_id, bet });
+        // Отправляем ставку вместе с целью автовывода
+        const res = await apiRequest('/crash/bet', 'POST', { 
+            user_id: state.user.telegram_id, 
+            bet: bet,
+            auto_cashout: autoCashoutVal 
+        });
+
         if (res.success) {
             myCrashBetAmount = bet;
             didIbet = true;

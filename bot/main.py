@@ -189,7 +189,43 @@ async def open_case(user_id: int, case_id: int) -> dict:
 
 
 # === HANDLERS ===
+@router.callback_query(F.data.startswith("wd_appr_"))
+async def approve_withdrawal(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS: return
+    wd_id = int(callback.data.split("_")[2])
+    
+    async with async_session() as session:
+        wd = await session.get(Withdrawal, wd_id)
+        if not wd or wd.status != 'pending':
+            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Уже обработано</i>", parse_mode="HTML")
+            
+        wd.status = 'completed'
+        wd.completed_at = datetime.utcnow()
+        
+        # Помечаем сам предмет как выведенный (чтобы он пропал из инвентаря)
+        opening = await session.get(CaseOpening, wd.opening_id)
+        if opening:
+            opening.is_withdrawn = True
+            
+        await session.commit()
+        
+    await callback.message.edit_text(callback.message.html_text + "\n\n✅ <b>ОДОБРЕНО</b>", parse_mode="HTML")
 
+@router.callback_query(F.data.startswith("wd_rej_"))
+async def reject_withdrawal(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS: return
+    wd_id = int(callback.data.split("_")[2])
+    
+    async with async_session() as session:
+        wd = await session.get(Withdrawal, wd_id)
+        if not wd or wd.status != 'pending':
+            return await callback.message.edit_text(callback.message.html_text + "\n\n⚠️ <i>Уже обработано</i>", parse_mode="HTML")
+            
+        wd.status = 'rejected'
+        wd.completed_at = datetime.utcnow()
+        await session.commit()
+        
+    await callback.message.edit_text(callback.message.html_text + "\n\n❌ <b>ОТКЛОНЕНО</b>", parse_mode="HTML")
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     """Стартовое сообщение"""
@@ -513,9 +549,24 @@ def get_admin_keyboard():
             InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast_start"),
             InlineKeyboardButton(text="💸 Бонус ВСЕМ", callback_data="admin_mass_bonus")
         ],
+        [InlineKeyboardButton(text="📤 Заявки на вывод", callback_data="admin_pending_wd")],
         [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
-
+    
+@router.callback_query(F.data == "admin_pending_wd")
+async def show_pending_withdrawals(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS: return
+    
+    async with async_session() as session:
+        pending = (await session.execute(
+            select(Withdrawal).where(Withdrawal.status == 'pending').limit(10)
+        )).scalars().all()
+        
+    if not pending:
+        return await callback.answer("Активных заявок нет!", show_alert=True)
+        
+    await callback.message.answer("⚠️ Обратите внимание: Уведомления о выводах приходят вам в личку автоматически. Выше показаны последние сообщения.")
+    await callback.answer()
 @router.message(Command("admin"))
 async def admin_panel(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:

@@ -323,22 +323,56 @@ function closeResultScreen() { switchScreen('main-screen'); switchTab('inventory
 
 // === INVENTORY ===
 async function loadInventory() { const response = await apiRequest(`/inventory/${state.user.telegram_id}`, 'GET'); if (response.success) { state.inventory = response.inventory; renderInventory(); } }
+
 function renderInventory() {
     const list = document.getElementById('inventoryList'); if(!list) return; list.innerHTML = '';
     if (state.inventory.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><img src="/static/images/tab-inventory.png" class="empty-state-icon-img"></div><div class="empty-state-text">Инвентарь пуст — открой кейс!</div></div>`; return; }
+    
     state.inventory.forEach((item, index) => {
         if (item.is_sold || item.gift?.is_stars) return;
         const itemEl = document.createElement('div'); itemEl.className = 'inventory-item';
         const gn = item.gift?.gift_number;
         const imgContent = (gn >= 1 && gn <= 120) ? tgsEl(`inv_tgs_${index}`, gn, '60px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:60px;height:60px;object-fit:contain">`;
-        let actionsHtml = item.is_withdrawn ? `<div class="inv-done">✅ Выведено</div>` : `<div class="inv-actions"><button class="btn-inv btn-inv-withdraw" onclick="withdrawInventoryItem(${item.opening_id})"><img src="/static/images/withdraw-icon.png" class="btn-inv-withdraw-icon" onerror="this.outerHTML='📤'">Вывести</button><button class="btn-inv btn-inv-sell" onclick="sellInventoryItem(${item.opening_id}, ${item.gift?.value || 0})"><span class="btn-inv-sell-label">Продать за</span><span class="btn-inv-sell-row"><img src="/static/images/star.png" class="btn-inv-star-icon">${item.gift?.value || 0}</span></button></div>`;
-        itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'common'}"></div><div class="inv-img">${imgContent}</div><div class="inv-name">${item.gift?.name || 'Приз'}</div>${actionsHtml}`;
+        
+        let actionsHtml = '';
+        let rejectedHtml = '';
+
+        // Проверяем статус вывода
+        if (item.status === 'pending') {
+            actionsHtml = `<div class="inv-pending">⏳ Обработка вывода...</div>`;
+        } else {
+            if (item.status === 'rejected') {
+                rejectedHtml = `<div class="inv-rejected">Отклонено! Поддержка</div>`;
+            }
+            // Новая крутая иконка вывода (SVG)
+            const withdrawIcon = `<svg class="icon-withdraw-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`;
+            actionsHtml = `<div class="inv-actions">
+                <button class="btn-inv btn-inv-withdraw" onclick="withdrawInventoryItem(${item.opening_id})">${withdrawIcon}Вывести</button>
+                <button class="btn-inv btn-inv-sell" onclick="sellInventoryItem(${item.opening_id}, ${item.gift?.value || 0})">
+                    <span class="btn-inv-sell-label">Продать за</span>
+                    <span class="btn-inv-sell-row"><img src="/static/images/star.png" class="btn-inv-star-icon">${item.gift?.value || 0}</span>
+                </button>
+            </div>`;
+        }
+
+        itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'common'}"></div><div class="inv-img">${imgContent}</div><div class="inv-name" style="display:flex;flex-direction:column;align-items:center;"><span>${item.gift?.name || 'Приз'}</span>${rejectedHtml}</div>${actionsHtml}`;
         list.appendChild(itemEl);
     });
     setTimeout(() => initAllTGS(), 50);
 }
 
-async function withdrawInventoryItem(openingId) { showLoader(); const response = await apiRequest('/withdraw', 'POST', { opening_id: openingId, user_id: state.user.telegram_id }); hideLoader(); if (response.success) { showToast('Приз отправляется!'); loadInventory(); } else showToast('❌ ' + (response.error || 'Ошибка вывода')); }
+async function withdrawInventoryItem(openingId) { 
+    showLoader(); 
+    const response = await apiRequest('/withdraw', 'POST', { opening_id: openingId, user_id: state.user.telegram_id }); 
+    hideLoader(); 
+    if (response.success) { 
+        showToast('⏳ Заявка отправлена! Ожидайте обработки.'); 
+        loadInventory(); // Перезагружаем инвентарь, чтобы появилась надпись "Обработка..."
+    } else { 
+        showToast('❌ ' + (response.error || 'Ошибка вывода')); 
+    } 
+}
+
 async function sellInventoryItem(openingId, value) { showLoader(); const response = await apiRequest('/sell', 'POST', { opening_id: openingId, user_id: state.user.telegram_id }); hideLoader(); if (response.success) { state.user.balance = response.new_balance; updateUserDisplay(); showToast(` Продано за ${value} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`); loadInventory(); } else showToast('❌ ' + (response.error || 'Ошибка продажи')); }
 
 // === HISTORY ===

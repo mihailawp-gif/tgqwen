@@ -452,7 +452,33 @@ async def open_case(request):
     except Exception as e:
         print(f"❌ Error in open_case: {e}")
         return web.json_response({'success': False, 'error': f'Internal error: {str(e)}'}, status=500)
+async def notify_admins_about_withdrawal(withdrawal_id, user_id, username, gift_name, price):
+    """Фоновая функция для отправки уведомлений админам"""
+    bot_token = os.getenv('BOT_TOKEN')
+    admin_ids = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x]
+    if not bot_token or not admin_ids: return
 
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    kb = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ Подтвердить", "callback_data": f"wd_appr_{withdrawal_id}"},
+                {"text": "❌ Отклонить", "callback_data": f"wd_rej_{withdrawal_id}"}
+            ]
+        ]
+    }
+    text = (f"📤 <b>Новая заявка на вывод!</b>\n\n"
+            f"🎁 Предмет: <b>{gift_name}</b>\n"
+            f"💰 Ценность: {price} ⭐\n"
+            f"👤 Игрок: <a href='tg://user?id={user_id}'>{username or 'Без имени'}</a>\n"
+            f"🆔 Заявка: #{withdrawal_id}")
+           
+    async with aiohttp.ClientSession() as session:
+        for ad_id in admin_ids:
+            try:
+                await session.post(url, json={"chat_id": ad_id, "text": text, "parse_mode": "HTML", "reply_markup": kb})
+            except Exception: pass
+            
 async def get_inventory(request):
     telegram_id = int(request.match_info['telegram_id'])
     try:
@@ -460,23 +486,36 @@ async def get_inventory(request):
             user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
             if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
-            # КОСТЫЛЬ ВЫРЕЗАН, ТОЧНАЯ ПРОВЕРКА ПО БАЗЕ
+            # Берем только те, что не проданы и НЕ ВЫВЕДЕНЫ УСПЕШНО (is_withdrawn == False)
             openings = (await session.execute(
                 select(CaseOpening)
-                .where(CaseOpening.user_id == user.id, CaseOpening.is_sold == False)
+                .where(CaseOpening.user_id == user.id, CaseOpening.is_sold == False, CaseOpening.is_withdrawn == False)
                 .order_by(desc(CaseOpening.created_at)).options(joinedload(CaseOpening.gift))
             )).scalars().unique().all()
             
+            # Получаем статусы выводов
+            opening_ids = [o.id for o in openings]
+            withdrawals = (await session.execute(
+                select(Withdrawal).where(Withdrawal.opening_id.in_(opening_ids)).order_by(desc(Withdrawal.created_at))
+            )).scalars().all()
+
+            wd_map = {}
+            for w in withdrawals:
+                if w.opening_id not in wd_map: 
+                    wd_map[w.opening_id] = w.status # Записываем только самый свежий статус
+
             items_data = []
             for opening in openings:
                 gift = opening.gift
+                status = wd_map.get(opening.id)
                 items_data.append({
-                    'opening_id': opening.id, 'is_withdrawn': opening.is_withdrawn, 'is_sold': opening.is_sold, 'created_at': opening.created_at.isoformat(),
+                    'opening_id': opening.id, 
+                    'status': status, # 'pending', 'rejected', или None
+                    'created_at': opening.created_at.isoformat(),
                     'gift': { 'id': gift.id, 'name': gift.name, 'rarity': gift.rarity, 'value': gift.value, 'image_url': gift.image_url, 'gift_number': gift.gift_number if gift.gift_number else ((gift.id - 1) % 120 + 1), 'is_stars': bool(gift.gift_number and gift.gift_number >= 200) }
                 })
             return web.json_response({'success': True, 'inventory': items_data})
     except Exception as e:
-        print(f"❌ Error in get_inventory: {e}")
         return web.json_response({'success': False, 'error': 'Internal server error'}, status=500)
 
 async def withdraw_item(request):
@@ -486,11 +525,25 @@ async def withdraw_item(request):
         user = (await session.execute(select(User).where(User.telegram_id == user_telegram_id))).scalar_one_or_none()
         opening = await session.get(CaseOpening, opening_id)
         if not user or not opening or opening.user_id != user.id: return web.json_response({'success': False, 'error': 'Not found'})
-        if opening.is_withdrawn: return web.json_response({'success': False, 'error': 'Already withdrawn'})
-        opening.is_withdrawn = True
-        withdrawal = Withdrawal(user_id=user.id, opening_id=opening.id, status='completed', completed_at=datetime.utcnow())
+        if opening.is_withdrawn: return web.json_response({'success': False, 'error': 'Уже выведено'})
+        
+        # Проверяем, нет ли уже активной заявки
+        existing = (await session.execute(select(Withdrawal).where(Withdrawal.opening_id == opening.id, Withdrawal.status == 'pending'))).scalar_one_or_none()
+        if existing: return web.json_response({'success': False, 'error': 'Заявка уже в обработке'})
+
+        # Создаем заявку со статусом pending. Флаг is_withdrawn НЕ трогаем!
+        withdrawal = Withdrawal(user_id=user.id, opening_id=opening.id, status='pending')
         session.add(withdrawal)
         await session.commit()
+        await session.refresh(withdrawal)
+        
+        gift = await session.get(Gift, opening.gift_id)
+        
+        # Отправляем уведомление админам
+        asyncio.create_task(notify_admins_about_withdrawal(
+            withdrawal.id, user.telegram_id, user.username, gift.name, gift.value
+        ))
+        
         return web.json_response({'success': True, 'message': 'Withdrawal request created'})
 
 async def sell_item(request):

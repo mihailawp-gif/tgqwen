@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0d0d17">
     <title>Кейсы — Telegram</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="/static/css/style.css?v=1344">
+    <link rel="stylesheet" href="/static/css/style.css?v=1345">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
@@ -77,7 +77,7 @@
 
                 <div class="game-block block-cases align-right" onclick="switchTab('cases')">
                     <div class="art-left">
-                        <div id="main_pepe" data-tgs="8" data-sz="110" style="width:110px;height:110px;"></div>
+                        <div id="plush_pepe" data-tgs="22" data-sz="110" style="width:110px;height:110px;"></div>
                     </div>
                     <div class="info">
                         <h2>КЕЙСЫ</h2>
@@ -86,7 +86,7 @@
                     </div>
                 </div>
 
-                <div class="game-block block-dice align-right" onclick="showToast('В разработке!')">
+                <div class="game-block block-dice align-right" onclick="showDiceScreen()">
                     <div class="art-left">
                         <div class="anim-placeholder">🎲</div>
                     </div>
@@ -254,6 +254,78 @@
             </div>
         </div>
     </div>
+	<div id="dice-screen" class="screen">
+        <div class="preview-header">
+            <button class="btn-back" onclick="switchScreen('main-screen')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <h2>Дайс</h2>
+            <div class="mines-balance-badge">
+                <img src="/static/images/star.png" alt="⭐">
+                <span id="diceBalanceDisplay">0</span>
+            </div>
+        </div>
+
+        <div class="dice-container" style="padding: 16px; display: flex; flex-direction: column; gap: 16px; height: calc(100vh - 70px);">
+            
+            <div class="dice-result-box" id="diceResultBox">
+                <div class="dice-result-number" id="diceResultNumber">000000</div>
+                <div class="dice-result-label" id="diceResultLabel">Сделайте ставку</div>
+            </div>
+
+            <div class="mines-controls-panel" style="margin-bottom: 0;">
+                <div class="control-group">
+                    <label>Сумма ставки</label>
+                    <div class="input-with-icon">
+                        <input type="number" id="diceBet" value="10" min="1" oninput="updateDiceUI()">
+                        <img src="/static/images/star.png" alt="⭐">
+                    </div>
+                    <div class="quick-buttons">
+                        <button onclick="modifyDiceBet('add', 10)">+10</button>
+                        <button onclick="modifyDiceBet('add', 100)">+100</button>
+                        <button onclick="modifyDiceBet('mult', 2)">x2</button>
+                        <button onclick="modifyDiceBet('mult', 0.5)">/2</button>
+                        <button onclick="modifyDiceBet('clear')">Min</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Шанс выигрыша (%)</label>
+                    <div class="input-with-icon">
+                        <input type="number" id="diceChance" value="80" min="1" max="95" oninput="updateDiceUI()">
+                        <span style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-family:'Exo 2', sans-serif; font-weight: 800; color: var(--txt3);">%</span>
+                    </div>
+                    <div class="quick-buttons">
+                        <button onclick="setDiceChance(10)">10%</button>
+                        <button onclick="setDiceChance(33)">33%</button>
+                        <button onclick="setDiceChance(50)">50%</button>
+                        <button onclick="setDiceChance(80)">80%</button>
+                        <button onclick="setDiceChance(95)">95%</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dice-info-row">
+                <div class="dice-info-box">
+                    <span>Множитель</span>
+                    <div id="diceMultiplier">1.25x</div>
+                </div>
+                <div class="dice-info-box highlight">
+                    <span>Выигрыш</span>
+                    <div><span id="dicePossibleWin">12</span> <img src="/static/images/star.png" style="width:14px; vertical-align:middle; position:relative; top:-2px;"></div>
+                </div>
+            </div>
+
+            <div class="dice-actions">
+                <button class="btn-dice btn-dice-under" onclick="playDice('under')">
+                    <div class="dice-btn-title">МЕНЬШЕ</div>
+                    <div class="dice-btn-range">0 - <span id="diceRangeMin">799999</span></div>
+                </button>
+                <button class="btn-dice btn-dice-over" onclick="playDice('over')">
+                    <div class="dice-btn-title">БОЛЬШЕ</div>
+                    <div class="dice-btn-range"><span id="diceRangeMax">200000</span> - 999999</div>
+                </button>
+            </div>
+        </div>
+    </div>
 	<div id="mines-screen" class="screen">
         <div class="preview-header">
             <button class="btn-back" onclick="switchScreen('main-screen')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
@@ -369,6 +441,6 @@
     </div>
 
     <script src="/static/js/tgs-manager.js?v=1006"></script>
-    <script src="/static/js/app.js?v=1225"></script>
+    <script src="/static/js/app.js?v=1226"></script>
 </body>
 </html>

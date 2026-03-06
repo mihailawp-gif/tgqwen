@@ -44,7 +44,7 @@ MINES_COEFS = {
 
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame
 )
 
 load_dotenv()
@@ -692,6 +692,56 @@ async def create_invoice(request):
 async def index(request):
     with open('templates/index.html', 'r', encoding='utf-8') as f: return web.Response(text=f.read(), content_type='text/html')
     
+async def dice_play(request):
+    data = await request.json()
+    user_id = data.get('user_id')
+    bet = int(data.get('bet', 0))
+    chance = int(data.get('chance', 80))
+    roll_type = data.get('type', 'under')
+
+    if bet < 1: return web.json_response({'success': False, 'error': 'Минимальная ставка 1 ⭐'})
+    if chance < 1 or chance > 95: return web.json_response({'success': False, 'error': 'Шанс от 1% до 95%'})
+    if roll_type not in ['under', 'over']: return web.json_response({'success': False, 'error': 'Ошибка направления'})
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        if not user or user.balance < bet:
+            return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
+
+        # Списываем ставку
+        user.balance -= bet
+
+        # --- Математика Nvuti (0 - 999999) ---
+        rand_num = random.randint(0, 999999)
+        nwin_under = (chance * 10000) - 1
+        nwin_over = 1000000 - (chance * 10000)
+
+        is_win = False
+        multiplier = 100.0 / chance
+        
+        # Проверка победы
+        if roll_type == 'under' and rand_num <= nwin_under:
+            is_win = True
+        elif roll_type == 'over' and rand_num >= nwin_over:
+            is_win = True
+
+        win_amount = 0
+        if is_win:
+            win_amount = math.floor(bet * multiplier)
+            user.balance += win_amount
+
+        # Запись в БД
+        game = DiceGame(user_id=user.id, bet=bet, chance=chance, roll_type=roll_type, roll_result=rand_num, win_amount=win_amount)
+        session.add(game)
+        await session.commit()
+
+        return web.json_response({
+            'success': True,
+            'result': rand_num,
+            'is_win': is_win,
+            'win_amount': win_amount,
+            'balance': user.balance
+        })
 async def mines_start(request):
     data = await request.json()
     user_id = data.get('user_id')
@@ -847,6 +897,7 @@ async def create_app():
         web.get('/api/crash/ws', crash_ws),
         web.post('/api/crash/bet', crash_bet),
         web.post('/api/crash/cashout', crash_cashout),
+        web.post('/api/dice/play', dice_play),
     ]
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))

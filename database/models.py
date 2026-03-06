@@ -152,6 +152,19 @@ class CrashBet(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
+class DiceGame(Base):
+    __tablename__ = "dice_games"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    bet = Column(Integer, nullable=False)
+    chance = Column(Integer, nullable=False)
+    roll_type = Column(String(10), nullable=False) # 'under' (меньше) или 'over' (больше)
+    roll_result = Column(Integer, nullable=False)
+    win_amount = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./database/cases.db")
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):

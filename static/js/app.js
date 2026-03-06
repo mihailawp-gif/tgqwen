@@ -1103,6 +1103,119 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.fill();
     crashCtx.shadowBlur = 0; 
 }
+// dice
+// === ЛОГИКА DICE ===
+let isDiceRolling = false;
+
+function showDiceScreen() {
+    switchScreen('dice-screen');
+    document.getElementById('diceBalanceDisplay').textContent = state.user.balance || 0;
+    updateDiceUI();
+}
+
+function modifyDiceBet(action, val) {
+    if (isDiceRolling) return;
+    const input = document.getElementById('diceBet');
+    let current = parseInt(input.value) || 0;
+    
+    if (action === 'add') current += val;
+    if (action === 'mult') current = Math.floor(current * val);
+    if (action === 'clear') current = 1;
+    
+    if (current < 1) current = 1;
+    input.value = current;
+    updateDiceUI();
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+function setDiceChance(val) {
+    if (isDiceRolling) return;
+    document.getElementById('diceChance').value = val;
+    updateDiceUI();
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+function updateDiceUI() {
+    let bet = parseInt(document.getElementById('diceBet').value) || 1;
+    let chanceInput = document.getElementById('diceChance');
+    let chance = parseInt(chanceInput.value) || 80;
+
+    if (chance < 1) chance = 1;
+    if (chance > 95) chance = 95;
+
+    const multiplier = 100 / chance;
+    const possibleWin = Math.floor(bet * multiplier);
+
+    document.getElementById('diceMultiplier').textContent = multiplier.toFixed(2) + 'x';
+    document.getElementById('dicePossibleWin').textContent = possibleWin;
+
+    // Математика шансов как в Nvuti
+    const underMax = (chance * 10000) - 1;
+    const overMin = 1000000 - (chance * 10000);
+
+    document.getElementById('diceRangeMin').textContent = underMax;
+    document.getElementById('diceRangeMax').textContent = overMin;
+}
+
+async function playDice(type) {
+    if (isDiceRolling) return;
+    
+    let bet = parseInt(document.getElementById('diceBet').value);
+    let chance = parseInt(document.getElementById('diceChance').value);
+
+    if (isNaN(bet) || bet < 1) return showToast('❌ Неверная ставка');
+    if (isNaN(chance) || chance < 1 || chance > 95) {
+        document.getElementById('diceChance').value = 95;
+        updateDiceUI();
+        return showToast('❌ Шанс от 1% до 95%');
+    }
+    if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
+
+    isDiceRolling = true;
+    
+    // Сбрасываем стили результата и запускаем "барабан"
+    const resNumber = document.getElementById('diceResultNumber');
+    const resLabel = document.getElementById('diceResultLabel');
+    resNumber.className = 'dice-result-number';
+    resLabel.textContent = 'Бросаем кости...';
+    resLabel.style.color = 'var(--txt3)';
+
+    // Быстро меняем цифры для эффекта прокрутки
+    let rollInterval = setInterval(() => {
+        resNumber.textContent = String(Math.floor(Math.random() * 999999)).padStart(6, '0');
+    }, 40);
+
+    const res = await apiRequest('/dice/play', 'POST', { user_id: state.user.telegram_id, bet, chance, type });
+
+    clearInterval(rollInterval);
+    isDiceRolling = false;
+
+    if (res.success) {
+        // Показываем настоящий результат
+        resNumber.textContent = String(res.result).padStart(6, '0');
+        
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        document.getElementById('diceBalanceDisplay').textContent = state.user.balance;
+
+        if (res.is_win) {
+            resNumber.classList.add('win');
+            resLabel.textContent = `ВЫИГРЫШ +${res.win_amount} ⭐`;
+            resLabel.style.color = 'var(--green)';
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            resNumber.classList.add('lose');
+            resLabel.textContent = `ПРОИГРЫШ -${bet} ⭐`;
+            resLabel.style.color = '#ef4444';
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        }
+    } else {
+        resNumber.textContent = '000000';
+        resLabel.textContent = 'Сделайте ставку';
+        showToast(res.error);
+    }
+}
+// dice close
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
     openProfileTab();

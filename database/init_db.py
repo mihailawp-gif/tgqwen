@@ -8,7 +8,7 @@ from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from database.models import init_db, async_session, Case, Gift, CaseItem, User, CaseOpening, Withdrawal, MinesGame, CrashBet
+from database.models import init_db, async_session, Case, Gift, CaseItem, User, CaseOpening, Withdrawal, MinesGame, CrashBet, DiceGame
 from sqlalchemy import select, delete
 
 # ──────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ GIFTS_CATALOG = [
     # ── LEGENDARY (> 50k) ──
     (22,   "Plush Pepe",           "legendary",   1006500), # 1M+ звёзд
     (18,   "Durov's Cap",          "legendary",   80043),
-    (126,  "Heart Locket",         "legendary",   210891),  # Sailor Moon style
+    (126,  "Heart Locket",         "legendary",   210892),  # Sailor Moon style
     
     # ── EPIC (5k - 50k) ──
     (39,   "Precious Peach",       "epic",        47259),

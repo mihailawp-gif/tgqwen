@@ -1143,13 +1143,14 @@ function updateDiceUI() {
     if (chance < 1) chance = 1;
     if (chance > 95) chance = 95;
 
-    const multiplier = 100 / chance;
+    // ВНЕДРИЛИ МАРЖУ 1% ДЛЯ ОТОБРАЖЕНИЯ
+    const multiplier = 99 / chance;
     const possibleWin = Math.floor(bet * multiplier);
 
     document.getElementById('diceMultiplier').textContent = multiplier.toFixed(2) + 'x';
     document.getElementById('dicePossibleWin').textContent = possibleWin;
 
-    // Математика шансов как в Nvuti
+    // Математика шансов
     const underMax = (chance * 10000) - 1;
     const overMin = 1000000 - (chance * 10000);
 
@@ -1177,10 +1178,10 @@ async function playDice(type) {
     const resNumber = document.getElementById('diceResultNumber');
     const resLabel = document.getElementById('diceResultLabel');
     resNumber.className = 'dice-result-number';
+    resLabel.className = 'dice-result-label'; // Сбрасываем увеличенный шрифт перед новым броском
     resLabel.textContent = 'Бросаем кости...';
     resLabel.style.color = 'var(--txt3)';
 
-    // Быстро меняем цифры для эффекта прокрутки
     let rollInterval = setInterval(() => {
         resNumber.textContent = String(Math.floor(Math.random() * 999999)).padStart(6, '0');
     }, 40);
@@ -1191,26 +1192,29 @@ async function playDice(type) {
     isDiceRolling = false;
 
     if (res.success) {
-        // Показываем настоящий результат
         resNumber.textContent = String(res.result).padStart(6, '0');
-        
         state.user.balance = res.balance;
         updateUserDisplay();
         document.getElementById('diceBalanceDisplay').textContent = state.user.balance;
 
+        // Включаем класс для большого текста
+        resLabel.classList.add('big-result');
+
         if (res.is_win) {
             resNumber.classList.add('win');
-            resLabel.textContent = `ВЫИГРЫШ +${res.win_amount} ⭐`;
+            // Вместо эмодзи теперь HTML с картинкой звезды
+            resLabel.innerHTML = `ВЫИГРЫШ +${res.win_amount} <img src="/static/images/star.png" style="width:20px;height:20px;vertical-align:middle;position:relative;top:-2px;">`;
             resLabel.style.color = 'var(--green)';
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         } else {
             resNumber.classList.add('lose');
-            resLabel.textContent = `ПРОИГРЫШ -${bet} ⭐`;
+            resLabel.innerHTML = `ПРОИГРЫШ -${bet} <img src="/static/images/star.png" style="width:20px;height:20px;vertical-align:middle;position:relative;top:-2px;">`;
             resLabel.style.color = '#ef4444';
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         }
     } else {
         resNumber.textContent = '000000';
+        resLabel.className = 'dice-result-label';
         resLabel.textContent = 'Сделайте ставку';
         showToast(res.error);
     }

@@ -717,7 +717,8 @@ async def dice_play(request):
         nwin_over = 1000000 - (chance * 10000)
 
         is_win = False
-        multiplier = 100.0 / chance
+        # ВНЕДРИЛИ МАРЖУ (HOUSE EDGE 1%): 99 вместо 100
+        multiplier = 99.0 / chance 
         
         # Проверка победы
         if roll_type == 'under' and rand_num <= nwin_under:

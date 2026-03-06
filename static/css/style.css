@@ -630,7 +630,8 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .dice-result-number { font-family: 'Exo 2', sans-serif; font-size: 56px; font-weight: 900; color: #fff; letter-spacing: 4px; text-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: color 0.3s, text-shadow 0.3s; }
 .dice-result-number.win { color: var(--green); text-shadow: 0 4px 30px rgba(16, 185, 129, 0.5); }
 .dice-result-number.lose { color: #ef4444; text-shadow: 0 4px 30px rgba(239, 68, 68, 0.5); }
-.dice-result-label { font-size: 13px; color: var(--txt3); font-weight: 700; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.dice-result-label { font-size: 13px; color: var(--txt3); font-weight: 700; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s ease; }
+.dice-result-label.big-result { font-size: 18px; font-weight: 900; letter-spacing: 0; }
 
 .dice-info-row { display: flex; gap: 12px; margin-top: auto; }
 .dice-info-box { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }

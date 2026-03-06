@@ -76,7 +76,10 @@ async function renderTGS(id, num) {
     let px = parseInt(el.dataset.sz || el.style.width) || 80;
 
     try {
-        const data = await _load(`/static/images/gift_limited_${num}.tgs`);
+        // УМНАЯ ЗАГРУЗКА: если передали текст (dice), грузим dice.tgs. Если цифру - гифт.
+        const url = isNaN(num) ? `/static/images/${num}.tgs` : `/static/images/gift_limited_${num}.tgs`;
+        const data = await _load(url);
+        
         if (mySession !== _currentSession || !document.getElementById(id)) return;
 
         _renderQueue.push(() => {
@@ -97,7 +100,6 @@ async function renderTGS(id, num) {
                 const svg = targetEl.querySelector('svg');
                 if (svg) {
                     svg.setAttribute('width', px); svg.setAttribute('height', px);
-                    // GPU-ускорение:
                     svg.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translateZ(0);`;
                 }
                 _obs.observe(targetEl);
@@ -114,8 +116,6 @@ async function renderTGS(id, num) {
 }
 
 function initAllTGS() {
-    // --- 1. GARBAGE COLLECTOR (УБИВАЕТ БАГ С ИНВЕНТАРЕМ) ---
-    // Находим все мертвые анимации и чистим оперативную память телефона
     _inst.forEach((anim, id) => {
         if (!document.getElementById(id)) {
             try { anim.destroy(); } catch(e){}
@@ -123,14 +123,14 @@ function initAllTGS() {
         }
     });
 
-    // --- 2. РЕНДЕР ЖИВЫХ ---
     document.querySelectorAll('[data-tgs]').forEach(el => {
         if (el.closest('.screen:not(.active)') || el.closest('.tab-content:not(.active)')) return;
         if (!el.id) el.id = 'tgs_' + Math.random().toString(36).substr(2, 9);
         
         if (_inst.has(el.id)) return;
-        const n = parseInt(el.dataset.tgs, 10);
-        if (n >= 1) renderTGS(el.id, n);
+        // Убрали parseInt, чтобы можно было передавать слова (например "dice")
+        const n = el.dataset.tgs;
+        if (n) renderTGS(el.id, n);
     });
 }
 

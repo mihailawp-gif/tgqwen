@@ -656,7 +656,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     width: 250px; 
     height: 250px; 
     /* Увеличил масштаб до 0.65 и сильно сдвинул влево (-45px) */
-    transform: scale(0.65) translate(-45px, 5px); 
+    transform: scale(0.65) translate(-40px, 5px); 
     transform-origin: left center; 
     pointer-events: none; 
 }

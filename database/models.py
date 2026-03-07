@@ -203,8 +203,13 @@ engine = create_async_engine(
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"⚠️ Ошибка создания таблиц (игнорируем гонку процессов): {e}")
+    
+    # 1. Сначала жестко создаем колонки...
     
     # 1. Сначала жестко создаем колонки с дефолтными значениями (без костылей)
     try:

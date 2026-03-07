@@ -119,6 +119,8 @@ class Payment(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Integer)
+    bonus_amount = Column(Integer, default=0) # Бонус от промокода
+    promo_id = Column(Integer, ForeignKey("promo_codes.id"), nullable=True) # Использованный промокод
     status = Column(String(50), default="pending")
     telegram_payment_id = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -165,6 +167,27 @@ class DiceGame(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
+    
+class PromoCode(Base):
+    __tablename__ = "promo_codes"
+    
+    id = Column(Integer, primary_key=True)
+    code = Column(String(50), unique=True, nullable=False)
+    promo_type = Column(String(20), nullable=False) # 'balance' (звезды) или 'deposit' (+% к депу)
+    value = Column(Integer, nullable=False)         # Количество звезд ИЛИ процент
+    uses_limit = Column(Integer, default=0)         # 0 = бесконечно
+    uses_count = Column(Integer, default=0)         # Сколько раз уже активировали
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class PromoCodeUsage(Base):
+    __tablename__ = "promo_code_usages"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    promo_id = Column(Integer, ForeignKey("promo_codes.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./database/cases.db")
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
@@ -202,6 +225,8 @@ async def init_db():
         ("users", "photo_url", "TEXT"),
         ("users", "referrer_id", "INTEGER"),
         ("users", "referral_code", "TEXT"),
+        ("payments", "bonus_amount", "INTEGER DEFAULT 0"),
+        ("payments", "promo_id", "INTEGER"),
     ]
     for table, col, col_type in migrations:
         try:

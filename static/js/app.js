@@ -436,22 +436,31 @@ function closeTopupModal() { document.getElementById('topupModal').classList.rem
 function closeConfirmModal() { document.getElementById('confirmModal').classList.remove('active'); }
 
 async function createStarsInvoice(stars) {
+    // Читаем код из инпута
+    const promoCode = document.getElementById('depositPromoInput')?.value.trim() || '';
     showLoader();
     try {
-        const response = await apiRequest('/payment/create-invoice', 'POST', { user_id: state.user.telegram_id, stars: stars });
+        const response = await apiRequest('/payment/create-invoice', 'POST', { 
+            user_id: state.user.telegram_id, 
+            stars: stars,
+            promo_code: promoCode // Отправляем на сервер!
+        });
         hideLoader();
         if (response.success && response.invoice_link) {
             closeTopupModal();
             tg.openInvoice(response.invoice_link, async (status) => {
                 if (status === 'paid') {
                     if (window.playSuccessAnimation) window.playSuccessAnimation();
-                    showToast(` Баланс пополнен на ${stars} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
-                    setTimeout(async () => { await loadUserBalance(); }, 1000);
+                    showToast(` Баланс пополнен!`);
+                    setTimeout(async () => { await loadUserBalance(); }, 1500); // Чуть больше задержка для обработки сервером
                 } else if (status === 'failed') showToast('❌ Ошибка оплаты');
             });
-        } else showToast('❌ ' + (response.error || 'Ошибка создания платежа'));
+        } else {
+            showToast('❌ ' + (response.error || 'Ошибка создания платежа'));
+        }
     } catch (error) { hideLoader(); showToast('❌ Ошибка создания платежа'); }
 }
+
 function createCustomStarsInvoice() {
     const input = document.getElementById('customStarsAmount'); let stars = parseInt(input?.value);
     if (!stars || stars < 1) { showToast('❌ Минимальная сумма: 1 <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">'); return; }
@@ -1288,7 +1297,28 @@ async function showReferralsList() {
         document.getElementById('referralsList').innerHTML = '<div class="empty-state">Ошибка загрузки</div>';
     }
 }
-
+async function activateBalancePromo() {
+    const input = document.getElementById('profilePromoInput');
+    const code = input.value.trim();
+    if (!code) return showToast('❌ Введите код');
+    
+    showLoader();
+    const res = await apiRequest('/promo/activate', 'POST', { user_id: state.user.telegram_id, code: code });
+    hideLoader();
+    
+    if (res.success) {
+        input.value = '';
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        document.getElementById('profileBalance').textContent = res.balance;
+        showToast(`🎉 ${res.message}`);
+        if (window.playSuccessAnimation) window.playSuccessAnimation();
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+        showToast('❌ ' + res.error);
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    }
+}
 async function withdrawReferralEarnings() {
     if (!state.user?.telegram_id) return;
     const btn = document.getElementById('btnRefWithdraw');

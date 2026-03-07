@@ -44,7 +44,7 @@ MINES_COEFS = {
 
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage
 )
 
 load_dotenv()
@@ -675,20 +675,78 @@ async def get_referrals(request):
 async def create_invoice(request):
     data = await request.json()
     stars, user_id = data.get('stars', 100), data.get('user_id')
+    code = data.get('promo_code', '').strip().upper()
+    
     bot_token = os.getenv('BOT_TOKEN')
     if not bot_token: return web.json_response({'success': False, 'error': 'Токен бота не настроен'})
 
-    api_url = f"https://api.telegram.org/bot{bot_token}/createInvoiceLink"
-    invoice_payload = { "title": f"{stars} Telegram Stars", "description": f"Пополнение баланса на {stars} звезд", "payload": f"stars_{stars}_{user_id}", "provider_token": "", "currency": "XTR", "prices": [{"label": f"{stars} Stars", "amount": stars}] }
+    bonus_amount = 0
+    promo_id = None
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(api_url, json=invoice_payload) as resp:
-                result = await resp.json()
-                if result.get("ok"): return web.json_response({'success': True, 'invoice_link': result["result"]})
-                else: return web.json_response({'success': False, 'error': result.get("description", "Ошибка API")})
-    except Exception as e: return web.json_response({'success': False, 'error': 'Внутренняя ошибка сервера'})
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        if not user: return web.json_response({'success': False, 'error': 'Юзер не найден'})
 
+        # Если ввели промокод, проверяем его перед созданием инвойса
+        if code:
+            promo = (await session.execute(select(PromoCode).where(PromoCode.code == code, PromoCode.is_active == True))).scalar_one_or_none()
+            if not promo: return web.json_response({'success': False, 'error': 'Промокод не найден'})
+            if promo.promo_type != 'deposit': return web.json_response({'success': False, 'error': 'Этот промокод не для депозита'})
+            if promo.uses_limit > 0 and promo.uses_count >= promo.uses_limit: return web.json_response({'success': False, 'error': 'Лимит активаций исчерпан'})
+            
+            usage = (await session.execute(select(PromoCodeUsage).where(PromoCodeUsage.user_id == user.id, PromoCodeUsage.promo_id == promo.id))).scalar_one_or_none()
+            if usage: return web.json_response({'success': False, 'error': 'Вы уже использовали этот код'})
+            
+            bonus_amount = int(stars * (promo.value / 100.0))
+            promo_id = promo.id
+
+        # Сохраняем черновик платежа, чтобы потом знать про бонус
+        payment = Payment(user_id=user.id, amount=stars, bonus_amount=bonus_amount, promo_id=promo_id, status='pending')
+        session.add(payment)
+        await session.commit()
+        await session.refresh(payment)
+
+        api_url = f"https://api.telegram.org/bot{bot_token}/createInvoiceLink"
+        # Передаем ID платежа в payload, чтобы потом его найти!
+        invoice_payload = { "title": f"{stars} Telegram Stars", "description": f"Пополнение баланса на {stars} звезд", "payload": f"pay_{payment.id}", "provider_token": "", "currency": "XTR", "prices": [{"label": f"{stars} Stars", "amount": stars}] }
+
+        try:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.post(api_url, json=invoice_payload) as resp:
+                    result = await resp.json()
+                    if result.get("ok"): return web.json_response({'success': True, 'invoice_link': result["result"]})
+                    else: return web.json_response({'success': False, 'error': result.get("description", "Ошибка API")})
+        except Exception as e: return web.json_response({'success': False, 'error': 'Внутренняя ошибка сервера'})
+    
+async def activate_promo(request):
+    data = await request.json()
+    user_id = data.get('user_id')
+    code = data.get('code', '').strip().upper()
+
+    if not code: return web.json_response({'success': False, 'error': 'Введите промокод'})
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        promo = (await session.execute(select(PromoCode).where(PromoCode.code == code, PromoCode.is_active == True))).scalar_one_or_none()
+
+        if not promo: return web.json_response({'success': False, 'error': 'Промокод не найден или неактивен'})
+        if promo.promo_type != 'balance': return web.json_response({'success': False, 'error': 'Этот промокод только для пополнения!'})
+        if promo.uses_limit > 0 and promo.uses_count >= promo.uses_limit: return web.json_response({'success': False, 'error': 'Лимит активаций исчерпан'})
+
+        # Проверка, использовал ли уже этот юзер этот код
+        usage = (await session.execute(select(PromoCodeUsage).where(PromoCodeUsage.user_id == user.id, PromoCodeUsage.promo_id == promo.id))).scalar_one_or_none()
+        if usage: return web.json_response({'success': False, 'error': 'Вы уже активировали этот промокод'})
+
+        # Выдаем бонус
+        user.balance += promo.value
+        promo.uses_count += 1
+        
+        # Записываем использование
+        new_usage = PromoCodeUsage(user_id=user.id, promo_id=promo.id)
+        session.add(new_usage)
+        await session.commit()
+
+        return web.json_response({'success': True, 'message': f'Активировано! +{promo.value} ⭐', 'balance': user.balance})
 async def index(request):
     with open('templates/index.html', 'r', encoding='utf-8') as f: return web.Response(text=f.read(), content_type='text/html')
     
@@ -899,6 +957,7 @@ async def create_app():
         web.post('/api/crash/bet', crash_bet),
         web.post('/api/crash/cashout', crash_cashout),
         web.post('/api/dice/play', dice_play),
+        web.post('/api/promo/activate', activate_promo),
     ]
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))

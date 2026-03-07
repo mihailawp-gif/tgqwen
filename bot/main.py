@@ -29,6 +29,10 @@ class AdminState(StatesGroup):
     waiting_for_broadcast = State()
     waiting_for_add_balance = State()
     waiting_for_mass_bonus = State()
+    promo_code = State()
+    promo_type = State()
+    promo_value = State()
+    promo_limit = State()
 # Инициализация бота
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 admin_bot = Bot(token=os.getenv("ADMIN_BOT_TOKEN"))
@@ -373,70 +377,56 @@ async def process_pre_checkout(pre_checkout_query: PreCheckoutQuery):
 
 @router.message(F.successful_payment)
 async def process_successful_payment(message: Message):
-    """Обработка успешного платежа"""
+    """Обработка успешного платежа (с учетом промокодов)"""
+    payload = message.successful_payment.invoice_payload
+    # payload выглядит как "pay_123"
+    payment_id = int(payload.split('_')[1]) if payload.startswith('pay_') else None
     amount = message.successful_payment.total_amount
     
     async with async_session() as session:
-        result = await session.execute(
-            select(User).where(User.telegram_id == message.from_user.id)
-        )
+        result = await session.execute(select(User).where(User.telegram_id == message.from_user.id))
         user = result.scalar_one()
-        user.balance += amount
         
-        payment = Payment(
-            user_id=user.id,
-            amount=amount,
-            status="completed",
-            telegram_payment_id=message.successful_payment.telegram_payment_charge_id
-        )
-        session.add(payment)
+        # Находим наш подготовленный платеж
+        payment = await session.get(Payment, payment_id) if payment_id else None
         
+        bonus = 0
+        if payment:
+            payment.status = "completed"
+            payment.telegram_payment_id = message.successful_payment.telegram_payment_charge_id
+            bonus = payment.bonus_amount
+            
+            # Фиксируем использование промокода
+            if payment.promo_id:
+                promo = await session.get(PromoCode, payment.promo_id)
+                if promo:
+                    promo.uses_count += 1
+                    session.add(PromoCodeUsage(user_id=user.id, promo_id=promo.id))
+        
+        # Начисляем основу + бонус от промокода
+        total_add = amount + bonus
+        user.balance += total_add
+        
+        # Реферальная система
         if user.referrer_id:
             referrer = await session.get(User, user.referrer_id)
             if referrer:
-                bonus_stars = int(amount * 0.05) # 5% от депа
+                bonus_stars = int(amount * 0.05) # 5% от чистого депа (без учета промо-бонуса)
                 if bonus_stars > 0:
                     referrer.balance += bonus_stars
-                    earning = ReferralEarning(
-                        referrer_id=referrer.id,
-                        referred_user_id=user.id,
-                        amount=bonus_stars,
-                        source='deposit_bonus'
-                    )
-                    session.add(earning)
-                   
+                    session.add(ReferralEarning(referrer_id=referrer.id, referred_user_id=user.id, amount=bonus_stars, source='deposit_bonus'))
                     try:
-                        await bot.send_message(
-                            chat_id=referrer.telegram_id,
-                            text=f"🎁 <b> Вы получили реферальную награду!</b>\nВам начислено: <b>{bonus_stars} ⭐</b>",
-                            parse_mode="HTML"
-                        )
-                    except Exception:
-                        pass 
+                        await bot.send_message(chat_id=referrer.telegram_id, text=f"🎁 <b> Вы получили реферальную награду!</b>\nВам начислено: <b>{bonus_stars} ⭐</b>", parse_mode="HTML")
+                    except Exception: pass 
+                    
         await session.commit()
 
-    # Уведомление всем админам
-    name = message.from_user.first_name or 'Пользователь'
-    uname = f' (@{message.from_user.username})' if message.from_user.username else ''
-    user_link = f'<a href="tg://user?id={message.from_user.id}">{name}</a>{uname}'
-    for admin_id in ADMIN_IDS:
-        try:
-            await bot.send_message(
-                admin_id,
-                f'💳 <b>Пополнение баланса</b>\n'
-                f'👤 {user_link}\n'
-                f'⭐ +{amount} звёзд\n'
-                f'💰 Новый баланс: {user.balance} ⭐',
-                parse_mode='HTML'
-            )
-        except Exception:
-            pass
-
-    await message.answer(
-        f"✅ Платеж успешно обработан!\n"
-        f"💰 Начислено: {amount} ⭐\n"
-        f"💎 Новый баланс: {user.balance} ⭐"
-    )
+    # Уведомление юзеру
+    text = f"✅ Платеж успешно обработан!\n💰 Начислено: {amount} ⭐"
+    if bonus > 0:
+        text += f"\n🎁 Бонус по промокоду: +{bonus} ⭐"
+    text += f"\n💎 Новый баланс: {user.balance} ⭐"
+    await message.answer(text)
 
 
 @router.callback_query(F.data == "stats")
@@ -561,9 +551,98 @@ def get_admin_keyboard():
             InlineKeyboardButton(text="📤 Новые выводы", callback_data="admin_pending_wd_1"),
             InlineKeyboardButton(text="🗄 История выводов", callback_data="admin_history_wd_1")
         ],
+        [InlineKeyboardButton(text="🎟 Промокоды", callback_data="admin_promos")]
         [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
+@router.callback_query(F.data == "admin_promos")
+async def admin_promos_menu(callback: CallbackQuery):
+    if callback.fromuser.id not in ADMIN_IDS: return
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Создать промокод", callback_data="promo_create")],
+        [InlineKeyboardButton(text="📋 Активные промокоды", callback_data="promo_list")],
+        [InlineKeyboardButton(text="◀️ В меню", callback_data="admin_back")]
+    ])
+    await callback.message.edit_text("🎟 <b>Управление промокодами</b>", reply_markup=kb, parse_mode="HTML")
+
+@router.callback_query(F.data == "promo_create")
+async def promo_create_step1(callback: CallbackQuery, state: FSMContext):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 На баланс (+ Звезды)", callback_data="promo_type_balance")],
+        [InlineKeyboardButton(text="💳 На депозит (+ % к пополнению)", callback_data="promo_type_deposit")],
+        [InlineKeyboardButton(text="◀️ Отмена", callback_data="admin_promos")]
+    ])
+    await callback.message.edit_text("Выберите тип промокода:", reply_markup=kb)
+
+@router.callback_query(F.data.startswith("promo_type_"))
+async def promo_create_step2(callback: CallbackQuery, state: FSMContext):
+    p_type = callback.data.split("_")[2]
+    await state.update_data(promo_type=p_type)
+    await state.set_state(AdminState.promo_code)
+    await callback.message.edit_text("Введите текст промокода (Например: SUMMER2026):")
+
+@router.message(AdminState.promo_code)
+async def promo_create_step3(message: Message, state: FSMContext):
+    await state.update_data(promo_code=message.text.strip().upper())
+    await state.set_state(AdminState.promo_value)
     
+    data = await state.get_data()
+    msg = "Введите сумму звезд:" if data['promo_type'] == 'balance' else "Введите процент бонуса (например 50 для +50%):"
+    await message.answer(msg)
+
+@router.message(AdminState.promo_value)
+async def promo_create_step4(message: Message, state: FSMContext):
+    try:
+        val = int(message.text.strip())
+        await state.update_data(promo_value=val)
+        await state.set_state(AdminState.promo_limit)
+        await message.answer("Введите лимит активаций (введите 0, если промокод бесконечный):")
+    except ValueError:
+        await message.answer("Пожалуйста, введите число.")
+
+@router.message(AdminState.promo_limit)
+async def promo_create_finish(message: Message, state: FSMContext):
+    try:
+        limit = int(message.text.strip())
+        data = await state.get_data()
+        
+        async with async_session() as session:
+            promo = PromoCode(
+                code=data['promo_code'],
+                promo_type=data['promo_type'],
+                value=data['promo_value'],
+                uses_limit=limit
+            )
+            session.add(promo)
+            await session.commit()
+            
+        await state.clear()
+        
+        t_str = "На Баланс" if data['promo_type'] == 'balance' else "На Депозит"
+        v_str = f"{data['promo_value']} ⭐" if data['promo_type'] == 'balance' else f"+{data['promo_value']}%"
+        l_str = "Бесконечный" if limit == 0 else str(limit)
+        
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos")]])
+        await message.answer(f"✅ <b>Промокод создан!</b>\n\nКод: <code>{data['promo_code']}</code>\nТип: {t_str}\nБонус: {v_str}\nЛимит: {l_str}", parse_mode="HTML", reply_markup=kb)
+    except Exception as e:
+        await message.answer(f"Ошибка: {e}")
+        await state.clear()
+
+@router.callback_query(F.data == "promo_list")
+async def promo_list(callback: CallbackQuery):
+    async with async_session() as session:
+        promos = (await session.execute(select(PromoCode).where(PromoCode.is_active == True).order_by(desc(PromoCode.created_at)).limit(10))).scalars().all()
+    
+    if not promos:
+        return await callback.message.edit_text("Нет активных промокодов.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos")]]))
+        
+    text = "📋 <b>Активные промокоды (Последние 10):</b>\n\n"
+    for p in promos:
+        l_str = f"{p.uses_count}/{p.uses_limit}" if p.uses_limit > 0 else f"{p.uses_count}/∞"
+        v_str = f"{p.value}⭐" if p.promo_type == 'balance' else f"+{p.value}%"
+        text += f"▪️ <code>{p.code}</code> ({v_str}) | Активаций: {l_str}\n"
+        
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="◀️ Назад", callback_data="admin_promos")]])
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
 @router.callback_query(F.data.startswith("admin_pending_wd_"))
 async def show_pending_withdrawals(callback: CallbackQuery):
     if callback.from_user.id not in ADMIN_IDS: return

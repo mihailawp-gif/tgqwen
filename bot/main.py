@@ -551,7 +551,7 @@ def get_admin_keyboard():
             InlineKeyboardButton(text="📤 Новые выводы", callback_data="admin_pending_wd_1"),
             InlineKeyboardButton(text="🗄 История выводов", callback_data="admin_history_wd_1")
         ],
-        [InlineKeyboardButton(text="🎟 Промокоды", callback_data="admin_promos")]
+        [InlineKeyboardButton(text="🎟 Промокоды", callback_data="admin_promos")], 
         [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
 @router.callback_query(F.data == "admin_promos")

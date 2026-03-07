@@ -650,26 +650,27 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .dice-btn-range { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; opacity: 0.9; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px; }
 
 /* --- АНИМАЦИЯ МИН В ГЛАВНОМ МЕНЮ (КРУПНЕЕ) --- */
+/* --- АНИМАЦИЯ МИН В ГЛАВНОМ МЕНЮ (ЕЩЕ БОЛЬШЕ И ЛЕВЕЕ) --- */
 .mines-menu-anim { 
     position: relative; 
     width: 250px; 
     height: 250px; 
-    /* Увеличил общий масштаб с 0.48 до 0.55 и немного поправил положение */
-    transform: scale(0.55) translate(-10px, 10px); 
+    /* Увеличил масштаб до 0.65 и сильно сдвинул влево (-45px) */
+    transform: scale(0.65) translate(-45px, 5px); 
     transform-origin: left center; 
     pointer-events: none; 
 }
-/* Сдвинул алмаз ближе к центру и бомбе */
-.gem-wrapper { position: absolute; top: 40px; left: 40px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
-/* Бомбу оставил почти там же, но она стала больше */
-.bomb-wrapper { position: absolute; top: 70px; left: 90px; display: flex; flex-direction: column; align-items: center; z-index: 2; }
+/* Алмаз теперь левее */
+.gem-wrapper { position: absolute; top: 40px; left: 20px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
+/* Бомба тоже смещена */
+.bomb-wrapper { position: absolute; top: 70px; left: 80px; display: flex; flex-direction: column; align-items: center; z-index: 2; }
 
-/* Увеличил размеры самих картинок */
+/* Размеры картинок и теней те же, что и в прошлом шаге, 
+   так как мы увеличили общий контейнер через scale() */
 .gem-img { width: 135px; animation: floatGem 3.5s ease-in-out infinite; filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35)); }
 .bomb-img { width: 165px; animation: floatBomb 4s ease-in-out infinite; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.55)); }
 
 .mine-shadow { height: 12px; background: rgba(0, 0, 0, 0.4); border-radius: 50%; filter: blur(5px); margin-top: 15px; }
-/* Подстроил размеры теней под новые картинки */
 .gem-shadow { width: 105px; animation: shadowGem 3.5s ease-in-out infinite; }
 .bomb-shadow { width: 125px; animation: shadowBomb 4s ease-in-out infinite; }
 

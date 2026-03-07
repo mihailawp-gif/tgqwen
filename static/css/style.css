@@ -648,3 +648,24 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .btn-dice-over { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; }
 .dice-btn-title { font-family: 'Exo 2', sans-serif; font-size: 18px; font-weight: 900; letter-spacing: 1px; }
 .dice-btn-range { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; opacity: 0.9; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px; }
+
+.mines-menu-anim { 
+    position: relative; 
+    width: 250px; 
+    height: 250px; 
+    transform: scale(0.48) translate(-20px, 0); 
+    transform-origin: left center; 
+    pointer-events: none; 
+}
+.gem-wrapper { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
+.bomb-wrapper { position: absolute; top: 70px; left: 90px; display: flex; flex-direction: column; align-items: center; z-index: 2; }
+.gem-img { width: 110px; animation: floatGem 3.5s ease-in-out infinite; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); }
+.bomb-img { width: 140px; animation: floatBomb 4s ease-in-out infinite; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); }
+.mine-shadow { height: 10px; background: rgba(0, 0, 0, 0.4); border-radius: 50%; filter: blur(4px); margin-top: 15px; }
+.gem-shadow { width: 85px; animation: shadowGem 3.5s ease-in-out infinite; }
+.bomb-shadow { width: 100px; animation: shadowBomb 4s ease-in-out infinite; }
+
+@keyframes floatGem { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(-5deg); } }
+@keyframes floatBomb { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(3deg); } }
+@keyframes shadowGem { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(0.8); opacity: 0.2; } }
+@keyframes shadowBomb { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(0.75); opacity: 0.25; } }

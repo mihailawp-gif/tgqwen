@@ -334,43 +334,21 @@ async def get_case_items(request):
     async with async_session() as session:
         case = await session.get(Case, case_id)
         if not case: return web.json_response({'success': False, 'error': 'Case not found'})
+        
         result = await session.execute(select(CaseItem).where(CaseItem.case_id == case_id).options(joinedload(CaseItem.gift)))
         items = result.scalars().unique().all()
-
-        if case.is_free:
-            stars_item = None
-            for item in items:
-                if item.gift.gift_number and item.gift.gift_number >= 200:
-                    stars_item = item
-                    break
-
-            if stars_item:
-                gift = stars_item.gift
-                gift_number = gift.gift_number if gift.gift_number else ((gift.id - 1) % 120 + 1)
-                preview_items = [{
-                    'id': stars_item.id, 'drop_chance': 73.0,
-                    'gift': {'id': gift.id, 'name': 'STARS', 'rarity': gift.rarity or 'common', 'value': '1-10', 'image_url': gift.image_url, 'gift_number': gift_number, 'is_stars': True }
-                }]
-                non_stars_items = [item for item in items if not (item.gift.gift_number and item.gift.gift_number >= 200)]
-                fake_chances = {'legendary': 3.0, 'epic': 5.0, 'rare': 8.0, 'common': 11.0}
-                
-                for item in non_stars_items:
-                    g = item.gift
-                    gift_number = g.gift_number if g.gift_number else ((g.id - 1) % 120 + 1)
-                    fake_chance = fake_chances.get(g.rarity or 'common', 11.0)
-                    preview_items.append({
-                        'id': item.id, 'drop_chance': fake_chance,
-                        'gift': {'id': g.id, 'name': g.name, 'rarity': g.rarity or 'common', 'value': g.value, 'image_url': g.image_url, 'gift_number': gift_number, 'is_stars': False}
-                    })
-                return web.json_response({'success': True, 'items': preview_items})
 
         items_data = []
         for item in items:
             gift = item.gift
             gift_number = gift.gift_number if gift.gift_number else ((gift.id - 1) % 120 + 1)
             items_data.append({
-                'id': item.id, 'drop_chance': item.drop_chance,
-                'gift': {'id': gift.id, 'name': gift.name, 'rarity': gift.rarity, 'value': gift.value, 'image_url': gift.image_url, 'gift_number': gift_number, 'is_stars': bool(gift.gift_number and gift.gift_number >= 200)}
+                'id': item.id, 
+                'drop_chance': item.drop_chance,
+                'gift': { 
+                    'id': gift.id, 'name': gift.name, 'value': gift.value, 'image_url': gift.image_url, 
+                    'gift_number': gift_number, 'is_stars': bool(gift.gift_number and gift.gift_number >= 200) 
+                }
             })
         return web.json_response({'success': True, 'items': items_data})
 
@@ -390,9 +368,11 @@ async def open_case(request):
             case = await session.get(Case, case_id)
             if not case: return web.json_response({'success': False, 'error': 'Case not found'})
 
+            # Списываем баланс или проверяем кулдаун
             if case.is_free:
                 if user.last_free_case:
-                    time_diff = datetime.utcnow() - user.last_free_case
+                    # Фикс DeprecationWarning
+                    time_diff = datetime.now(datetime.UTC).replace(tzinfo=None) - user.last_free_case
                     if time_diff < timedelta(hours=24):
                         remaining = timedelta(hours=24) - time_diff
                         return web.json_response({'success': False, 'error': f'Бесплатный кейс доступен через {remaining.seconds // 3600} ч'})
@@ -404,54 +384,51 @@ async def open_case(request):
             items = items_result.scalars().unique().all()
             if not items: return web.json_response({'success': False, 'error': 'No items in case'})
 
-            if case.is_free:
-                rare_chance = random.uniform(0, 100)
-                is_stars = False
-                
-                if rare_chance < 0.01:
-                    non_stars_items = [item for item in items if not (item.gift.gift_number and item.gift.gift_number >= 200)]
-                    won_item = random.choice(non_stars_items) if non_stars_items else items[0]
-                    gift = won_item.gift
-                    user.balance += gift.value or 0
-                else:
-                    stars_weights = [25, 20, 15, 12, 10, 7, 5, 3, 2, 1]
-                    stars_amount = random.choices(range(1, 11), weights=stars_weights, k=1)[0]
-                    is_stars = True
-                    won_item = next((item for item in items if item.gift.gift_number and item.gift.gift_number >= 200), items[0])
-                    gift = won_item.gift
-                    user.balance += stars_amount
-                    gift.value = stars_amount
-            else:
-                total_chance = sum(item.drop_chance for item in items)
-                rand = random.uniform(0, total_chance)
-                current = 0
-                won_item = items[0]
-                for item in items:
-                    current += item.drop_chance
-                    if rand <= current:
-                        won_item = item
-                        break
-                gift = won_item.gift
-                is_stars = bool(gift.gift_number and gift.gift_number >= 200)
-                if is_stars: user.balance += gift.value or 0
+            # ЕДИНАЯ ЛОГИКА РУЛЕТКИ ДЛЯ ВСЕХ КЕЙСОВ
+            total_chance = sum(item.drop_chance for item in items)
+            rand = random.uniform(0, total_chance)
+            current = 0
+            won_item = items[0]
+            
+            for item in items:
+                current += item.drop_chance
+                if rand <= current:
+                    won_item = item
+                    break
+                    
+            gift = won_item.gift
+            is_stars = bool(gift.gift_number and gift.gift_number >= 200)
+            
+            # Начисляем звезды сразу на баланс
+            if is_stars: 
+                user.balance += gift.value or 0
 
+            # Записываем в БД
             opening = CaseOpening(user_id=user.id, case_id=case_id, gift_id=gift.id)
-            if is_stars: opening.is_sold = True
+            if is_stars: 
+                opening.is_sold = True # Звезды нельзя продать повторно
+                
             session.add(opening)
 
-            if case.is_free: user.last_free_case = datetime.utcnow()
+            # Обновляем таймер бесплатного кейса
+            if case.is_free: 
+                user.last_free_case = datetime.now(datetime.UTC).replace(tzinfo=None)
 
             await session.commit()
             await session.refresh(opening)
 
             return web.json_response({
                 'success': True, 'opening_id': opening.id,
-                'gift': { 'id': gift.id, 'name': gift.name, 'rarity': gift.rarity, 'value': gift.value, 'image_url': gift.image_url, 'gift_number': gift.gift_number or ((gift.id - 1) % 120 + 1), 'is_stars': bool(gift.gift_number and gift.gift_number >= 200) },
+                'gift': { 
+                    'id': gift.id, 'name': gift.name, 'value': gift.value, 'image_url': gift.image_url, 
+                    'gift_number': gift.gift_number or ((gift.id - 1) % 120 + 1), 'is_stars': is_stars 
+                },
                 'balance': user.balance
             })
     except Exception as e:
         print(f"❌ Error in open_case: {e}")
-        return web.json_response({'success': False, 'error': f'Internal error: {str(e)}'}, status=500)
+        return web.json_response({'success': False, 'error': f'Internal error'}, status=500)
+        
 async def notify_admins_about_withdrawal(withdrawal_id, user_id, username, gift_name, price):
     """Фоновая функция для отправки уведомлений админам"""
     bot_token = os.getenv('BOT_TOKEN')

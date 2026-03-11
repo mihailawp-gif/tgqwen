@@ -179,8 +179,8 @@ async function showCasePreview(caseId) {
         response.items.forEach((item, index) => {
             const tgsNum = item.gift.gift_number || ((item.gift.id - 1) % 120) + 1;
             const tgsId  = `prev_${caseId}_${index}`;
-            const tile   = document.createElement('div');
-            tile.className = `preview-tile rarity-${item.gift.rarity || 'common'}`;
+			const tile   = document.createElement('div');
+            tile.className = `preview-tile rarity-unique`;
             tile.innerHTML = `<div class="preview-tile-tgs">${tgsEl(tgsId, tgsNum, '80px')}</div><div class="preview-tile-name">${item.gift.name}</div><div class="preview-tile-footer"><span class="preview-tile-chance">${item.drop_chance.toFixed(1)}%</span></div>`;
             itemsPreview.appendChild(tile);
         });
@@ -308,8 +308,11 @@ function showResult(result) {
     } else {
         if (btnSell) btnSell.style.display = ''; if (starsNotice) starsNotice.style.display = 'none'; if (itemValueSection) itemValueSection.style.display = '';
     }
-    const rarityEl = document.getElementById('wonItemRarity');
-    if(rarityEl) { rarityEl.className = `item-rarity-badge ${result.gift.rarity || 'common'}`; rarityEl.textContent = getRarityText(result.gift.rarity || 'common'); }
+	const rarityEl = document.getElementById('wonItemRarity');
+    if(rarityEl) { 
+        rarityEl.className = `item-rarity-badge unique`; 
+        rarityEl.textContent = 'LIMITED'; 
+    }
 }
 
 async function sellResultItem() {
@@ -537,7 +540,7 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     } catch (error) { return { success: false, error: error.message }; }
 }
 async function checkFreeCaseAvailable() { const response = await apiRequest(`/user/${state.user.telegram_id}/free-case-check`, 'GET'); return response.available; }
-function getRarityText(rarity) { return { 'common': 'Обычный', 'rare': 'Редкий', 'epic': 'Эпический', 'legendary': 'Легендарный' }[rarity] || 'Обычный'; }
+
 
 if (tg && tg.BackButton) {
     tg.BackButton.onClick(() => {

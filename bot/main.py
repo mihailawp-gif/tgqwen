@@ -554,9 +554,10 @@ def get_admin_keyboard():
         [InlineKeyboardButton(text="🎟 Промокоды", callback_data="admin_promos")], 
         [InlineKeyboardButton(text="🔄 Сбросить мой Free Кейс", callback_data="admin_reset_my_free")]
     ])
+
 @router.callback_query(F.data == "admin_promos")
 async def admin_promos_menu(callback: CallbackQuery):
-    if callback.fromuser.id not in ADMIN_IDS: return
+    if callback.from_user.id not in ADMIN_IDS: return 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Создать промокод", callback_data="promo_create")],
         [InlineKeyboardButton(text="📋 Активные промокоды", callback_data="promo_list")],

@@ -20,7 +20,7 @@ import random
 
 from database.models import (
     async_session, User, Case, CaseOpening, 
-    Gift, CaseItem, Withdrawal, Payment, ReferralEarning
+    Gift, CaseItem, Withdrawal, Payment, ReferralEarning, PromoCode, PromoCodeUsage
 )
 
 load_dotenv()

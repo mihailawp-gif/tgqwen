@@ -368,10 +368,10 @@ async def open_case(request):
             case = await session.get(Case, case_id)
             if not case: return web.json_response({'success': False, 'error': 'Case not found'})
 
-           # Списываем баланс или проверяем кулдаун
+            # Списываем баланс или проверяем кулдаун
             if case.is_free:
                 if user.last_free_case:
-                    # ЖЕСТКИЙ ФИКС ВРЕМЕНИ: Убираем timezone инфу из обеих дат перед вычитанием
+                    # ЖЕСТКИЙ ФИКС ВРЕМЕНИ ДЛЯ ОТКРЫТИЯ КЕЙСА
                     now_utc = datetime.now(datetime.UTC).replace(tzinfo=None)
                     last_case = user.last_free_case.replace(tzinfo=None)
                     
@@ -413,7 +413,6 @@ async def open_case(request):
                 
             session.add(opening)
 
-            # Обновляем таймер бесплатного кейса
             # Обновляем таймер бесплатного кейса
             if case.is_free: 
                 user.last_free_case = datetime.now(datetime.UTC).replace(tzinfo=None)
@@ -560,7 +559,12 @@ async def check_free_case(request):
     async with async_session() as session:
         user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
         if not user or not user.last_free_case: return web.json_response({'available': True})
-        time_diff = datetime.utcnow() - user.last_free_case
+        
+        # ЖЕСТКИЙ ФИКС ВРЕМЕНИ ДЛЯ ОБНОВЛЕНИЯ ТАЙМЕРА
+        now_utc = datetime.now(datetime.UTC).replace(tzinfo=None)
+        last_case = user.last_free_case.replace(tzinfo=None)
+        
+        time_diff = now_utc - last_case
         available = time_diff >= timedelta(hours=24)
         return web.json_response({'available': available, 'remaining_seconds': max(0, (timedelta(hours=24) - time_diff).total_seconds()) if not available else 0})
 

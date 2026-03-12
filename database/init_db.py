@@ -245,35 +245,54 @@ async def populate_db():
         await session.commit()
         
         # Пересоздание кейсов
-        try:
-            await session.execute(delete(CaseItem))
-            await session.execute(delete(Case))
-            await session.commit()
-        except Exception: await session.rollback()
+# --- УМНОЕ ОБНОВЛЕНИЕ КЕЙСОВ (ФИКС ДУБЛИКАТОВ) ---
+        # 1. Отключаем вообще все кейсы (прячем дубликаты)
+        existing_cases = (await session.execute(select(Case))).scalars().all()
+        for c in existing_cases:
+            c.is_active = False
+        await session.commit()
         
-        # Создание кейсов из конфига
+        # 2. Обновляем оригиналы или создаем новые
         for case_data in CASES_CONFIG:
             try:
-                case = Case(
-                    name=case_data["name"], description=case_data["description"],
-                    price=case_data["price"], is_free=case_data["is_free"],
-                    image_url=case_data["image_url"]
-                )
-                session.add(case)
+                # Ищем кейс по имени (берем самый первый, чтобы игнорировать дубли)
+                result = await session.execute(select(Case).where(Case.name == case_data["name"]).order_by(Case.id))
+                case = result.scalars().first()
+                
+                if case:
+                    # Обновляем старый кейс
+                    case.description = case_data["description"]
+                    case.price = case_data["price"]
+                    case.is_free = case_data["is_free"]
+                    case.image_url = case_data["image_url"]
+                    case.is_active = True
+                else:
+                    # Если такого кейса еще нет - создаем
+                    case = Case(
+                        name=case_data["name"], description=case_data["description"],
+                        price=case_data["price"], is_free=case_data["is_free"],
+                        image_url=case_data["image_url"], is_active=True
+                    )
+                    session.add(case)
+                
                 await session.flush()
                 
+                # Удаляем старые шансы/предметы только для этого кейса
+                await session.execute(delete(CaseItem).where(CaseItem.case_id == case.id))
+                
+                # Добавляем новые предметы с правильными шансами из конфига
                 for item_data in case_data["items"]:
                     key = item_data["key"]
                     if key in gift_objs:
                         session.add(CaseItem(
                             case_id=case.id,
-                            gift_id=gift_objs[key], # Здесь теперь подставляется готовое число
+                            gift_id=gift_objs[key],
                             drop_chance=item_data["chance"]
                         ))
                 await session.commit()
-                print(f"✅ Кейс '{case_data['name']}' успешно создан")
+                print(f"✅ Кейс '{case_data['name']}' успешно обновлен!")
             except Exception as e:
-                print(f"⚠️ Ошибка создания кейса {case_data['name']}: {e}")
+                print(f"⚠️ Ошибка кейса {case_data['name']}: {e}")
                 await session.rollback()
 
         # Восстановление юзеров

@@ -67,7 +67,7 @@ GIFTS_CATALOG = [
     (13,   "Jolly Chimp",          768),
     (14,   "Happy Brownie",        650),
     (23,   "Bling Blinky",         500),   
-    (26,   "Loot Bag",             671),
+    (26,   "Private bag",             671),
     (48,   "Clover Pin",           287),
     (50,   "Cupid Charm",          743),   
     (51,   "Nail Bracelet",        900),
@@ -78,7 +78,7 @@ GIFTS_CATALOG = [
     (73,   "Input Key",            671),
     (74,   "Evil Eye",             788),
     (75,   "Top Hat",              1392),
-    (78,   "Loot Bag II",          400),
+    (78,   "Loot Bag",          15000),
     (85,   "Light Sword",          671),
     (86,   "Lol Pop",              280),
     (87,   "Restless Jar",         671),
@@ -102,7 +102,6 @@ GIFTS_CATALOG = [
     (125,  "Champagne",            50),
     (143,  "Cool Dog",             372),
     (144,  "Ice Cream",            375),
-    (145,  "Poop",                 300),
     (146,  "Xmas Stocking",        300),
     (147,  "Candy Cane",           433),
     (148,  "Pot of Gold",          590),
@@ -151,29 +150,32 @@ CASES_CONFIG = [
         "description": "Открывай раз в 24 часа бесплатно!",
         "price": 0,
         "is_free": True,
-        "image_url": "/static/images/free-stars-case.png",
+        "image_url": "/static/images/cases/free.png",
         "items": [
             # ID гифта/ключа : Шанс выпадения (Сумма не обязательно 100, но так удобнее)
             {"key": 200, "chance": 89.8}, # 10 звезд (Частый дроп)
             {"key": 201, "chance": 3.0}, # 50 звезд
             {"key": 202, "chance": 3.0}, # 100 звезд
-            {"key": 125, "chance": 2.0}, # Champagne (Цена 50)
-            {"key": 124, "chance": 2.0},  # Ring (Цена 100)
-            {"key": 205, "chance": 0.1},  # 1000 звезд (Редкий)
-            {"key": 22,  "chance": 0.1},  # Plush Pepe (Невероятно редкий, джекпот)
+            {"key": 125, "chance": 1.0}, # Champagne (Цена 50)
+            {"key": 124, "chance": 1},  # Ring (Цена 100)
+            {"key": 205, "chance": 0.01},  # 1000 звезд 
+            {"key": 22,  "chance": 0.0001},  # Plush Pepe 
         ]
     },
     {
         "name": "Кейс Подарков",
         "description": "Эксклюзивные подарки Telegram!",
-        "price": 150,
+        "price": 350,
         "is_free": False,
-        "image_url": "/static/images/premium-gifts-case.png",
+        "image_url": "/static/images/cases/case_2.png",
         "items": [
             {"key": 122, "chance": 40.0}, # Heart (Цена 150 - Окуп 1х)
-            {"key": 145, "chance": 30.0}, # Poop (Цена 300 - Окуп 2х)
-            {"key": 99,  "chance": 20.0}, # Whip Cupcake (Цена 370)
-            {"key": 13,  "chance": 8.0},  # Jolly Chimp (Цена 768)
+            {"key": 14, "chance": 4.0}, # HappyBrownie
+            {"key": 124, "chance":20.0}, # Ring
+            {"key": 144, "chance":10.0}, # Ice Cream
+            {"key": 99,  "chance": 7.0}, # Whip Cupcake (Цена 370)
+            {"key": 13,  "chance": 2.0},  # Jolly Chimp (Цена 768)
+            {"key": 121,  "chance": 30.0},  # Goblet
             {"key": 81,  "chance": 0.01},  # Heart Locket (Цена 2203 - Редкий)
             {"key": 18,  "chance": 0.01},  # Durov's Cap (Цена 80к - Супер редкий)
         ]
@@ -183,14 +185,40 @@ CASES_CONFIG = [
         "description": "Максимальные шансы на жирный дроп!",
         "price": 500,
         "is_free": False,
-        "image_url": "/static/images/premium-gifts-case.png",
+        "image_url": "/static/images/cases/case_3.png",
         "items": [
             {"key": 114, "chance": 45.0}, # Santa Hat (Цена 555 - Окуп 1х)
-            {"key": 26,  "chance": 30.0}, # Loot Bag (Цена 671)
+            {"key": 78,  "chance": 1.0}, # Loot Bag (Цена 671)
             {"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
             {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
-            {"key": 46,  "chance": 1.9},  # Scared Cat (Цена 9775)
+            {"key": 46,  "chance": 0.9},  # Scared Cat (Цена 9775)
+            {"key": 59,  "chance": 9.9},  #  Electric Skull
             {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
+
+
+            
+        ]
+    },
+    {
+        "name": "Дорогой кейс",
+        "description": "Испытай удачу",
+        "price": 5000,
+        "is_free": False,
+        "image_url": "/static/images/cases/bigboom.jpg",
+        "items": [
+            {"key": 114, "chance": 45.0}, # Santa Hat 
+            {"key": 78,  "chance": 1.0}, # Loot Bag 
+            {"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
+            {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
+            {"key": 46,  "chance": 3.9},  # Scared Cat (Цена 9775)
+            {"key": 64,  "chance": 13.01},  #     (64,   "Skull Flower",         1174),
+            {"key": 72,  "chance": 55.01},  #    (72,   "Voodoo Doll",          3331),
+            {"key": 56,  "chance": 22.01},  # (56,   "Kissed Frog",          6231),
+            {"key": 133,  "chance": 17.01},  # (133,  "Ice Eagle",            3954),
+            {"key": 15,  "chance": 2.0},  # (15,   "Mighty Arm",           19647),
+            {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
+            {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
+            {"key": 138,  "chance": 20.0},  # Vinyl Player
         ]
     }
 ]

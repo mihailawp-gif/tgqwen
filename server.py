@@ -368,11 +368,14 @@ async def open_case(request):
             case = await session.get(Case, case_id)
             if not case: return web.json_response({'success': False, 'error': 'Case not found'})
 
-            # Списываем баланс или проверяем кулдаун
+           # Списываем баланс или проверяем кулдаун
             if case.is_free:
                 if user.last_free_case:
-                    # Фикс DeprecationWarning
-                    time_diff = datetime.now(datetime.UTC).replace(tzinfo=None) - user.last_free_case
+                    # ЖЕСТКИЙ ФИКС ВРЕМЕНИ: Убираем timezone инфу из обеих дат перед вычитанием
+                    now_utc = datetime.now(datetime.UTC).replace(tzinfo=None)
+                    last_case = user.last_free_case.replace(tzinfo=None)
+                    
+                    time_diff = now_utc - last_case
                     if time_diff < timedelta(hours=24):
                         remaining = timedelta(hours=24) - time_diff
                         return web.json_response({'success': False, 'error': f'Бесплатный кейс доступен через {remaining.seconds // 3600} ч'})
@@ -410,6 +413,7 @@ async def open_case(request):
                 
             session.add(opening)
 
+            # Обновляем таймер бесплатного кейса
             # Обновляем таймер бесплатного кейса
             if case.is_free: 
                 user.last_free_case = datetime.now(datetime.UTC).replace(tzinfo=None)

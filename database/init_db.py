@@ -191,7 +191,7 @@ CASES_CONFIG = [
         "items": [
             {"key": 114, "chance": 45.0}, # Santa Hat (Цена 555 - Окуп 1х)
             {"key": 78,  "chance": 1.0}, # Loot Bag (Цена 671)
-            {"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
+            #{"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
             {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
             {"key": 46,  "chance": 0.9},  # Scared Cat (Цена 9775)
             {"key": 59,  "chance": 9.9},  #  Electric Skull

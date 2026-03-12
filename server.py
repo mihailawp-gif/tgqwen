@@ -360,9 +360,9 @@ async def open_case(request):
     if not case_id or not user_telegram_id: return web.json_response({'success': False, 'error': 'Missing parameters'})
 
     try:
+        case_id = int(case_id)
         async with async_session() as session:
-            user_result = await session.execute(select(User).where(User.telegram_id == user_telegram_id))
-            user = user_result.scalar_one_or_none()
+            user = (await session.execute(select(User).where(User.telegram_id == user_telegram_id))).scalar_one_or_none()
             if not user: return web.json_response({'success': False, 'error': 'User not found'})
 
             case = await session.get(Case, case_id)
@@ -371,14 +371,19 @@ async def open_case(request):
             # Списываем баланс или проверяем кулдаун
             if case.is_free:
                 if user.last_free_case:
-                    # ЖЕСТКИЙ ФИКС ВРЕМЕНИ ДЛЯ ОТКРЫТИЯ КЕЙСА
-                    now_utc = datetime.now(datetime.UTC).replace(tzinfo=None)
-                    last_case = user.last_free_case.replace(tzinfo=None)
+                    from datetime import timezone
+                    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+                    
+                    last_case = user.last_free_case
+                    if isinstance(last_case, str):
+                        last_case = datetime.fromisoformat(last_case)
+                    last_case = last_case.replace(tzinfo=None)
                     
                     time_diff = now_utc - last_case
                     if time_diff < timedelta(hours=24):
                         remaining = timedelta(hours=24) - time_diff
-                        return web.json_response({'success': False, 'error': f'Бесплатный кейс доступен через {remaining.seconds // 3600} ч'})
+                        hours_left = int(remaining.total_seconds() // 3600)
+                        return web.json_response({'success': False, 'error': f'Бесплатный кейс доступен через {hours_left} ч'})
             else:
                 if user.balance < case.price: return web.json_response({'success': False, 'error': 'Insufficient balance'})
                 user.balance -= case.price
@@ -387,14 +392,16 @@ async def open_case(request):
             items = items_result.scalars().unique().all()
             if not items: return web.json_response({'success': False, 'error': 'No items in case'})
 
-            # ЕДИНАЯ ЛОГИКА РУЛЕТКИ ДЛЯ ВСЕХ КЕЙСОВ
-            total_chance = sum(item.drop_chance for item in items)
+            # ЗАЩИТА: проверяем шансы
+            total_chance = sum((float(item.drop_chance) if item.drop_chance else 0.0) for item in items)
+            if total_chance <= 0: return web.json_response({'success': False, 'error': 'Шансы в кейсе не настроены'})
+            
             rand = random.uniform(0, total_chance)
             current = 0
             won_item = items[0]
             
             for item in items:
-                current += item.drop_chance
+                current += (float(item.drop_chance) if item.drop_chance else 0.0)
                 if rand <= current:
                     won_item = item
                     break
@@ -402,20 +409,18 @@ async def open_case(request):
             gift = won_item.gift
             is_stars = bool(gift.gift_number and gift.gift_number >= 200)
             
-            # Начисляем звезды сразу на баланс
             if is_stars: 
-                user.balance += gift.value or 0
+                user.balance += (int(gift.value) if gift.value else 0)
 
-            # Записываем в БД
             opening = CaseOpening(user_id=user.id, case_id=case_id, gift_id=gift.id)
             if is_stars: 
-                opening.is_sold = True # Звезды нельзя продать повторно
+                opening.is_sold = True 
                 
             session.add(opening)
 
-            # Обновляем таймер бесплатного кейса
             if case.is_free: 
-                user.last_free_case = datetime.now(datetime.UTC).replace(tzinfo=None)
+                from datetime import timezone
+                user.last_free_case = datetime.now(timezone.utc).replace(tzinfo=None)
 
             await session.commit()
             await session.refresh(opening)
@@ -430,7 +435,10 @@ async def open_case(request):
             })
     except Exception as e:
         print(f"❌ Error in open_case: {e}")
-        return web.json_response({'success': False, 'error': f'Internal error'}, status=500)
+        import traceback
+        traceback.print_exc()
+        # ТЕПЕРЬ ОШИБКА БУДЕТ ВЫВОДИТЬСЯ ПРЯМО В ТЕЛЕФОНЕ!
+        return web.json_response({'success': False, 'error': f'Сбой сервера: {e}'}, status=500)
         
 async def notify_admins_about_withdrawal(withdrawal_id, user_id, username, gift_name, price):
     """Фоновая функция для отправки уведомлений админам"""
@@ -560,13 +568,22 @@ async def check_free_case(request):
         user = (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
         if not user or not user.last_free_case: return web.json_response({'available': True})
         
-        # ЖЕСТКИЙ ФИКС ВРЕМЕНИ ДЛЯ ОБНОВЛЕНИЯ ТАЙМЕРА
-        now_utc = datetime.now(datetime.UTC).replace(tzinfo=None)
-        last_case = user.last_free_case.replace(tzinfo=None)
-        
-        time_diff = now_utc - last_case
-        available = time_diff >= timedelta(hours=24)
-        return web.json_response({'available': available, 'remaining_seconds': max(0, (timedelta(hours=24) - time_diff).total_seconds()) if not available else 0})
+        try:
+            from datetime import timezone
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            
+            last_case = user.last_free_case
+            # Фикс на случай, если база вернула дату строкой
+            if isinstance(last_case, str):
+                last_case = datetime.fromisoformat(last_case)
+            last_case = last_case.replace(tzinfo=None)
+            
+            time_diff = now_utc - last_case
+            available = time_diff >= timedelta(hours=24)
+            return web.json_response({'available': available, 'remaining_seconds': max(0, (timedelta(hours=24) - time_diff).total_seconds()) if not available else 0})
+        except Exception as e:
+            print(f"Time check error: {e}")
+            return web.json_response({'available': True})
 
 
 # === ЧИСТАЯ ЛОГИКА ПРОФИЛЯ ===

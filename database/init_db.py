@@ -225,7 +225,8 @@ async def populate_db():
                 else:
                     gift = Gift(name=name, gift_id=f"gift_{num}", rarity='unique', value=value, gift_number=num, image_url=image_url)
                     session.add(gift)
-                gift_objs[num] = gift
+                await session.flush() # Сразу записываем в базу, чтобы получить ID
+                gift_objs[num] = gift.id # Храним только ЧИСЛО (ID), чтобы избежать ошибки greenlet
             except Exception: await session.rollback()
         
         for key, name, value in PENDING_GIFTS:
@@ -237,11 +238,11 @@ async def populate_db():
                 else:
                     gift = Gift(name=name, gift_id=key, rarity='unique', value=value, gift_number=None, image_url="/static/images/star.png")
                     session.add(gift)
-                gift_objs[key] = gift
+                await session.flush() # Сразу записываем в базу, чтобы получить ID
+                gift_objs[key] = gift.id # Храним только ЧИСЛО (ID)
             except Exception: await session.rollback()
         
         await session.commit()
-        for k in gift_objs: await session.refresh(gift_objs[k])
         
         # Пересоздание кейсов
         try:
@@ -266,11 +267,11 @@ async def populate_db():
                     if key in gift_objs:
                         session.add(CaseItem(
                             case_id=case.id,
-                            gift_id=gift_objs[key].id,
+                            gift_id=gift_objs[key], # Здесь теперь подставляется готовое число
                             drop_chance=item_data["chance"]
                         ))
                 await session.commit()
-                print(f"✅ Кейс '{case.name}' успешно создан с точными шансами!")
+                print(f"✅ Кейс '{case_data['name']}' успешно создан")
             except Exception as e:
                 print(f"⚠️ Ошибка создания кейса {case_data['name']}: {e}")
                 await session.rollback()
@@ -292,7 +293,7 @@ async def populate_db():
                         user.balance = u['balance']
                 await session.commit()
             except Exception: await session.rollback()
-
+            
 async def main():
     print("🔄 Инициализация таблиц...")
     from database.models import init_db as create_tables, engine

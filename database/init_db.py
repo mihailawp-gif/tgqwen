@@ -37,7 +37,7 @@ GIFTS_CATALOG = [
     (102,  "Toy Bear",             4677),
     (132,  "Retro Car",            4621),  
     (58,   "Neko Helmet",          4129),
-    (133,  "Ice Eagle",            3954),  
+    #(133,  "Ice Eagle",            3954),  
     (134,  "Signet Ring II",       3753),  
     (53,   "Vintage Cigar",        3729),
     (135,  "Golden Pacifier",      3643),
@@ -68,8 +68,8 @@ GIFTS_CATALOG = [
     (14,   "Happy Brownie",        650),
     (23,   "Bling Blinky",         500),   
     (26,   "Private bag",             671),
-    (48,   "Clover Pin",           287),
-    (50,   "Cupid Charm",          743),   
+    (48,   "Clover Pin",           622),
+    (50,   "Cupid Charm",          2043),   
     (51,   "Nail Bracelet",        900),
     (55,   "Hypno Lollipop",       600),
     (62,   "Fresh Socks",          598),
@@ -89,39 +89,38 @@ GIFTS_CATALOG = [
     (99,   "Whip Cupcake",         370),
     (100,  "Bow Tie",              666),
     (109,  "Snow Mittens",         650),
-    (111,  "Desk Calendar",        320),
+    (111,  "Desk Calendar",        550),
     (114,  "Santa Hat",            555),
     (115,  "Instant Ramen",        250),
-    (116,  "B-Day Candle",         300),
+    (116,  "B-Day Candle",         550),
     (117,  "Ginger Cookie",        649),
     (120,  "Tama Gadget",          570),
-    (121,  "Goblet",               100),
-    (122,  "Heart",                150),
+    #(121,  "Goblet",               100),
+    (122,  "Heart",                15),
     (123,  "Diamond",              100),
     (124,  "Ring",                 100),
     (125,  "Champagne",            50),
-    (143,  "Cool Dog",             372),
-    (144,  "Ice Cream",            375),
-    (146,  "Xmas Stocking",        300),
-    (147,  "Candy Cane",           433),
-    (148,  "Pot of Gold",          590),
-    (149,  "White Bunny",          750),
-    (150,  "Hot Cocoa",            500),
-    (151,  "Mulled Wine",          550),
-    (152,  "Year 2025",            400),
-    (153,  "Piano Keys",           549),
-    (154,  "Xmas Wreath",          515),
-    (155,  "Diary Book",           671),
-    (156,  "Golden Egg",           588),
-    (157,  "Mushroom Eye",         671),
-    (158,  "Strawberry Box",       863),
-    (159,  "Mosque Moon",          380),
-    (160,  "White Snake",          300),
-    (161,  "Happy B-Day",          199),
-    (162,  "Easter Basket",        639),
-    (163,  "Sparkler",             569),
-    (164,  "Flower Pot",           671),
-    (165,  "Golden Bells",         805),
+    # (143,  "Cool Dog",             372),
+    # (144,  "Ice Cream",            375),
+    # (146,  "Xmas Stocking",        300),
+    # (147,  "Candy Cane",           433),
+    # (148,  "Pot of Gold",          590),
+    # (149,  "White Bunny",          750),
+    # (150,  "Hot Cocoa",            500),
+    # (151,  "Mulled Wine",          550),
+    # (152,  "Year 2025",            400),
+    # (153,  "Piano Keys",           549),
+    # (154,  "Xmas Wreath",          515),
+    # (155,  "Diary Book",           671),
+    # (156,  "Golden Egg",           588),
+    # (157,  "Mushroom Eye",         671),
+    # (158,  "Strawberry Box",       863),
+    # (159,  "Mosque Moon",          380),
+    # (160,  "White Snake",          300),
+    # (162,  "Easter Basket",        639),
+    # (163,  "Sparkler",             569),
+    # (164,  "Flower Pot",           671),
+    # (165,  "Golden Bells",         805),
 
     # ── ПАКИ ЗВЕЗД ──
     (200,  "Stars 10",             10),
@@ -160,6 +159,9 @@ CASES_CONFIG = [
             {"key": 124, "chance": 1},  # Ring (Цена 100)
             {"key": 205, "chance": 0.01},  # 1000 звезд 
             {"key": 22,  "chance": 0.0001},  # Plush Pepe 
+            {"key": 123,  "chance": 2.0},  #     (123,  "Diamond",              100),
+            {"key": 111,  "chance": 0.8},  #     (111,  "Desk Calendar",        320),
+            {"key": 116,  "chance": 0.9},  #     (116,  "B-Day Candle",         550),
         ]
     },
     {
@@ -177,13 +179,13 @@ CASES_CONFIG = [
             {"key": 13,  "chance": 2.0},  # Jolly Chimp (Цена 768)
             {"key": 121,  "chance": 30.0},  # Goblet
             {"key": 81,  "chance": 0.01},  # Heart Locket (Цена 2203 - Редкий)
-            {"key": 18,  "chance": 0.01},  # Durov's Cap (Цена 80к - Супер редкий)
+            {"key": 22,  "chance": 0.01},  # pepe 
         ]
     },
     {
         "name": "Премиум кейс",
         "description": "Максимальные шансы на жирный дроп!",
-        "price": 500,
+        "price": 777,
         "is_free": False,
         "image_url": "/static/images/cases/case_3.png",
         "items": [
@@ -193,7 +195,17 @@ CASES_CONFIG = [
             {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
             {"key": 46,  "chance": 0.9},  # Scared Cat (Цена 9775)
             {"key": 59,  "chance": 9.9},  #  Electric Skull
-            {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
+            {"key": 55,  "chance": 43.0}, #     (55,   "Hypno Lollipop",       600),
+            {"key": 48,  "chance": 22.0},  #     (48,   "Clover Pin",           622),
+            {"key": 124,  "chance": 3.0},  #     (124,  "Ring",                 100),
+            {"key": 123,  "chance": 3.0},  #     (123,  "Diamond",              100),
+            {"key": 111,  "chance": 30.0},  #     (111,  "Desk Calendar",        320),
+            {"key": 116,  "chance": 44.0},  #     (116,  "B-Day Candle",         550),
+            {"key": 50,  "chance": 4.0},  #     (50,   "Cupid Charm",          2043), 
+            {"key": 75,  "chance": 2.00},  #   (75,   "Top Hat",              1392),
+            {"key": 104,  "chance": 12.0},  #     (104,  "Sky Stilettos",        1582),
+            {"key": 65,  "chance": 7.00},  #     (65,   "Mad Pumpkin",          1534),
+            {"key": 18,  "chance": 0.01},  #durov 
 
 
             
@@ -206,19 +218,16 @@ CASES_CONFIG = [
         "is_free": False,
         "image_url": "/static/images/cases/bigboom.jpg",
         "items": [
-            {"key": 114, "chance": 45.0}, # Santa Hat 
+            {"key": 114, "chance": 25.0}, # Santa Hat 
             {"key": 78,  "chance": 1.0}, # Loot Bag 
             {"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
-            {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
             {"key": 46,  "chance": 3.9},  # Scared Cat (Цена 9775)
             {"key": 64,  "chance": 13.01},  #     (64,   "Skull Flower",         1174),
             {"key": 72,  "chance": 55.01},  #    (72,   "Voodoo Doll",          3331),
             {"key": 56,  "chance": 22.01},  # (56,   "Kissed Frog",          6231),
-            {"key": 133,  "chance": 17.01},  # (133,  "Ice Eagle",            3954),
             {"key": 15,  "chance": 2.0},  # (15,   "Mighty Arm",           19647),
             {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
-            {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
-            {"key": 138,  "chance": 20.0},  # Vinyl Player
+            
         ]
     }
 ]

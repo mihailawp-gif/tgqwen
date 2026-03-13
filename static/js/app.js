@@ -1490,7 +1490,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     ballEl.style.opacity = '1';
     pinsContainer.appendChild(ballEl);
 
-    // Шарик всегда радиуса 6 (ширина 12px из CSS)
     let ball = {
         x: width / 2 + (Math.random() - 0.5) * 4, 
         y: -10,
@@ -1501,7 +1500,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
 
     const gravity = 0.20;       
     const friction = 0.99;      
-    const restitution = 0.50; // Базовый отскок снижен, так как мы даем свой мощный импульс
+    const restitution = 0.50; 
     const maxSpeed = 12;       
 
     let isDone = false;
@@ -1509,7 +1508,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     function updatePhysics() {
         if (isDone) return;
 
-        // ВНИМАНИЕ: Магнитного ветра больше нет! Шарик падает свободно.
         ball.vy += gravity; 
         ball.vx *= friction; 
         ball.vy *= friction; 
@@ -1523,6 +1521,19 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
+        // === ФИКС: НЕВИДИМЫЕ СТЕНЫ ПО БОКАМ ===
+        // Левая стена
+        if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius; // Возвращаем в пределы экрана
+            ball.vx = Math.abs(ball.vx) * 0.8; // Отскок вправо с потерей 20% энергии
+        }
+        // Правая стена
+        else if (ball.x + ball.radius > width) {
+            ball.x = width - ball.radius; // Возвращаем в пределы экрана
+            ball.vx = -Math.abs(ball.vx) * 0.8; // Отскок влево с потерей 20% энергии
+        }
+        // ======================================
+
         for (let pin of window.plinkoPhysicsPins) {
             let dx = ball.x - pin.x;
             let dy = ball.y - pin.y;
@@ -1533,7 +1544,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
                 let nx = dx / distance;
                 let ny = dy / distance;
 
-                // МОМЕНТАЛЬНОЕ ВЫТАЛКИВАНИЕ (Убираем скольжение/залипание)
                 let penetration = minDist - distance;
                 ball.x += nx * penetration;
                 ball.y += ny * penetration;
@@ -1544,25 +1554,19 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
                     ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
                     ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
                     
-                    // --- СЕКРЕТ ИДЕАЛЬНОГО ОТСКОКА ---
-                    // Если шарик бьется о верхнюю часть пина (ny < -0.1)
                     if (ny < -0.1) {
-                        let hitRow = Math.round(pin.y / pinSpacingY) - 1; // Узнаем индекс ряда
+                        let hitRow = Math.round(pin.y / pinSpacingY) - 1; 
                         if (hitRow >= 0 && hitRow < path.length) {
-                            let dir = path[hitRow]; // 0 = лево, 1 = право
+                            let dir = path[hitRow]; 
                             
-                            // Даем жесткий физический пинок в нужную сторону
-                            // Если рядов много (14-16), пинаем чуть слабее, чтобы не перелетел
                             let kickForceX = (1.5 + Math.random() * 0.5) * (rows >= 14 ? 0.75 : 1);
                             
                             ball.vx = dir === 0 ? -kickForceX : kickForceX;
-                            // И подкидываем вверх для красивой дуги (отскок)
                             ball.vy = -1.5 - (Math.random() * 0.5); 
                         } else {
                             ball.vx += (Math.random() - 0.5) * 1.5;
                         }
                     } else {
-                        // Если ударился боком
                         ball.vx += (Math.random() - 0.5) * 0.8;
                     }
 
@@ -1597,9 +1601,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
-        if (multiplier >= 2) {
-            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
-        }
+
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {

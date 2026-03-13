@@ -1503,7 +1503,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     let lefts = rows - finalBucketIndex;      // Сколько шагов влево
 
     // Если падает мусор (множитель меньше 2), с шансом 35% пугаем игрока!
-    if (multiplier < 2 && Math.random() < 0.35) {
+    if (multiplier < 2 && Math.random() < 0.15) {
         let baitLeft = Math.random() < 0.5; // Байтим влево или вправо?
         
         // Байтим влево (если хватает шагов)
@@ -1627,9 +1627,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
-        if (multiplier >= 2) {
-            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
-        }
+
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {

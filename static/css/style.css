@@ -731,34 +731,36 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 /* 1. Делаем сам контейнер и фон больше по размеру */
 .plinko-anim-wrapper {
     position: relative;
-    width: 150px; /* <--- Было 100px. Сделали БОЛЬШЕ по ширине */
-    height: 150px; /* <--- Было 100px. Сделали БОЛЬШЕ по высоте */
+    width: 150px; 
+    height: 150px; 
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden; /* <--- ВАЖНО: прячет все, что вылетает за этот квадрат */
+    overflow: hidden; 
+    /* ФИКС: Сдвигаем всю пирамидку правее! */
+    left: 20px; 
 }
 
-/* Фон с точками */
 .plinko-bg {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-/* Шарики - без изменений, только чуть быстрее */
-.plinko-ball {
+/* ФИКС: Новый независимый белый шарик с глоу эффектом только для меню */
+.plinko-menu-ball {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     background: #ffffff;
     border-radius: 50%;
-    box-shadow: 0 0 10px #ffffff, 0 0 4px rgba(255,255,255,0.8);
+    box-shadow: 0 0 8px #ffffff, 0 0 16px rgba(255, 255, 255, 0.9);
     top: 0;
     left: 50%;
-    margin-left: -4px;
+    margin-left: -3.5px;
     opacity: 0;
 }
+
 
 /* Привязываем новые анимации "поп-ап" */
 /* Привязываем анимации с реалистичной скоростью падения */
@@ -812,8 +814,8 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     55%  { top: 49%; left: 56%; } 
     70%  { top: 66%; left: 60%; } 
     75%  { top: 63%; left: 55%; } 
-    85%  { top: 78%; left: 50%; opacity: 1; } 
-    88%  { top: 75%; left: 48%; opacity: 0.8; transform: scale(1); } 
+    85%  { top: 78%; left: 50%; opacity: 0.8; } 
+    88%  { top: 75%; left: 48%; opacity: 0.4; transform: scale(1); } 
     93%  { top: 84%; left: 46%; opacity: 0; transform: scale(0.8); } 
     100% { top: 84%; left: 46%; opacity: 0; }
 }

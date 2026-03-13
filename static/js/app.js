@@ -1499,16 +1499,11 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     let currentX = width / 2;
     let currentY = pinSpacingY; 
     
-    // ФИКС 1: Смещение вверх, чтобы шарик касался пина своим низом, а не сливался центрами
     const yHitOffset = 6; 
     
-    // Точка 0: Спавн (падает сверху)
     points.push({ x: currentX, y: -20 });
-    
-    // Точка 1: Удар о первый пин (с учетом смещения)
     points.push({ x: currentX, y: currentY - yHitOffset });
 
-    // Точки 2-N: Прыжки по остальным пинам
     for (let i = 0; i < path.length; i++) {
         let dir = path[i];
         
@@ -1516,12 +1511,8 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         currentY += pinSpacingY;
         
         if (i === path.length - 1) {
-            // ФИКС 2: Последняя точка - касание края корзинки!
-            // Мы не делаем полный прыжок вниз, а целимся ровно в линию лунок
-            // +2 пикселя для легкого визуального погружения перед исчезновением
             points.push({ x: currentX, y: height - ballRadius + 2 }); 
         } else {
-            // Обычный пин (добавляем микро-шум по X для красоты)
             let noiseX = (Math.random() - 0.5) * 4;
             points.push({ x: currentX + noiseX, y: currentY - yHitOffset });
         }
@@ -1532,7 +1523,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     let lastTime = performance.now();
     let isDone = false;
 
-    // Настраиваем скорость в зависимости от количества рядов
     const baseDuration = 350 - (rows * 8); 
 
     function animate(time) {
@@ -1543,7 +1533,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         
         let segmentDuration = baseDuration;
         if (currentSegment > 0 && currentSegment < points.length - 2) {
-            // Легкий рандом в скорость каждого прыжка
             segmentDuration += (Math.random() * 30 - 15); 
         }
 
@@ -1553,13 +1542,11 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             segmentProgress = 0;
             currentSegment++;
             
-            // Вибрация при ударе о пин
             if (currentSegment > 0 && currentSegment < points.length - 1) {
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
         }
 
-        // Если все отрезки пройдены - шарик долетел до лунки
         if (currentSegment >= points.length - 1) {
             isDone = true;
             finishDrop();
@@ -1573,20 +1560,18 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         let x = p1.x + (p2.x - p1.x) * t; 
         let y = p1.y + (p2.y - p1.y) * t;
 
-        // Физика дуг
         if (currentSegment === 0) {
-            // Самое первое падение
             let easeIn = t * t; 
             y = p1.y + (p2.y - p1.y) * easeIn;
         } 
         else if (currentSegment < points.length - 2) {
-            // Прыжки по параболе между пинами
-            let bounceHeight = pinSpacingY * (0.4 + Math.random() * 0.1); 
+            // ФИКС: УВЕЛИЧЕННЫЙ ОТСКОК
+            // Теперь шарик подпрыгивает на 70-85% от расстояния между рядами (было 40-50%)
+            let bounceHeight = pinSpacingY * (0.70 + Math.random() * 0.15); 
             let bounceOffset = Math.sin(t * Math.PI) * bounceHeight; 
             y -= bounceOffset; 
         } 
         else {
-            // Падение в корзину
             let easeIn = t * t;
             y = p1.y + (p2.y - p1.y) * easeIn;
         }
@@ -1605,7 +1590,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
         }
 
-        // Моментальное удаление из лунки
         ballEl.style.display = 'none';
         ballEl.remove();
 

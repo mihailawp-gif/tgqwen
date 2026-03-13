@@ -848,16 +848,14 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     box-shadow: 0 0 8px rgba(255,255,255,0.6);
 }
 
-p.plinko-ball {
+.plinko-ball {
     position: absolute;
-    width: 12px;
-    height: 12px;
-    /* Красивый синий градиент */
-    background: radial-gradient(circle at 30% 30%, #93c5fd, #2563eb);
+    width: 10px; /* Чуть меньше, чтобы смотрелось элегантнее */
+    height: 10px;
+    background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb) !important;
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    /* Синее неоновое свечение */
-    box-shadow: 0 0 15px #3b82f6, 0 0 5px #fff;
+    box-shadow: 0 0 12px #3b82f6, 0 0 4px #fff !important;
     opacity: 0; 
     pointer-events: none;
     z-index: 10;
@@ -877,17 +875,17 @@ p.plinko-ball {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Изменили шрифт на более красивый и "геймерский" */
-    font-family: 'Exo 2', sans-serif;
-    font-size: 11px;
-    font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    /* ФИКС: Сделали шрифт тоньше (было 800) */
+    font-weight: 600; 
     color: #111; 
     border-bottom: 2px solid rgba(0,0,0,0.2); 
     transition: transform 0.1s, filter 0.1s;
     letter-spacing: -0.5px;
 }
 
-@media (max-width: 360px) { .plinko-bucket { font-size: 9px; } }
+@media (max-width: 360px) { .plinko-bucket { font-size: 8px; } }
 
 .plinko-bucket.active {
     transform: translateY(-2px) scale(1.05);
@@ -895,13 +893,13 @@ p.plinko-ball {
     z-index: 5;
 }
 
-/* Цвета как на твоем скриншоте */
-.pb-c-0 { background: #ffb74d; } /* Оранжевый (< 1x) */
-.pb-c-1 { background: #f1c40f; } /* Желтый (1x - 1.5x) */
-.pb-c-2 { background: #78e08f; } /* Светло-зеленый (2x - 5x) */
-.pb-c-3 { background: #2ecc71; } /* Ярко-зеленый (большие иксы) */
+.pb-c-0 { background: #ffb74d; }
+.pb-c-1 { background: #f1c40f; }
+.pb-c-2 { background: #78e08f; }
+.pb-c-3 { background: #2ecc71; }
 
+/* ФИКС: Синее выделение кнопок сложности и пинов */
 .diff-buttons button.active, .pins-buttons button.active {
-    background: rgba(245, 158, 11, 0.2);
-    color: var(--gold);
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: var(--blue) !important;
 }

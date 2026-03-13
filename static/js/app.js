@@ -1407,17 +1407,17 @@ function renderPlinkoBoard() {
 }
 
 async function playPlinko() {
-    if (isPlinkoPlaying) return;
-    
     const bet = parseInt(document.getElementById('plinkoBet').value);
     if (isNaN(bet) || bet < 1) return showToast('❌ Введите ставку');
     if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
 
-    isPlinkoPlaying = true;
-    const btn = document.getElementById('btnPlinkoAction');
-    btn.disabled = true;
-    btn.textContent = 'ШАРИК ПАДАЕТ...';
+    // ФИКС МНОЖЕСТВА ШАРИКОВ: 
+    // Сразу списываем баланс визуально, чтобы юзер мог кликать без остановки
+    state.user.balance -= bet;
+    updateUserDisplay();
+    document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
+    // Отправляем запрос на сервер
     const res = await apiRequest('/plinko/play', 'POST', {
         user_id: state.user.telegram_id,
         bet: bet,
@@ -1426,38 +1426,23 @@ async function playPlinko() {
     });
 
     if (res.success) {
-        // Сразу списываем баланс, чтобы юзер не кликал
-        state.user.balance -= bet; 
-        updateUserDisplay();
-        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
-
-        // Запускаем анимацию
-        await animatePlinkoBall(res.path, res.bucket);
-
-        // Начисляем выигрыш
-        state.user.balance = res.balance;
-        updateUserDisplay();
-        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
-
-        if (res.multiplier >= 1) {
-            showToast(`Победа! +${res.win_amount} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        } else {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        }
-
+        // НЕ ждем окончания анимации (убрали await). Просто спавним новый шарик!
+        spawnPlinkoBall(res.path, res.bucket, res.multiplier, res.balance);
     } else {
         showToast(res.error);
+        // Если ошибка (например, рассинхрон), возвращаем баланс обратно
+        state.user.balance += bet;
+        updateUserDisplay();
+        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
     }
-
-    isPlinkoPlaying = false;
-    btn.disabled = false;
-    btn.textContent = 'ИГРАТЬ';
 }
 
-async function animatePlinkoBall(path, finalBucketIndex) {
-    const ball = document.getElementById('plinkoBall');
+// Новая функция, которая создает независимый шарик для каждого клика
+async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const pinsContainer = document.getElementById('plinkoPins');
+    const bucketsContainer = document.getElementById('plinkoBuckets');
+    if (!pinsContainer || !bucketsContainer) return;
+
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
@@ -1465,67 +1450,81 @@ async function animatePlinkoBall(path, finalBucketIndex) {
     const pinSpacingX = width / (rows + 4);
     const pinSpacingY = height / (rows + 1);
 
-    ball.style.transition = 'none';
+    // Создаем свой собственный шарик для этой анимации
+    const ball = document.createElement('div');
+    ball.className = 'plinko-ball';
     ball.style.opacity = '1';
+    pinsContainer.appendChild(ball);
 
     let currentX = width / 2;
-    let currentY = pinSpacingY; // Высота первого пина
+    let currentY = pinSpacingY / 2; 
     
-    // Стартуем ровно по центру с самого верха
     ball.style.left = `${currentX}px`;
-    ball.style.top = `0px`;
+    ball.style.top = `${currentY}px`;
 
-    void ball.offsetWidth; // Принудительный рефлоу браузера
+    void ball.offsetWidth; // Применяем CSS
 
     const stepSpeed = 400 - (rows * 10); 
     const halfSpeed = stepSpeed / 2;
 
-    // 1. Падение до первого пина
-    ball.style.transition = `top ${stepSpeed}ms ease-in`;
+    // 1. Свободное падение до самого первого пина
+    ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.6, 0, 0.8, 1)`;
+    currentY = pinSpacingY;
     ball.style.top = `${currentY}px`;
     await new Promise(r => setTimeout(r, stepSpeed));
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-    // 2. ФИЗИКА ОТСКОКОВ (Прыгаем по пинам)
+    // 2. ИДЕАЛЬНАЯ ФИЗИКА ОТСКОКА (Как в Money-X)
     for (let i = 0; i < path.length; i++) {
         const dir = path[i]; 
         const targetX = dir === 0 ? currentX - (pinSpacingX / 2) : currentX + (pinSpacingX / 2);
         const targetY = currentY + pinSpacingY;
 
-        // Вычисляем пик прыжка (шарик подлетает на 35% высоты ряда)
+        // Вычисляем пик прыжка (шарик подлетает ВВЕРХ на 40% от высоты ряда)
         const peakX = (currentX + targetX) / 2;
-        const peakY = currentY - (pinSpacingY * 0.35); 
+        const peakY = currentY - (pinSpacingY * 0.4); 
 
-        // Имитация гравитации (вверх летит с замедлением, вниз - с ускорением, вбок - равномерно)
-        // ПРЫЖОК ВВЕРХ
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms ease-out`;
+        // ПРЫЖОК ВВЕРХ (с замедлением)
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.2, 0.8, 0.4, 1)`;
         ball.style.left = `${peakX}px`;
         ball.style.top = `${peakY}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
 
-        // ПАДЕНИЕ ВНИЗ НА СЛЕДУЮЩИЙ ПИН
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms ease-in`;
+        // ПАДЕНИЕ ВНИЗ (с ускорением)
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.6, 0, 0.8, 1)`;
         ball.style.left = `${targetX}px`;
         ball.style.top = `${targetY}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
-
-        if (i < path.length - 1 && tg.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred('light');
-        }
 
         currentX = targetX;
         currentY = targetY;
     }
 
-    // Удар о корзину
-    const buckets = document.getElementById('plinkoBuckets').children;
+    // 3. Проваливание в корзину
+    ball.style.transition = `top ${stepSpeed}ms linear, opacity ${stepSpeed}ms ease`;
+    ball.style.top = `${currentY + 15}px`;
+    ball.style.opacity = '0'; // Растворяется при падении в корзину
+    await new Promise(r => setTimeout(r, stepSpeed));
+
+    // Подсвечиваем корзину
+    const buckets = bucketsContainer.children;
     if(buckets[finalBucketIndex]) {
         buckets[finalBucketIndex].classList.add('active');
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 600);
+        setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
     }
 
-    ball.style.opacity = '0';
+    // Удаляем шарик из HTML (чтобы не засорять память!)
+    ball.remove();
+
+    // Обновляем реальный баланс только когда шарик долетел
+    state.user.balance = finalBalance;
+    updateUserDisplay();
+    document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+
+    // Тост выводим только если это был хороший икс, чтобы не спамить при дожде из шариков
+    if (multiplier >= 2) {
+        showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+    }
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

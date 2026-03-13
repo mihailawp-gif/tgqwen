@@ -114,7 +114,19 @@ body {
 .game-block:active { transform: scale(0.96); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 
 .block-crash { background: linear-gradient(135deg, #0f172a, #1e293b); }
-.block-plinko { background: linear-gradient(135deg, #d97706, #ea580c); }
+.game-block.block-plinko {
+    position: relative;
+    /* Убираем жесткий оранжевый фон, делаем прозрачным */
+    background: transparent; 
+    border: none; /* Убираем рамку, если она есть */
+    box-shadow: none; /* Убираем тень, чтобы блок не "парил" */
+    
+    /* Смешиваем все содержимое блока с фоном игры */
+    background-blend-mode: screen; 
+    
+    /* Добавляем легкое свечение всему блоку, чтобы он не потерялся */
+    filter: drop-shadow(0 0 20px rgba(255, 170, 0, 0.4)); 
+}
 .block-cases { background: linear-gradient(135deg, #d97706, #f59e0b); }
 .block-dice { background: linear-gradient(135deg, #2563eb, #3b82f6); }
 

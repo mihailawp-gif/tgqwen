@@ -1483,18 +1483,18 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
 
     // --- ФИЗИЧЕСКИЕ ПАРАМЕТРЫ ---
     let ball = {
-        x: width / 2 + (Math.random() - 0.5) * 6, // Случайный стартовый микро-разброс по X
+        x: width / 2 + (Math.random() - 0.5) * 6, // Случайный стартовый микро-разброс
         y: -10,
         vx: (Math.random() - 0.5) * 2, // Начальная случайная скорость
         vy: 0,
-        radius: 6 // Радиус шарика (12px ширина / 2)
+        radius: 6 // Радиус шарика
     };
 
-    const gravity = 0.45;       // Сила притяжения (g)
+    const gravity = 0.45;       // Сила притяжения
     const friction = 0.99;      // Сопротивление воздуха
-    const restitution = 0.75;   // Коэффициент упругости отскока (75% энергии сохраняется)
+    const restitution = 0.75;   // Коэффициент упругости
     
-    // Рассчитываем ИДЕАЛЬНЫЙ путь (target X для каждого ряда), чтобы направить шарик
+    // Рассчитываем путь
     let idealPathX = [width / 2];
     let currX = width / 2;
     for (let i = 0; i < path.length; i++) {
@@ -1504,71 +1504,60 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
 
     let isDone = false;
 
-    // Главный цикл симуляции физики (60 кадров в секунду)
     function updatePhysics() {
         if (isDone) return;
 
-        // 1. УПРАВЛЕНИЕ ТРАЕКТОРИЕЙ (Микро-ветер, направляющий шарик по пути сервера)
-        // Определяем, между какими рядами находится шарик
+        // Направление ветра (магнетизм)
         let currentRow = Math.floor((ball.y + pinSpacingY / 2) / pinSpacingY);
         if (currentRow >= 0 && currentRow < idealPathX.length) {
             let targetX = idealPathX[currentRow];
             let diff = targetX - ball.x;
-            // Применяем легкую подруливающую силу
             ball.vx += diff * 0.015; 
         }
 
-        // 2. БАЗОВАЯ ФИЗИКА
-        ball.vy += gravity; // Применяем гравитацию
-        ball.vx *= friction; // Трение
-        ball.vy *= friction; // Трение
+        ball.vy += gravity; 
+        ball.vx *= friction; 
+        ball.vy *= friction; 
         
-        // Добавляем микро-шум для хаоса, как ты просил
+        // Микро-шум для хаоса
         ball.vx += (Math.random() - 0.5) * 0.1;
 
-        // Обновляем позицию
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // 3. ОБРАБОТКА СТОЛКНОВЕНИЙ СО ВСЕМИ ПИНАМИ
+        // Столкновения с пинами
         for (let pin of window.plinkoPhysicsPins) {
             let dx = ball.x - pin.x;
             let dy = ball.y - pin.y;
             let distance = Math.sqrt(dx * dx + dy * dy);
             let minDist = ball.radius + pin.radius;
 
-            // Если произошло столкновение
             if (distance < minDist) {
-                // Вычисляем нормаль столкновения (вектор от центра пина к центру шарика)
                 let nx = dx / distance;
                 let ny = dy / distance;
 
-                // Разрешение проникновения (выталкиваем шарик из пина, чтобы он не застрял)
                 let overlap = minDist - distance;
                 ball.x += nx * overlap;
                 ball.y += ny * overlap;
 
-                // Отражаем вектор скорости по формуле: v' = v - 2(v * n)n
                 let dotProduct = ball.vx * nx + ball.vy * ny;
                 
-                // Отражаем только если они двигаются друг на друга
                 if (dotProduct < 0) {
                     ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
                     ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
                     
-                    // Вибрация при ударе
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 }
             }
         }
 
-        // Отрисовка шарика на экране (центрируем координаты)
+        // Отрисовка шарика
         ballEl.style.left = `${ball.x - ball.radius}px`;
         ballEl.style.top = `${ball.y - ball.radius}px`;
 
         // 4. ПРОВЕРКА ПОПАДАНИЯ В КОРЗИНУ
-        const endY = height;
-        if (ball.y > endY) {
+        // ФИКС: Как только нижний край шарика (ball.y + ball.radius) касается верхнего края корзин (height)
+        if (ball.y + ball.radius >= height) {
             isDone = true;
             finishDrop();
         } else {
@@ -1576,7 +1565,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         }
     }
 
-    // Завершение падения
     function finishDrop() {
         const buckets = bucketsContainer.children;
         if(buckets[finalBucketIndex]) {
@@ -1585,15 +1573,17 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
         }
 
-        // Плавно растворяем шарик
-        ballEl.style.transition = 'opacity 200ms ease';
-        ballEl.style.opacity = '0';
-        setTimeout(() => ballEl.remove(), 200);
+        // ФИКС: Моментальное исчезновение шарика без задержек и прозрачности
+        ballEl.style.display = 'none';
+        ballEl.remove();
 
         state.user.balance = finalBalance;
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
+        if (multiplier >= 2) {
+            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+        }
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {
@@ -1602,7 +1592,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         }
     }
 
-    // Запускаем двигатель физики
     requestAnimationFrame(updatePhysics);
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===

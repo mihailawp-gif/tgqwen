@@ -380,21 +380,60 @@ async function withdrawInventoryItem(openingId) {
 async function sellInventoryItem(openingId, value) { showLoader(); const response = await apiRequest('/sell', 'POST', { opening_id: openingId, user_id: state.user.telegram_id }); hideLoader(); if (response.success) { state.user.balance = response.new_balance; updateUserDisplay(); showToast(` Продано за ${value} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`); loadInventory(); } else showToast('❌ ' + (response.error || 'Ошибка продажи')); }
 
 // === HISTORY ===
-async function loadHistory() { const response = await apiRequest('/history/recent', 'GET'); if (response.success) { state.history = response.history; renderHistory(); } }
+let _lastHistoryHash = '';
+async function loadHistory() { 
+    const response = await apiRequest('/history/recent', 'GET'); 
+    if (response.success) { 
+        // Простая проверка: если история не изменилась - ничего не трогаем (экономит FPS и не сбрасывает анимации)
+        const currentHash = response.history.map(h => h.id).join(',');
+        if (currentHash !== _lastHistoryHash) {
+            _lastHistoryHash = currentHash;
+            state.history = response.history; 
+            renderHistory(); 
+        }
+    } 
+}
 function renderHistory() {
-    const liveScroll = document.getElementById('liveHistoryScroll'); if (!liveScroll) return;
-    if (state.history.length === 0) { liveScroll.innerHTML = `<div style="color:var(--txt3);font-size:12px;padding:8px 4px">Пока пусто</div>`; return; }
+    const liveScroll = document.getElementById('liveHistoryScroll'); 
+    if (!liveScroll) return;
+    
+    if (state.history.length === 0) { 
+        liveScroll.innerHTML = `<div style="color:var(--txt3);font-size:12px;padding:8px 4px">Пока пусто</div>`; 
+        return; 
+    }
+    
+    // Уничтожаем старые анимации из ленты перед перерисовкой, чтобы не текла память
+    const oldTgsIds = Array.from(liveScroll.querySelectorAll('[data-tgs]')).map(el => el.id);
+    if(window.tgsManager && oldTgsIds.length > 0) {
+        oldTgsIds.forEach(id => {
+            if (_inst.has(id)) {
+                try { _inst.get(id).destroy(); } catch(e){}
+                _inst.delete(id);
+            }
+        });
+    }
+
     liveScroll.innerHTML = '';
+    
     state.history.forEach((item, index) => {
-        const card = document.createElement('div'); card.className = `live-history-card rarity-${item.gift?.rarity || 'common'}`;
+        const card = document.createElement('div'); 
+        card.className = `live-history-card rarity-${item.gift?.rarity || 'common'}`;
         const giftNum = item.gift?.gift_number;
-        const imgContent = (giftNum >= 1 && giftNum < 200) ? tgsEl(`lh_tgs_${index}`, giftNum, '48px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:48px;height:48px;object-fit:contain;flex-shrink:0">`;
+        const uniqId = `lh_tgs_${item.id}_${index}`; // Делаем ID 100% уникальным
+        
+        // Используем твой исправленный лимит до 200
+        const imgContent = (giftNum && giftNum >= 1 && giftNum < 200) ? tgsEl(uniqId, giftNum, '48px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:48px;height:48px;object-fit:contain;flex-shrink:0">`;
+        
         card.innerHTML = `${imgContent}<div class="live-history-card-name">${item.gift?.name || 'Приз'}</div><div class="live-history-card-user">${item.user?.first_name || '...'}</div>`;
         liveScroll.appendChild(card);
     });
-    requestAnimationFrame(() => { state.history.forEach((item, index) => { if (item.gift?.gift_number >= 1 && item.gift?.gift_number < 200) renderTGS(`lh_tgs_${index}`, item.gift.gift_number); }); });
+    
+    // Надежно запускаем парсинг новых анимаций после того, как они точно вставились в HTML
+    setTimeout(() => { if (window.initAllTGS) window.initAllTGS(); }, 50);
 }
-function startHistoryPolling() { setInterval(loadHistory, 5000); }
+function startHistoryPolling() { 
+    setInterval(loadHistory, 3000); // Опрашиваем сервер каждые 3 секунды (без лагов, т.к. перерисовка умная)
+}
 
 // === TABS & SCREENS ===
 function switchTab(tabName) {

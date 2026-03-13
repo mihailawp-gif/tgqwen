@@ -1311,24 +1311,30 @@ const PLINKO_COEFS = {
 
 let plinkoDiff = 'low';
 let plinkoPinsCount = 8;
-let isPlinkoPlaying = false;
-window.addEventListener('resize', () => {
-    const screen = document.getElementById('plinko-screen');
-    const pinsContainer = document.getElementById('plinkoPins');
-    // Перерисовываем только если экран Плинко открыт
-    if (screen && screen.classList.contains('active') && pinsContainer && pinsContainer.clientWidth > 0) {
-        renderPlinkoBoard();
-    }
-});
+let activePlinkoBalls = 0; // Считаем, сколько шариков сейчас летит
+
+// Функция для блокировки/разблокировки настроек
+function togglePlinkoControls(enable) {
+    const opacity = enable ? '1' : '0.5';
+    const pointerEvents = enable ? 'auto' : 'none';
+    
+    // Находим все группы контролов на экране Плинко (ставка, сложность, ряды)
+    const controls = document.querySelectorAll('#plinko-screen .control-group');
+    controls.forEach(c => {
+        c.style.transition = 'all 0.3s ease';
+        c.style.opacity = opacity;
+        c.style.pointerEvents = pointerEvents;
+    });
+}
+
 function showPlinkoScreen() {
     switchScreen('plinko-screen');
     document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance || 0;
-    // Делаем задержку в 50мс, чтобы DOM успел прогрузиться, и мы могли правильно высчитать ширину поля (clientWidth)
     setTimeout(() => { renderPlinkoBoard(); }, 50);
 }
 
 function modifyPlinkoBet(action, val) {
-    if (isPlinkoPlaying) return;
+    if (activePlinkoBalls > 0) return; // Защита от изменения во время полета
     const input = document.getElementById('plinkoBet');
     let current = parseInt(input.value) || 0;
     if (action === 'add') current += val;
@@ -1340,7 +1346,7 @@ function modifyPlinkoBet(action, val) {
 }
 
 function setPlinkoDiff(diff) {
-    if (isPlinkoPlaying) return;
+    if (activePlinkoBalls > 0) return; // Защита
     plinkoDiff = diff;
     document.querySelectorAll('.diff-buttons button').forEach(b => b.classList.remove('active'));
     document.getElementById(`p-diff-${diff}`).classList.add('active');
@@ -1349,7 +1355,7 @@ function setPlinkoDiff(diff) {
 }
 
 function setPlinkoPins(pins) {
-    if (isPlinkoPlaying) return;
+    if (activePlinkoBalls > 0) return; // Защита
     plinkoPinsCount = pins;
     document.querySelectorAll('.pins-buttons button').forEach(b => b.classList.remove('active'));
     document.getElementById(`p-pins-${pins}`).classList.add('active');
@@ -1357,7 +1363,14 @@ function setPlinkoPins(pins) {
     if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 
-// Отрисовка пирамиды
+window.addEventListener('resize', () => {
+    const screen = document.getElementById('plinko-screen');
+    const pinsContainer = document.getElementById('plinkoPins');
+    if (screen && screen.classList.contains('active') && pinsContainer && pinsContainer.clientWidth > 0) {
+        renderPlinkoBoard();
+    }
+});
+
 function renderPlinkoBoard() {
     const pinsContainer = document.getElementById('plinkoPins');
     const bucketsContainer = document.getElementById('plinkoBuckets');
@@ -1370,8 +1383,8 @@ function renderPlinkoBoard() {
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    const pinSpacingX = width / (rows + 4); 
-    const pinSpacingY = height / (rows + 1);
+    const pinSpacingX = width / (rows + 2.5); 
+    const pinSpacingY = height / (rows + 1.5); 
 
     for (let i = 0; i < rows; i++) {
         const numPins = i + 3;
@@ -1388,6 +1401,9 @@ function renderPlinkoBoard() {
         }
     }
 
+    const bucketsWidth = (rows + 1) * pinSpacingX;
+    bucketsContainer.style.width = `${bucketsWidth}px`;
+
     const coefs = PLINKO_COEFS[plinkoDiff][plinkoPinsCount];
     coefs.forEach(c => {
         const b = document.createElement('div');
@@ -1399,8 +1415,6 @@ function renderPlinkoBoard() {
         else if (c > 5) colorClass = 'pb-c-3'; 
         
         b.className = `plinko-bucket ${colorClass}`;
-        
-        // ФИКС: Выводим просто число без 'x' и без 'k' (ровно как в таблице)
         b.textContent = c; 
         bucketsContainer.appendChild(b);
     });
@@ -1411,13 +1425,16 @@ async function playPlinko() {
     if (isNaN(bet) || bet < 1) return showToast('❌ Введите ставку');
     if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
 
-    // ФИКС МНОЖЕСТВА ШАРИКОВ: 
-    // Сразу списываем баланс визуально, чтобы юзер мог кликать без остановки
     state.user.balance -= bet;
     updateUserDisplay();
     document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
-    // Отправляем запрос на сервер
+    // Если это ПЕРВЫЙ запущенный шарик, блокируем настройки
+    if (activePlinkoBalls === 0) {
+        togglePlinkoControls(false);
+    }
+    activePlinkoBalls++; // Увеличиваем счетчик шариков на поле
+
     const res = await apiRequest('/plinko/play', 'POST', {
         user_id: state.user.telegram_id,
         bet: bet,
@@ -1426,18 +1443,22 @@ async function playPlinko() {
     });
 
     if (res.success) {
-        // НЕ ждем окончания анимации (убрали await). Просто спавним новый шарик!
         spawnPlinkoBall(res.path, res.bucket, res.multiplier, res.balance);
     } else {
         showToast(res.error);
-        // Если ошибка (например, рассинхрон), возвращаем баланс обратно
         state.user.balance += bet;
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+        
+        // Если произошла ошибка запроса, откатываем счетчик
+        activePlinkoBalls--;
+        if (activePlinkoBalls <= 0) {
+            activePlinkoBalls = 0;
+            togglePlinkoControls(true);
+        }
     }
 }
 
-// Новая функция, которая создает независимый шарик для каждого клика
 async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const pinsContainer = document.getElementById('plinkoPins');
     const bucketsContainer = document.getElementById('plinkoBuckets');
@@ -1447,8 +1468,8 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    const pinSpacingX = width / (rows + 4);
-    const pinSpacingY = height / (rows + 1);
+    const pinSpacingX = width / (rows + 2.5);
+    const pinSpacingY = height / (rows + 1.5);
 
     const ball = document.createElement('div');
     ball.className = 'plinko-ball';
@@ -1458,61 +1479,50 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
     let currentX = width / 2;
     let currentY = 0;
     
-    // Смещение для идеального удара о верхнюю грань точки
     const yOffset = -6; 
 
-    // Шарик падает из-за пределов экрана
     ball.style.left = `${currentX}px`;
     ball.style.top = `-30px`; 
 
-    void ball.offsetWidth; // Применяем CSS перед стартом
+    void ball.offsetWidth; 
 
-    // ФИКС: Увеличиваем скорость (чем меньше число, тем быстрее игра)
     const stepSpeed = 270; 
     const halfSpeed = stepSpeed / 2;
 
-    // 1. Мощное свободное падение до самого первого пина
     currentY = pinSpacingY;
     ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`; 
     ball.style.top = `${currentY + yOffset}px`;
     await new Promise(r => setTimeout(r, stepSpeed));
 
-    // 2. АЗАРТНАЯ ФИЗИКА (Высокие прыжки и жесткие удары)
     for (let i = 0; i < path.length; i++) {
         const dir = path[i]; 
         const targetX = dir === 0 ? currentX - (pinSpacingX / 2) : currentX + (pinSpacingX / 2);
         const targetY = currentY + pinSpacingY;
 
-        // ФИКС ФИЗИКИ: Шарик подлетает очень высоко (на 60% от расстояния между рядами)
         const peakX = (currentX + targetX) / 2;
         const peakY = currentY - (pinSpacingY * 0.60); 
 
-        // ПРЫЖОК ВВЕРХ (Резко отлетает от пина и зависает в воздухе)
         ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.215, 0.61, 0.355, 1)`;
         ball.style.left = `${peakX}px`;
         ball.style.top = `${peakY + yOffset}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
 
-        // ПАДЕНИЕ ВНИЗ (Срывается с пика и с ускорением бьется о следующий пин)
         ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.55, 0.055, 0.675, 0.19)`;
         ball.style.left = `${targetX}px`;
         ball.style.top = `${targetY + yOffset}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
 
-        // Вибрация при каждом жестком ударе
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
         currentX = targetX;
         currentY = targetY;
     }
 
-    // 3. Проваливание в корзину (падает вглубь и растворяется)
     ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.55, 0.085, 0.68, 0.53), opacity ${stepSpeed}ms ease`;
     ball.style.top = `${currentY + pinSpacingY + 15}px`;
     ball.style.opacity = '0'; 
     await new Promise(r => setTimeout(r, stepSpeed));
 
-    // Подсвечиваем корзину
     const buckets = bucketsContainer.children;
     if(buckets[finalBucketIndex]) {
         buckets[finalBucketIndex].classList.add('active');
@@ -1520,14 +1530,21 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
         setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
     }
 
-    // Удаляем шарик, чтобы игра не лагала при спаме
     ball.remove();
 
     state.user.balance = finalBalance;
     updateUserDisplay();
     document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
- 
+
+
+    // Когда шарик долетел, уменьшаем счетчик
+    activePlinkoBalls--;
+    // Если на поле больше нет шариков, разблокируем интерфейс
+    if (activePlinkoBalls <= 0) {
+        activePlinkoBalls = 0;
+        togglePlinkoControls(true);
+    }
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

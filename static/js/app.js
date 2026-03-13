@@ -1272,6 +1272,241 @@ async function playDice(type) {
     }
 }
 // dice close
+// === ЛОГИКА ПЛИНКО ===
+const PLINKO_COEFS = {
+    'low': {
+        8: [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6],
+        9: [5.6, 2.0, 1.6, 1.0, 0.7, 0.7, 1.0, 1.6, 2.0, 5.6],
+        10: [8.9, 3.0, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 3.0, 8.9],
+        11: [8.4, 3.0, 1.9, 1.3, 1.0, 0.7, 0.7, 1.0, 1.3, 1.9, 3.0, 8.4],
+        12: [10.0, 3.0, 1.6, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 1.6, 3.0, 10.0],
+        13: [8.1, 4.0, 3.0, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3.0, 4.0, 8.1],
+        14: [7.1, 4.0, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 4.0, 7.1],
+        15: [15.0, 8.0, 3.0, 2.0, 1.5, 1.1, 1.0, 0.7, 0.7, 1.0, 1.1, 1.5, 2.0, 3.0, 8.0, 15.0],
+        16: [16.0, 9.0, 2.0, 1.4, 1.4, 1.2, 1.1, 1.0, 0.5, 1.0, 1.1, 1.2, 1.4, 1.4, 2.0, 9.0, 16.0]
+    },
+    'medium': {
+        8: [13.0, 3.0, 1.3, 0.7, 0.4, 0.7, 1.3, 3.0, 13.0],
+        9: [18.0, 4.0, 1.7, 0.9, 0.5, 0.5, 0.9, 1.7, 4.0, 18.0],
+        10: [22.0, 5.0, 2.0, 1.4, 0.6, 0.4, 0.6, 1.4, 2.0, 5.0, 22.0],
+        11: [24.0, 6.0, 3.0, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3.0, 6.0, 24.0],
+        12: [33.0, 11.0, 4.0, 2.0, 1.1, 0.6, 0.3, 0.6, 1.1, 2.0, 4.0, 11.0, 33.0],
+        13: [43.0, 13.0, 6.0, 3.0, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3.0, 6.0, 13.0, 43.0],
+        14: [58.0, 15.0, 7.0, 4.0, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4.0, 7.0, 15.0, 58.0],
+        15: [88.0, 18.0, 11.0, 5.0, 3.0, 1.3, 0.5, 0.3, 0.3, 0.5, 1.3, 3.0, 5.0, 11.0, 18.0, 88.0],
+        16: [110.0, 41.0, 10.0, 5.0, 3.0, 1.5, 1.0, 0.5, 0.3, 0.5, 1.0, 1.5, 3.0, 5.0, 10.0, 41.0, 110.0]
+    },
+    'high': {
+        8: [29.0, 4.0, 1.5, 0.3, 0.2, 0.3, 1.5, 4.0, 29.0],
+        9: [43.0, 7.0, 2.0, 0.6, 0.2, 0.2, 0.6, 2.0, 7.0, 43.0],
+        10: [76.0, 10.0, 3.0, 0.9, 0.3, 0.2, 0.3, 0.9, 3.0, 10.0, 76.0],
+        11: [120.0, 14.0, 5.2, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 5.2, 14.0, 120.0],
+        12: [170.0, 24.0, 8.1, 2.0, 0.7, 0.2, 0.2, 0.2, 0.7, 2.0, 8.1, 24.0, 170.0],
+        13: [260.0, 37.0, 11.0, 4.0, 1.0, 0.2, 0.2, 0.2, 0.2, 1.0, 4.0, 11.0, 37.0, 260.0],
+        14: [420.0, 56.0, 18.0, 5.0, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5.0, 18.0, 56.0, 420.0],
+        15: [620.0, 83.0, 27.0, 8.0, 3.0, 0.5, 0.2, 0.2, 0.2, 0.2, 0.5, 3.0, 8.0, 27.0, 83.0, 620.0],
+        16: [1000.0, 130.0, 26.0, 9.0, 4.0, 2.0, 0.2, 0.2, 0.2, 0.2, 0.2, 2.0, 4.0, 9.0, 26.0, 130.0, 1000.0]
+    }
+};
+
+let plinkoDiff = 'low';
+let plinkoPinsCount = 8;
+let isPlinkoPlaying = false;
+
+function showPlinkoScreen() {
+    switchScreen('plinko-screen');
+    document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance || 0;
+    // Делаем задержку в 50мс, чтобы DOM успел прогрузиться, и мы могли правильно высчитать ширину поля (clientWidth)
+    setTimeout(() => { renderPlinkoBoard(); }, 50);
+}
+
+function modifyPlinkoBet(action, val) {
+    if (isPlinkoPlaying) return;
+    const input = document.getElementById('plinkoBet');
+    let current = parseInt(input.value) || 0;
+    if (action === 'add') current += val;
+    if (action === 'mult') current = Math.floor(current * val);
+    if (action === 'clear') current = 1;
+    if (current < 1) current = 1;
+    input.value = current;
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+function setPlinkoDiff(diff) {
+    if (isPlinkoPlaying) return;
+    plinkoDiff = diff;
+    document.querySelectorAll('.diff-buttons button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`p-diff-${diff}`).classList.add('active');
+    renderPlinkoBoard();
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+function setPlinkoPins(pins) {
+    if (isPlinkoPlaying) return;
+    plinkoPinsCount = pins;
+    document.querySelectorAll('.pins-buttons button').forEach(b => b.classList.remove('active'));
+    document.getElementById(`p-pins-${pins}`).classList.add('active');
+    renderPlinkoBoard();
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+
+// Отрисовка пирамиды
+function renderPlinkoBoard() {
+    const pinsContainer = document.getElementById('plinkoPins');
+    const bucketsContainer = document.getElementById('plinkoBuckets');
+    if (!pinsContainer || !bucketsContainer) return;
+
+    pinsContainer.innerHTML = '';
+    bucketsContainer.innerHTML = '';
+
+    const width = pinsContainer.clientWidth || 340;
+    const height = pinsContainer.clientHeight || 280;
+    const rows = plinkoPinsCount;
+
+    // Расчет отступов между точками
+    const pinSpacingX = width / (rows + 4); 
+    const pinSpacingY = height / (rows + 1);
+
+    // Рисуем точки (Пины)
+    for (let i = 0; i < rows; i++) {
+        const numPins = i + 3; // В нулевом ряду 3 пина, в первом 4 и т.д.
+        const startX = width / 2 - ((numPins - 1) * pinSpacingX) / 2;
+        const y = (i + 1) * pinSpacingY;
+
+        for (let j = 0; j < numPins; j++) {
+            const x = startX + j * pinSpacingX;
+            const pin = document.createElement('div');
+            pin.className = 'plinko-pin';
+            pin.style.left = `${x}px`;
+            pin.style.top = `${y}px`;
+            pinsContainer.appendChild(pin);
+        }
+    }
+
+    // Рисуем корзины с коэффициентами
+    const coefs = PLINKO_COEFS[plinkoDiff][plinkoPinsCount];
+    coefs.forEach(c => {
+        const b = document.createElement('div');
+        
+        // Логика раскраски корзин
+        let colorClass = 'pb-neutral'; 
+        if (c < 1) colorClass = 'pb-lose';
+        else if (c > 2 && c < 10) colorClass = 'pb-good';
+        else if (c >= 10) colorClass = 'pb-epic';
+        
+        b.className = `plinko-bucket ${colorClass}`;
+        b.textContent = (c >= 1000 ? (c/1000).toFixed(1)+'k' : c) + 'x'; // Сокращаем большие числа
+        bucketsContainer.appendChild(b);
+    });
+}
+
+async function playPlinko() {
+    if (isPlinkoPlaying) return;
+    
+    const bet = parseInt(document.getElementById('plinkoBet').value);
+    if (isNaN(bet) || bet < 1) return showToast('❌ Введите ставку');
+    if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
+
+    isPlinkoPlaying = true;
+    const btn = document.getElementById('btnPlinkoAction');
+    btn.disabled = true;
+    btn.textContent = 'ШАРИК ПАДАЕТ...';
+
+    const res = await apiRequest('/plinko/play', 'POST', {
+        user_id: state.user.telegram_id,
+        bet: bet,
+        difficulty: plinkoDiff,
+        pins: plinkoPinsCount
+    });
+
+    if (res.success) {
+        // Сразу списываем баланс, чтобы юзер не кликал
+        state.user.balance -= bet; 
+        updateUserDisplay();
+        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+
+        // Запускаем анимацию
+        await animatePlinkoBall(res.path, res.bucket);
+
+        // Начисляем выигрыш
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+
+        if (res.multiplier >= 1) {
+            showToast(`Победа! +${res.win_amount} <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        }
+
+    } else {
+        showToast(res.error);
+    }
+
+    isPlinkoPlaying = false;
+    btn.disabled = false;
+    btn.textContent = 'ИГРАТЬ';
+}
+
+async function animatePlinkoBall(path, finalBucketIndex) {
+    const ball = document.getElementById('plinkoBall');
+    const pinsContainer = document.getElementById('plinkoPins');
+    const width = pinsContainer.clientWidth || 340;
+    const height = pinsContainer.clientHeight || 280;
+    const rows = plinkoPinsCount;
+
+    const pinSpacingX = width / (rows + 4);
+    const pinSpacingY = height / (rows + 1);
+
+    ball.style.transition = 'none';
+    ball.style.display = 'block';
+
+    // Шарик стартует с самого верха, по центру
+    let currentX = width / 2;
+    let currentY = 0; 
+    
+    ball.style.left = `${currentX}px`;
+    ball.style.top = `${currentY}px`;
+
+    // Заставляем браузер применить координаты без транзишена
+    void ball.offsetWidth;
+
+    // Скорость падения зависит от количества рядов (чем больше, тем быстрее)
+    const stepSpeed = 350 - (rows * 10); 
+    
+    // Включаем плавную физику отскока
+    ball.style.transition = `all ${stepSpeed}ms cubic-bezier(0.3, 0.1, 0.7, 1)`;
+
+    for (let i = 0; i < path.length; i++) {
+        const dir = path[i]; // 0 = лево, 1 = право
+        if (dir === 0) currentX -= (pinSpacingX / 2);
+        else currentX += (pinSpacingX / 2);
+
+        currentY += pinSpacingY;
+
+        ball.style.left = `${currentX}px`;
+        ball.style.top = `${currentY}px`;
+
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        await new Promise(r => setTimeout(r, stepSpeed));
+    }
+
+    // Финальное падение в корзину (чуть ниже пинов)
+    currentY += pinSpacingY; 
+    ball.style.top = `${currentY + 20}px`; 
+    await new Promise(r => setTimeout(r, stepSpeed));
+
+    // Подсвечиваем победную корзину
+    const buckets = document.getElementById('plinkoBuckets').children;
+    if(buckets[finalBucketIndex]) {
+        buckets[finalBucketIndex].classList.add('active');
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 600);
+    }
+
+    ball.style.display = 'none';
+}
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {
     openProfileTab();

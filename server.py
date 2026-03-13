@@ -41,10 +41,44 @@ MINES_COEFS = {
     23: [12.5, 300],
     24: [25]
 }
-
+PLINKO_MULTIPLIERS = {
+    'low': {
+        8: [5.6, 2.1, 1.1, 1.0, 0.5, 1.0, 1.1, 2.1, 5.6],
+        9: [5.6, 2.0, 1.6, 1.0, 0.7, 0.7, 1.0, 1.6, 2.0, 5.6],
+        10: [8.9, 3.0, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 3.0, 8.9],
+        11: [8.4, 3.0, 1.9, 1.3, 1.0, 0.7, 0.7, 1.0, 1.3, 1.9, 3.0, 8.4],
+        12: [10.0, 3.0, 1.6, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 1.6, 3.0, 10.0],
+        13: [8.1, 4.0, 3.0, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3.0, 4.0, 8.1],
+        14: [7.1, 4.0, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 4.0, 7.1],
+        15: [15.0, 8.0, 3.0, 2.0, 1.5, 1.1, 1.0, 0.7, 0.7, 1.0, 1.1, 1.5, 2.0, 3.0, 8.0, 15.0],
+        16: [16.0, 9.0, 2.0, 1.4, 1.4, 1.2, 1.1, 1.0, 0.5, 1.0, 1.1, 1.2, 1.4, 1.4, 2.0, 9.0, 16.0]
+    },
+    'medium': {
+        8: [13.0, 3.0, 1.3, 0.7, 0.4, 0.7, 1.3, 3.0, 13.0],
+        9: [18.0, 4.0, 1.7, 0.9, 0.5, 0.5, 0.9, 1.7, 4.0, 18.0],
+        10: [22.0, 5.0, 2.0, 1.4, 0.6, 0.4, 0.6, 1.4, 2.0, 5.0, 22.0],
+        11: [24.0, 6.0, 3.0, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3.0, 6.0, 24.0],
+        12: [33.0, 11.0, 4.0, 2.0, 1.1, 0.6, 0.3, 0.6, 1.1, 2.0, 4.0, 11.0, 33.0],
+        13: [43.0, 13.0, 6.0, 3.0, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3.0, 6.0, 13.0, 43.0],
+        14: [58.0, 15.0, 7.0, 4.0, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4.0, 7.0, 15.0, 58.0],
+        15: [88.0, 18.0, 11.0, 5.0, 3.0, 1.3, 0.5, 0.3, 0.3, 0.5, 1.3, 3.0, 5.0, 11.0, 18.0, 88.0],
+        16: [110.0, 41.0, 10.0, 5.0, 3.0, 1.5, 1.0, 0.5, 0.3, 0.5, 1.0, 1.5, 3.0, 5.0, 10.0, 41.0, 110.0] # Исправил опечатку из PHP файла (там была 1 вместо 10)
+    },
+    'high': {
+        8: [29.0, 4.0, 1.5, 0.3, 0.2, 0.3, 1.5, 4.0, 29.0],
+        9: [43.0, 7.0, 2.0, 0.6, 0.2, 0.2, 0.6, 2.0, 7.0, 43.0],
+        10: [76.0, 10.0, 3.0, 0.9, 0.3, 0.2, 0.3, 0.9, 3.0, 10.0, 76.0],
+        11: [120.0, 14.0, 5.2, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 5.2, 14.0, 120.0],
+        12: [170.0, 24.0, 8.1, 2.0, 0.7, 0.2, 0.2, 0.2, 0.7, 2.0, 8.1, 24.0, 170.0],
+        13: [260.0, 37.0, 11.0, 4.0, 1.0, 0.2, 0.2, 0.2, 0.2, 1.0, 4.0, 11.0, 37.0, 260.0],
+        14: [420.0, 56.0, 18.0, 5.0, 1.9, 0.3, 0.2, 0.2, 0.2, 0.3, 1.9, 5.0, 18.0, 56.0, 420.0],
+        15: [620.0, 83.0, 27.0, 8.0, 3.0, 0.5, 0.2, 0.2, 0.2, 0.2, 0.5, 3.0, 8.0, 27.0, 83.0, 620.0],
+        16: [1000.0, 130.0, 26.0, 9.0, 4.0, 2.0, 0.2, 0.2, 0.2, 0.2, 0.2, 2.0, 4.0, 9.0, 26.0, 130.0, 1000.0]
+    }
+}
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage, PlinkoGame
 )
 
 load_dotenv()
@@ -934,6 +968,57 @@ async def mines_collect(request):
         clicked = json.loads(game.clicked_positions)
         await session.commit()
         return web.json_response({'success': True, 'win_amount': game.win_amount, 'balance': user.balance, 'mines': mines_pos, 'clicked': clicked})
+async def plinko_play(request):
+    data = await request.json()
+    user_id = data.get('user_id')
+    bet = int(data.get('bet', 0))
+    difficulty = data.get('difficulty', 'low')
+    pins = int(data.get('pins', 8))
+
+    if bet < 1:
+        return web.json_response({'success': False, 'error': 'Минимальная ставка 1 ⭐'})
+    if difficulty not in ['low', 'medium', 'high']:
+        return web.json_response({'success': False, 'error': 'Неверная сложность'})
+    if pins < 8 or pins > 16:
+        return web.json_response({'success': False, 'error': 'Пинов должно быть от 8 до 16'})
+
+    async with async_session() as session:
+        user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+        if not user or user.balance < bet:
+            return web.json_response({'success': False, 'error': 'Недостаточно звезд'})
+
+        # Списываем ставку
+        user.balance -= bet
+
+        # Генерируем траекторию (как в PHP скрипте)
+        # Шарик на каждом ряду (от 0 до pins) падает либо влево (0), либо вправо (1)
+        # Количество "вправо" (1) определяет номер итоговой корзины (от 0 до pins)
+        directions = [random.choice([0, 1]) for _ in range(pins)]
+        bucket = sum(directions)
+
+        # Получаем множитель из таблицы
+        multiplier = PLINKO_MULTIPLIERS[difficulty][pins][bucket]
+
+        # Считаем выигрыш
+        win_amount = math.floor(bet * multiplier)
+        user.balance += win_amount
+
+        # Записываем в БД
+        game = PlinkoGame(
+            user_id=user.id, bet=bet, difficulty=difficulty, 
+            pins=pins, bucket=bucket, multiplier=multiplier, win_amount=win_amount
+        )
+        session.add(game)
+        await session.commit()
+
+        return web.json_response({
+            'success': True,
+            'path': directions, # Отдаем путь клиенту для отрисовки анимации
+            'bucket': bucket,
+            'multiplier': multiplier,
+            'win_amount': win_amount,
+            'balance': user.balance
+        })
 async def create_app():
     app = web.Application(middlewares=[log_middleware, error_middleware])
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")})
@@ -960,6 +1045,7 @@ async def create_app():
         web.post('/api/crash/cashout', crash_cashout),
         web.post('/api/dice/play', dice_play),
         web.post('/api/promo/activate', activate_promo),
+        web.post('/api/plinko/play', plinko_play),
     ]
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))

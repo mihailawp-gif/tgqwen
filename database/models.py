@@ -179,7 +179,20 @@ class PromoCode(Base):
     uses_count = Column(Integer, default=0)         # Сколько раз уже активировали
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+class PlinkoGame(Base):
+    __tablename__ = "plinko_games"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    bet = Column(Integer, nullable=False)
+    difficulty = Column(String(10), nullable=False) # 'low', 'medium', 'high'
+    pins = Column(Integer, nullable=False)          # от 8 до 16
+    bucket = Column(Integer, nullable=False)        # индекс корзины (0 до pins)
+    multiplier = Column(Float, nullable=False)      # Итоговый икс
+    win_amount = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
+    user = relationship("User")
 class PromoCodeUsage(Base):
     __tablename__ = "promo_code_usages"
     

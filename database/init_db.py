@@ -5,7 +5,7 @@ from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from database.models import init_db, async_session, Case, Gift, CaseItem, User, CaseOpening, Withdrawal, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage, Payment
+from database.models import init_db, async_session, Case, Gift, CaseItem, User, CaseOpening, Withdrawal, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage, Payment, PlinkoGame
 from sqlalchemy import select, delete
 
 # ──────────────────────────────────────────────────────────────────

@@ -105,7 +105,7 @@
                         <p>УГАДАЙ ЧИСЛО</p>
                     </div>
                 </div>
-				<div class="game-block block-plinko align-right" onclick="showToast('В разработке!')">
+				<div class="game-block block-plinko align-right" onclick="showPlinkoScreen()">
                     <div class="art-left">
                         <div class="plinko-anim-wrapper">
                             <svg class="plinko-bg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -407,6 +407,64 @@
             <div class="mines-multipliers" id="minesMultipliers"></div>
 
             <button class="btn-open-case" id="btnMinesAction" onclick="startMines()" style="padding: 14px; margin-top: 4px;">Играть</button>
+        </div>
+    </div>
+	<div id="plinko-screen" class="screen">
+        <div class="preview-header">
+            <button class="btn-back" onclick="switchScreen('main-screen')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <h2>Плинко</h2>
+            <div class="mines-balance-badge">
+                <img src="/static/images/star.png" alt="⭐">
+                <span id="plinkoBalanceDisplay">0</span>
+            </div>
+        </div>
+
+        <div class="plinko-container" style="padding: 16px; display: flex; flex-direction: column; gap: 16px; height: calc(100vh - 70px);">
+            
+            <div class="plinko-game-area" id="plinkoGameArea">
+                <div id="plinkoPins"></div>
+                <div id="plinkoBuckets" class="plinko-buckets"></div>
+                <div id="plinkoBall" class="plinko-ball"></div>
+            </div>
+
+            <div class="mines-controls-panel" style="margin-bottom: 0;">
+                <div class="control-group">
+                    <label>Сумма ставки</label>
+                    <div class="input-with-icon">
+                        <input type="number" id="plinkoBet" value="10" min="1">
+                        <img src="/static/images/star.png" alt="⭐">
+                    </div>
+                    <div class="quick-buttons">
+                        <button onclick="modifyPlinkoBet('add', 10)">+10</button>
+                        <button onclick="modifyPlinkoBet('add', 50)">+50</button>
+                        <button onclick="modifyPlinkoBet('add', 100)">+100</button>
+                        <button onclick="modifyPlinkoBet('mult', 2)">x2</button>
+                        <button onclick="modifyPlinkoBet('clear')">Min</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Сложность</label>
+                    <div class="quick-buttons diff-buttons">
+                        <button id="p-diff-low" onclick="setPlinkoDiff('low')" class="active">Легко</button>
+                        <button id="p-diff-medium" onclick="setPlinkoDiff('medium')">Средне</button>
+                        <button id="p-diff-high" onclick="setPlinkoDiff('high')">Сложно</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Количество рядов</label>
+                    <div class="quick-buttons pins-buttons">
+                        <button id="p-pins-8" onclick="setPlinkoPins(8)" class="active">8</button>
+                        <button id="p-pins-10" onclick="setPlinkoPins(10)">10</button>
+                        <button id="p-pins-12" onclick="setPlinkoPins(12)">12</button>
+                        <button id="p-pins-14" onclick="setPlinkoPins(14)">14</button>
+                        <button id="p-pins-16" onclick="setPlinkoPins(16)">16</button>
+                    </div>
+                </div>
+
+                <button class="btn-open-case" id="btnPlinkoAction" onclick="playPlinko()" style="margin-top: 6px;">ИГРАТЬ</button>
+            </div>
         </div>
     </div>
     <div id="topupModal" class="modal">

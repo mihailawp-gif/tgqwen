@@ -114,18 +114,10 @@ body {
 .game-block:active { transform: scale(0.96); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 
 .block-crash { background: linear-gradient(135deg, #0f172a, #1e293b); }
-.game-block.block-plinko {
-    position: relative;
-    /* Убираем жесткий оранжевый фон, делаем прозрачным */
-    background: transparent; 
-    border: none; /* Убираем рамку, если она есть */
-    box-shadow: none; /* Убираем тень, чтобы блок не "парил" */
-    
-    /* Смешиваем все содержимое блока с фоном игры */
-    background-blend-mode: screen; 
-    
-    /* Добавляем легкое свечение всему блоку, чтобы он не потерялся */
-    filter: drop-shadow(0 0 20px rgba(255, 170, 0, 0.4)); 
+.block-plinko { 
+    background: linear-gradient(135deg, #d97706, #ea580c) !important; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+    filter: none !important;
 }
 .block-cases { background: linear-gradient(135deg, #d97706, #f59e0b); }
 .block-dice { background: linear-gradient(135deg, #2563eb, #3b82f6); }
@@ -751,9 +743,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .plinko-bg {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Растягивает SVG на весь наш новый большой размер */
-    mix-blend-mode: screen; 
-    opacity: 0.8; /* <--- Чуть ярче сделали точки, раз фон больше */
+    object-fit: cover;
 }
 
 /* Шарики - без изменений, только чуть быстрее */

@@ -818,6 +818,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     100% { top: 84%; left: 46%; opacity: 0; }
 }
 /* --- ПЛИНКО (ИГРОВОЙ ЭКРАН) --- */
+/* --- ПЛИНКО (ИГРОВОЙ ЭКРАН) --- */
 .plinko-game-area {
     position: relative;
     width: 100%;

@@ -1484,10 +1484,9 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
     
-    // Расчеты сетки (должны строго совпадать с renderPlinkoBoard)
     const pinSpacingX = width / (rows + 2);
     const pinSpacingY = height / (rows + 0.8);
-    const ballRadius = 5; // Шарик 10px
+    const ballRadius = 5; 
 
     const ballEl = document.createElement('div');
     ballEl.className = 'plinko-ball';
@@ -1496,44 +1495,45 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     ballEl.style.height = `${ballRadius * 2}px`;
     pinsContainer.appendChild(ballEl);
 
-    // --- 1. ГЕНЕРАЦИЯ ИДЕАЛЬНОГО МАРШРУТА ---
-    // Мы заранее вычисляем каждую точку (x, y), где шарик должен удариться о пин
     let points = [];
     let currentX = width / 2;
-    let currentY = pinSpacingY; // Y первого центрального пина
+    let currentY = pinSpacingY; 
     
-    // Точка 0: Спавн над экраном
+    // ФИКС 1: Смещение вверх, чтобы шарик касался пина своим низом, а не сливался центрами
+    const yHitOffset = 6; 
+    
+    // Точка 0: Спавн (падает сверху)
     points.push({ x: currentX, y: -20 });
     
-    // Точка 1: Удар о самый первый (верхний) пин
-    points.push({ x: currentX, y: currentY });
+    // Точка 1: Удар о первый пин (с учетом смещения)
+    points.push({ x: currentX, y: currentY - yHitOffset });
 
-    // Точки 2-N: Отскоки по рядам на основе массива сервера (path)
+    // Точки 2-N: Прыжки по остальным пинам
     for (let i = 0; i < path.length; i++) {
         let dir = path[i];
         
-        // Смещаемся влево (0) или вправо (1)
         currentX += (dir === 0) ? -(pinSpacingX / 2) : (pinSpacingX / 2);
         currentY += pinSpacingY;
         
-        // Добавляем микро-шум по X, чтобы шарик не бил ровно в пиксель (для красоты), 
-        // но не на последнем прыжке в корзину
-        let noiseX = (i === path.length - 1) ? 0 : (Math.random() - 0.5) * 4;
-        
-        points.push({ x: currentX + noiseX, y: currentY });
+        if (i === path.length - 1) {
+            // ФИКС 2: Последняя точка - касание края корзинки!
+            // Мы не делаем полный прыжок вниз, а целимся ровно в линию лунок
+            // +2 пикселя для легкого визуального погружения перед исчезновением
+            points.push({ x: currentX, y: height - ballRadius + 2 }); 
+        } else {
+            // Обычный пин (добавляем микро-шум по X для красоты)
+            let noiseX = (Math.random() - 0.5) * 4;
+            points.push({ x: currentX + noiseX, y: currentY - yHitOffset });
+        }
     }
-    
-    // Последняя точка: Падение строго в корзину
-    points.push({ x: currentX, y: currentY + pinSpacingY });
 
-    // --- 2. АНИМАЦИЯ ПРЫЖКОВ (СИМУЛЯЦИЯ ФИЗИКИ) ---
-    let currentSegment = 0;   // Текущий отрезок пути
-    let segmentProgress = 0;  // Прогресс на текущем отрезке (от 0 до 1)
+    let currentSegment = 0;   
+    let segmentProgress = 0;  
     let lastTime = performance.now();
     let isDone = false;
 
-    // Базовая скорость прыжка (ускоряется, если рядов много)
-    const baseDuration = 320 - (rows * 6); 
+    // Настраиваем скорость в зависимости от количества рядов
+    const baseDuration = 350 - (rows * 8); 
 
     function animate(time) {
         if (isDone) return;
@@ -1541,15 +1541,14 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         let dt = time - lastTime;
         lastTime = time;
         
-        // Добавляем легкий рандом к скорости каждого прыжка для живости
         let segmentDuration = baseDuration;
         if (currentSegment > 0 && currentSegment < points.length - 2) {
-            segmentDuration += (Math.random() * 40 - 20); // +/- 20 мс
+            // Легкий рандом в скорость каждого прыжка
+            segmentDuration += (Math.random() * 30 - 15); 
         }
 
         segmentProgress += dt / segmentDuration;
 
-        // Переход к следующему пину
         if (segmentProgress >= 1) {
             segmentProgress = 0;
             currentSegment++;
@@ -1560,7 +1559,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             }
         }
 
-        // Если достигли дна
+        // Если все отрезки пройдены - шарик долетел до лунки
         if (currentSegment >= points.length - 1) {
             isDone = true;
             finishDrop();
@@ -1570,31 +1569,28 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         let p1 = points[currentSegment];
         let p2 = points[currentSegment + 1];
 
-        // Математика интерполяции (плавного движения)
         let t = segmentProgress;
-        let x = p1.x + (p2.x - p1.x) * t; // X всегда движется линейно
+        let x = p1.x + (p2.x - p1.x) * t; 
         let y = p1.y + (p2.y - p1.y) * t;
 
-        // --- ИМИТАЦИЯ ГРАВИТАЦИИ И ОТСКОКА ---
+        // Физика дуг
         if (currentSegment === 0) {
-            // Самое первое падение сверху (ускорение вниз)
+            // Самое первое падение
             let easeIn = t * t; 
             y = p1.y + (p2.y - p1.y) * easeIn;
         } 
         else if (currentSegment < points.length - 2) {
-            // Прыжки между пинами (Парабола: прыжок вверх и падение вниз)
-            // Высота прыжка зависит от расстояния между рядами
-            let bounceHeight = pinSpacingY * (0.35 + Math.random() * 0.15); 
+            // Прыжки по параболе между пинами
+            let bounceHeight = pinSpacingY * (0.4 + Math.random() * 0.1); 
             let bounceOffset = Math.sin(t * Math.PI) * bounceHeight; 
-            y -= bounceOffset; // Поднимаем шарик по синусоиде
+            y -= bounceOffset; 
         } 
         else {
-            // Падение в саму корзину (ускорение вниз без подпрыгивания)
+            // Падение в корзину
             let easeIn = t * t;
             y = p1.y + (p2.y - p1.y) * easeIn;
         }
 
-        // Обновляем позицию на экране
         ballEl.style.left = `${x - ballRadius}px`;
         ballEl.style.top = `${y - ballRadius}px`;
 
@@ -1609,13 +1605,17 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
         }
 
-        // Моментальное удаление (как ты просил ранее)
+        // Моментальное удаление из лунки
         ballEl.style.display = 'none';
         ballEl.remove();
 
         state.user.balance = finalBalance;
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+
+        if (multiplier >= 2) {
+            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+        }
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {
@@ -1624,7 +1624,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         }
     }
 
-    // Запускаем 
     requestAnimationFrame(animate);
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===

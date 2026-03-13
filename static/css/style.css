@@ -114,7 +114,7 @@ body {
 .game-block:active { transform: scale(0.96); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 
 .block-crash { background: linear-gradient(135deg, #0f172a, #1e293b); }
-.block-roulette { background: linear-gradient(135deg, #d97706, #ea580c); }
+.block-plinko { background: linear-gradient(135deg, #d97706, #ea580c); }
 .block-cases { background: linear-gradient(135deg, #d97706, #f59e0b); }
 .block-dice { background: linear-gradient(135deg, #2563eb, #3b82f6); }
 

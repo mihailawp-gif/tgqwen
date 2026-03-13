@@ -1483,107 +1483,122 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
+    
+    // Расчеты сетки (должны строго совпадать с renderPlinkoBoard)
+    const pinSpacingX = width / (rows + 2);
     const pinSpacingY = height / (rows + 0.8);
+    const ballRadius = 5; // Шарик 10px
 
     const ballEl = document.createElement('div');
     ballEl.className = 'plinko-ball';
     ballEl.style.opacity = '1';
+    ballEl.style.width = `${ballRadius * 2}px`;
+    ballEl.style.height = `${ballRadius * 2}px`;
     pinsContainer.appendChild(ballEl);
 
-    let ball = {
-        x: width / 2 + (Math.random() - 0.5) * 4, 
-        y: -10,
-        vx: (Math.random() - 0.5) * 1,
-        vy: 0,
-        radius: 6 
-    };
+    // --- 1. ГЕНЕРАЦИЯ ИДЕАЛЬНОГО МАРШРУТА ---
+    // Мы заранее вычисляем каждую точку (x, y), где шарик должен удариться о пин
+    let points = [];
+    let currentX = width / 2;
+    let currentY = pinSpacingY; // Y первого центрального пина
+    
+    // Точка 0: Спавн над экраном
+    points.push({ x: currentX, y: -20 });
+    
+    // Точка 1: Удар о самый первый (верхний) пин
+    points.push({ x: currentX, y: currentY });
 
-    const gravity = 0.20;       
-    const friction = 0.99;      
-    const restitution = 0.50; 
-    const maxSpeed = 12;       
+    // Точки 2-N: Отскоки по рядам на основе массива сервера (path)
+    for (let i = 0; i < path.length; i++) {
+        let dir = path[i];
+        
+        // Смещаемся влево (0) или вправо (1)
+        currentX += (dir === 0) ? -(pinSpacingX / 2) : (pinSpacingX / 2);
+        currentY += pinSpacingY;
+        
+        // Добавляем микро-шум по X, чтобы шарик не бил ровно в пиксель (для красоты), 
+        // но не на последнем прыжке в корзину
+        let noiseX = (i === path.length - 1) ? 0 : (Math.random() - 0.5) * 4;
+        
+        points.push({ x: currentX + noiseX, y: currentY });
+    }
+    
+    // Последняя точка: Падение строго в корзину
+    points.push({ x: currentX, y: currentY + pinSpacingY });
 
+    // --- 2. АНИМАЦИЯ ПРЫЖКОВ (СИМУЛЯЦИЯ ФИЗИКИ) ---
+    let currentSegment = 0;   // Текущий отрезок пути
+    let segmentProgress = 0;  // Прогресс на текущем отрезке (от 0 до 1)
+    let lastTime = performance.now();
     let isDone = false;
 
-    function updatePhysics() {
+    // Базовая скорость прыжка (ускоряется, если рядов много)
+    const baseDuration = 320 - (rows * 6); 
+
+    function animate(time) {
         if (isDone) return;
-
-        ball.vy += gravity; 
-        ball.vx *= friction; 
-        ball.vy *= friction; 
-
-        let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-        if (speed > maxSpeed) {
-            ball.vx = (ball.vx / speed) * maxSpeed;
-            ball.vy = (ball.vy / speed) * maxSpeed;
+        
+        let dt = time - lastTime;
+        lastTime = time;
+        
+        // Добавляем легкий рандом к скорости каждого прыжка для живости
+        let segmentDuration = baseDuration;
+        if (currentSegment > 0 && currentSegment < points.length - 2) {
+            segmentDuration += (Math.random() * 40 - 20); // +/- 20 мс
         }
 
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+        segmentProgress += dt / segmentDuration;
 
-        // === ФИКС: НЕВИДИМЫЕ СТЕНЫ ПО БОКАМ ===
-        // Левая стена
-        if (ball.x - ball.radius < 0) {
-            ball.x = ball.radius; // Возвращаем в пределы экрана
-            ball.vx = Math.abs(ball.vx) * 0.8; // Отскок вправо с потерей 20% энергии
-        }
-        // Правая стена
-        else if (ball.x + ball.radius > width) {
-            ball.x = width - ball.radius; // Возвращаем в пределы экрана
-            ball.vx = -Math.abs(ball.vx) * 0.8; // Отскок влево с потерей 20% энергии
-        }
-        // ======================================
-
-        for (let pin of window.plinkoPhysicsPins) {
-            let dx = ball.x - pin.x;
-            let dy = ball.y - pin.y;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            let minDist = ball.radius + pin.radius;
-
-            if (distance < minDist) {
-                let nx = dx / distance;
-                let ny = dy / distance;
-
-                let penetration = minDist - distance;
-                ball.x += nx * penetration;
-                ball.y += ny * penetration;
-
-                let dotProduct = ball.vx * nx + ball.vy * ny;
-                
-                if (dotProduct < 0) {
-                    ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
-                    ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
-                    
-                    if (ny < -0.1) {
-                        let hitRow = Math.round(pin.y / pinSpacingY) - 1; 
-                        if (hitRow >= 0 && hitRow < path.length) {
-                            let dir = path[hitRow]; 
-                            
-                            let kickForceX = (1.5 + Math.random() * 0.5) * (rows >= 14 ? 0.75 : 1);
-                            
-                            ball.vx = dir === 0 ? -kickForceX : kickForceX;
-                            ball.vy = -1.5 - (Math.random() * 0.5); 
-                        } else {
-                            ball.vx += (Math.random() - 0.5) * 1.5;
-                        }
-                    } else {
-                        ball.vx += (Math.random() - 0.5) * 0.8;
-                    }
-
-                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                }
+        // Переход к следующему пину
+        if (segmentProgress >= 1) {
+            segmentProgress = 0;
+            currentSegment++;
+            
+            // Вибрация при ударе о пин
+            if (currentSegment > 0 && currentSegment < points.length - 1) {
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
         }
 
-        ballEl.style.left = `${ball.x - ball.radius}px`;
-        ballEl.style.top = `${ball.y - ball.radius}px`;
-
-        if (ball.y + ball.radius >= height) {
+        // Если достигли дна
+        if (currentSegment >= points.length - 1) {
             isDone = true;
             finishDrop();
-        } else {
-            requestAnimationFrame(updatePhysics);
+            return;
         }
+
+        let p1 = points[currentSegment];
+        let p2 = points[currentSegment + 1];
+
+        // Математика интерполяции (плавного движения)
+        let t = segmentProgress;
+        let x = p1.x + (p2.x - p1.x) * t; // X всегда движется линейно
+        let y = p1.y + (p2.y - p1.y) * t;
+
+        // --- ИМИТАЦИЯ ГРАВИТАЦИИ И ОТСКОКА ---
+        if (currentSegment === 0) {
+            // Самое первое падение сверху (ускорение вниз)
+            let easeIn = t * t; 
+            y = p1.y + (p2.y - p1.y) * easeIn;
+        } 
+        else if (currentSegment < points.length - 2) {
+            // Прыжки между пинами (Парабола: прыжок вверх и падение вниз)
+            // Высота прыжка зависит от расстояния между рядами
+            let bounceHeight = pinSpacingY * (0.35 + Math.random() * 0.15); 
+            let bounceOffset = Math.sin(t * Math.PI) * bounceHeight; 
+            y -= bounceOffset; // Поднимаем шарик по синусоиде
+        } 
+        else {
+            // Падение в саму корзину (ускорение вниз без подпрыгивания)
+            let easeIn = t * t;
+            y = p1.y + (p2.y - p1.y) * easeIn;
+        }
+
+        // Обновляем позицию на экране
+        ballEl.style.left = `${x - ballRadius}px`;
+        ballEl.style.top = `${y - ballRadius}px`;
+
+        requestAnimationFrame(animate);
     }
 
     function finishDrop() {
@@ -1594,14 +1609,13 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
         }
 
+        // Моментальное удаление (как ты просил ранее)
         ballEl.style.display = 'none';
         ballEl.remove();
 
         state.user.balance = finalBalance;
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
-
-
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {
@@ -1610,7 +1624,8 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         }
     }
 
-    requestAnimationFrame(updatePhysics);
+    // Запускаем 
+    requestAnimationFrame(animate);
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

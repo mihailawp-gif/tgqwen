@@ -1384,12 +1384,16 @@ function renderPlinkoBoard() {
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    // Делаем поле еще выше по вертикали, чтобы дать больше воздуха для падения
     const pinSpacingX = width / (rows + 2); 
-    const pinSpacingY = height / (rows + 0.8); // Увеличили вертикальный шаг
+    const pinSpacingY = height / (rows + 0.8); 
 
-    // ФИКС: Уменьшаем радиус самих пинов на больших рядах!
-    const pinRadius = rows >= 14 ? 2 : 3; // На 14-16 рядах пины будут по 4px в ширину
+    // --- ФИКС: Идеально пропорциональный размер пинов ---
+    let pinRadius = 3;
+    if (rows === 8) pinRadius = 5;         // 8 рядов: Огромные пины (10px)
+    else if (rows === 10) pinRadius = 4.5; // 10 рядов: Крупные (9px)
+    else if (rows === 12) pinRadius = 3.5; // 12 рядов: Средние (7px)
+    else if (rows === 14) pinRadius = 2.5; // 14 рядов: Мелкие (5px)
+    else if (rows === 16) pinRadius = 2;   // 16 рядов: Самые мелкие (4px)
 
     for (let i = 0; i < rows; i++) {
         const numPins = i + 3;
@@ -1400,14 +1404,15 @@ function renderPlinkoBoard() {
             const x = startX + j * pinSpacingX;
             const pin = document.createElement('div');
             pin.className = 'plinko-pin';
-            // Задаем размер пина динамически
+            
+            // Устанавливаем динамический размер для CSS
             pin.style.width = `${pinRadius * 2}px`;
             pin.style.height = `${pinRadius * 2}px`;
             pin.style.left = `${x}px`;
             pin.style.top = `${y}px`;
             pinsContainer.appendChild(pin);
             
-            // Физическое тело пина теперь меньше, места для шарика больше!
+            // Передаем этот же размер в физический движок
             window.plinkoPhysicsPins.push({ x: x, y: y, radius: pinRadius });
         }
     }
@@ -1479,11 +1484,13 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
+    
+    // ВАЖНО: интервалы должны совпадать с renderPlinkoBoard
     const pinSpacingX = width / (rows + 2);
     const pinSpacingY = height / (rows + 0.8);
 
-    // Шарик теперь всегда хорошего, видимого размера (10px шириной)
-    let ballRadius = 5; 
+    // ФИКС: ШАРИК ВСЕГДА БОЛЬШОЙ И КРАСИВЫЙ (диаметр 10px)
+    const ballRadius = 5; 
 
     const ballEl = document.createElement('div');
     ballEl.className = 'plinko-ball';
@@ -1492,6 +1499,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     ballEl.style.height = `${ballRadius * 2}px`;
     pinsContainer.appendChild(ballEl);
 
+    // --- ТВОЯ ИДЕАЛЬНАЯ ФИЗИКА ---
     let ball = {
         x: width / 2 + (Math.random() - 0.5) * 4, 
         y: -10,
@@ -1500,10 +1508,10 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         radius: ballRadius 
     };
 
-    const gravity = 0.25;  
+    const gravity = 0.15;       
     const friction = 0.99;      
     const restitution = 0.70; 
-    const maxSpeed = pinSpacingY * 0.6; // Ограничение скорости
+    const maxSpeed = 9;       
 
     let idealPathX = [width / 2];
     let currX = width / 2;
@@ -1528,6 +1536,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         ball.vx *= friction; 
         ball.vy *= friction; 
 
+        // Ограничение скорости
         let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
         if (speed > maxSpeed) {
             ball.vx = (ball.vx / speed) * maxSpeed;
@@ -1537,6 +1546,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
+        // Просчет столкновений
         for (let pin of window.plinkoPhysicsPins) {
             let dx = ball.x - pin.x;
             let dy = ball.y - pin.y;
@@ -1547,17 +1557,20 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
                 let nx = dx / distance;
                 let ny = dy / distance;
 
+                // Выталкивание (анти-залипание)
                 let penetration = minDist - distance;
                 ball.x += nx * penetration;
                 ball.y += ny * penetration;
 
                 let dotProduct = ball.vx * nx + ball.vy * ny;
                 
+                // Отражение
                 if (dotProduct < 0) {
                     ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
                     ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
                     
-                    ball.vx += (Math.random() - 0.5) * 0.05;
+                    // Шум
+                    ball.vx += (Math.random() - 0.5) * 0.03;
 
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 }
@@ -1590,9 +1603,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
-        if (multiplier >= 2) {
-            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
-        }
+
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {

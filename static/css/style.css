@@ -848,15 +848,17 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     box-shadow: 0 0 8px rgba(255,255,255,0.6);
 }
 
-plinko-ball {
+p.plinko-ball {
     position: absolute;
     width: 12px;
     height: 12px;
-    background: radial-gradient(circle at 30% 30%, #ffea70, #f59e0b);
+    /* Красивый синий градиент */
+    background: radial-gradient(circle at 30% 30%, #93c5fd, #2563eb);
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px #f59e0b, 0 0 5px #fff;
-    opacity: 0; /* ФИКС: используем прозрачность вместо display: none */
+    /* Синее неоновое свечение */
+    box-shadow: 0 0 15px #3b82f6, 0 0 5px #fff;
+    opacity: 0; 
     pointer-events: none;
     z-index: 10;
 }
@@ -864,29 +866,28 @@ plinko-ball {
 .plinko-buckets {
     display: flex;
     width: 100%;
-    height: 26px; /* Чуть меньше высоту для аккуратности */
+    height: 26px; 
     padding: 0 4px 4px 4px;
     gap: 2px;
 }
 
-/* ФИКС: Минималистичные корзинки без кругов сверху */
 .plinko-bucket {
     flex: 1;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Inter', sans-serif;
-    font-size: 10px;
+    /* Изменили шрифт на более красивый и "геймерский" */
+    font-family: 'Exo 2', sans-serif;
+    font-size: 11px;
     font-weight: 800;
-    color: #111; /* Темный текст для контраста */
-    border-bottom: 2px solid rgba(0,0,0,0.2); /* Легкий эффект объема (как на скрине) */
+    color: #111; 
+    border-bottom: 2px solid rgba(0,0,0,0.2); 
     transition: transform 0.1s, filter 0.1s;
     letter-spacing: -0.5px;
 }
 
-/* Если экран совсем мелкий, уменьшаем шрифт */
-@media (max-width: 360px) { .plinko-bucket { font-size: 8px; } }
+@media (max-width: 360px) { .plinko-bucket { font-size: 9px; } }
 
 .plinko-bucket.active {
     transform: translateY(-2px) scale(1.05);

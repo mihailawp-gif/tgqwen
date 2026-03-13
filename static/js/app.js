@@ -1392,18 +1392,16 @@ function renderPlinkoBoard() {
     coefs.forEach(c => {
         const b = document.createElement('div');
         
-        // ФИКС ЦВЕТОВ: Распределяем цвета как на скрине
         let colorClass = 'pb-c-0'; 
-        if (c < 1) colorClass = 'pb-c-0'; // Оранжевый
-        else if (c >= 1 && c < 2) colorClass = 'pb-c-1'; // Желтый
-        else if (c >= 2 && c <= 5) colorClass = 'pb-c-2'; // Светло-зеленый
-        else if (c > 5) colorClass = 'pb-c-3'; // Ярко-зеленый
+        if (c < 1) colorClass = 'pb-c-0'; 
+        else if (c >= 1 && c < 2) colorClass = 'pb-c-1'; 
+        else if (c >= 2 && c <= 5) colorClass = 'pb-c-2'; 
+        else if (c > 5) colorClass = 'pb-c-3'; 
         
         b.className = `plinko-bucket ${colorClass}`;
         
-        // Сокращаем тысячные числа (1000 -> 1k)
-        let text = c >= 1000 ? (c/1000).toFixed(0)+'k' : c;
-        b.textContent = text + 'x';
+        // ФИКС: Выводим просто число без 'x' и без 'k' (ровно как в таблице)
+        b.textContent = c; 
         bucketsContainer.appendChild(b);
     });
 }
@@ -1468,40 +1466,58 @@ async function animatePlinkoBall(path, finalBucketIndex) {
     const pinSpacingY = height / (rows + 1);
 
     ball.style.transition = 'none';
-    
-    // ФИКС ПРОЗРАЧНОСТИ: Делаем шарик видимым
     ball.style.opacity = '1';
 
     let currentX = width / 2;
-    let currentY = pinSpacingY / 2; // Начинаем чуть выше первого пина
+    let currentY = pinSpacingY; // Высота первого пина
     
+    // Стартуем ровно по центру с самого верха
     ball.style.left = `${currentX}px`;
+    ball.style.top = `0px`;
+
+    void ball.offsetWidth; // Принудительный рефлоу браузера
+
+    const stepSpeed = 400 - (rows * 10); 
+    const halfSpeed = stepSpeed / 2;
+
+    // 1. Падение до первого пина
+    ball.style.transition = `top ${stepSpeed}ms ease-in`;
     ball.style.top = `${currentY}px`;
+    await new Promise(r => setTimeout(r, stepSpeed));
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-    // Принудительно заставляем браузер применить координаты
-    void ball.offsetWidth;
-
-    const stepSpeed = 350 - (rows * 10); 
-    ball.style.transition = `all ${stepSpeed}ms cubic-bezier(0.3, 0.1, 0.7, 1)`;
-
+    // 2. ФИЗИКА ОТСКОКОВ (Прыгаем по пинам)
     for (let i = 0; i < path.length; i++) {
         const dir = path[i]; 
-        if (dir === 0) currentX -= (pinSpacingX / 2);
-        else currentX += (pinSpacingX / 2);
+        const targetX = dir === 0 ? currentX - (pinSpacingX / 2) : currentX + (pinSpacingX / 2);
+        const targetY = currentY + pinSpacingY;
 
-        currentY += pinSpacingY;
+        // Вычисляем пик прыжка (шарик подлетает на 35% высоты ряда)
+        const peakX = (currentX + targetX) / 2;
+        const peakY = currentY - (pinSpacingY * 0.35); 
 
-        ball.style.left = `${currentX}px`;
-        ball.style.top = `${currentY}px`;
+        // Имитация гравитации (вверх летит с замедлением, вниз - с ускорением, вбок - равномерно)
+        // ПРЫЖОК ВВЕРХ
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms ease-out`;
+        ball.style.left = `${peakX}px`;
+        ball.style.top = `${peakY}px`;
+        await new Promise(r => setTimeout(r, halfSpeed));
 
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        await new Promise(r => setTimeout(r, stepSpeed));
+        // ПАДЕНИЕ ВНИЗ НА СЛЕДУЮЩИЙ ПИН
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms ease-in`;
+        ball.style.left = `${targetX}px`;
+        ball.style.top = `${targetY}px`;
+        await new Promise(r => setTimeout(r, halfSpeed));
+
+        if (i < path.length - 1 && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        currentX = targetX;
+        currentY = targetY;
     }
 
-    currentY += pinSpacingY; 
-    ball.style.top = `${currentY + 15}px`; 
-    await new Promise(r => setTimeout(r, stepSpeed));
-
+    // Удар о корзину
     const buckets = document.getElementById('plinkoBuckets').children;
     if(buckets[finalBucketIndex]) {
         buckets[finalBucketIndex].classList.add('active');
@@ -1509,7 +1525,6 @@ async function animatePlinkoBall(path, finalBucketIndex) {
         setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 600);
     }
 
-    // Плавно скрываем шарик
     ball.style.opacity = '0';
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===

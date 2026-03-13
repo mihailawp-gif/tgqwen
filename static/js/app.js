@@ -1480,20 +1480,21 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     ballEl.style.opacity = '1';
     pinsContainer.appendChild(ballEl);
 
-    // --- ФИЗИЧЕСКИЕ ПАРАМЕТРЫ (ЗАМЕДЛЕННЫЕ) ---
+    // --- 1. ФИЗИЧЕСКИЕ ПАРАМЕТРЫ ---
     let ball = {
         x: width / 2 + (Math.random() - 0.5) * 4, 
         y: -10,
-        vx: (Math.random() - 0.5) * 1, // Уменьшили стартовый разлет
+        vx: (Math.random() - 0.5) * 1,
         vy: 0,
-        radius: 6
+        radius: 6 
     };
 
-    // ФИКС СКОРОСТИ:
-    const gravity = 0.20;       // Было 0.45. Теперь шарик падает в 2 раза медленнее!
-    const friction = 0.985;     // Чуть больше сопротивления воздуха, чтобы он не разгонялся бесконечно
-    const restitution = 0.75;   // Отскок оставляем сочным
-    
+    // Снизили гравитацию для более плавного и реалистичного падения
+    const gravity = 0.15;       
+    const friction = 0.99;      
+    const restitution = 0.70; // 3. Коэффициент упругости отскока (0.65 - 0.75)
+    const maxSpeed = 9;       // Ограничение скорости, чтобы не пролетал сквозь пины
+
     let idealPathX = [width / 2];
     let currX = width / 2;
     for (let i = 0; i < path.length; i++) {
@@ -1506,26 +1507,31 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     function updatePhysics() {
         if (isDone) return;
 
-        // Направление ветра
+        // Легкое подруливание для соблюдения серверного результата
         let currentRow = Math.floor((ball.y + pinSpacingY / 2) / pinSpacingY);
         if (currentRow >= 0 && currentRow < idealPathX.length) {
             let targetX = idealPathX[currentRow];
             let diff = targetX - ball.x;
-            // Уменьшили силу "подруливания", так как шарик летит медленнее и у него больше времени на поворот
-            ball.vx += diff * 0.008; 
+            ball.vx += diff * 0.005; // Снизили силу, чтобы не мешала отскокам
         }
 
+        // Применяем силы
         ball.vy += gravity; 
         ball.vx *= friction; 
         ball.vy *= friction; 
-        
-        // Микро-шум
-        ball.vx += (Math.random() - 0.5) * 0.08;
 
+        // 1. ОГРАНИЧЕНИЕ МАКСИМАЛЬНОЙ СКОРОСТИ
+        let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+        if (speed > maxSpeed) {
+            ball.vx = (ball.vx / speed) * maxSpeed;
+            ball.vy = (ball.vy / speed) * maxSpeed;
+        }
+
+        // Обновляем координаты
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Столкновения
+        // ПРОСЧЕТ СТОЛКНОВЕНИЙ
         for (let pin of window.plinkoPhysicsPins) {
             let dx = ball.x - pin.x;
             let dy = ball.y - pin.y;
@@ -1533,29 +1539,36 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             let minDist = ball.radius + pin.radius;
 
             if (distance < minDist) {
+                // Вычисляем нормаль
                 let nx = dx / distance;
                 let ny = dy / distance;
 
-                let overlap = minDist - distance;
-                ball.x += nx * overlap;
-                ball.y += ny * overlap;
+                // 4. ИСПРАВЛЕНИЕ "ЗАЛИПАНИЯ" (выталкиваем ровно на глубину проникновения)
+                let penetration = minDist - distance;
+                ball.x += nx * penetration;
+                ball.y += ny * penetration;
 
+                // 2. УБИРАЕМ ЭФФЕКТ КАТАНИЯ (отражение по нормали)
                 let dotProduct = ball.vx * nx + ball.vy * ny;
                 
+                // Отражаем вектор только если они движутся навстречу
                 if (dotProduct < 0) {
                     ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
                     ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
                     
+                    // 5. МИКРО-СЛУЧАЙНОСТЬ для естественных вариаций
+                    ball.vx += (Math.random() - 0.5) * 0.03; // +/- 0.015 скорости
+
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 }
             }
         }
 
-        // Отрисовка
+        // Применяем координаты к элементу
         ballEl.style.left = `${ball.x - ball.radius}px`;
         ballEl.style.top = `${ball.y - ball.radius}px`;
 
-        // Моментальное исчезновение при касании корзины
+        // Уничтожение при касании дна
         if (ball.y + ball.radius >= height) {
             isDone = true;
             finishDrop();
@@ -1590,6 +1603,7 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         }
     }
 
+    // Запуск физического цикла
     requestAnimationFrame(updatePhysics);
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===

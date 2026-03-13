@@ -1383,8 +1383,9 @@ function renderPlinkoBoard() {
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    const pinSpacingX = width / (rows + 2.5); 
-    const pinSpacingY = height / (rows + 1.5); 
+    // Рассчитываем сетку
+    const pinSpacingX = width / (rows + 2); 
+    const pinSpacingY = height / (rows + 1.2); 
 
     for (let i = 0; i < rows; i++) {
         const numPins = i + 3;
@@ -1401,6 +1402,7 @@ function renderPlinkoBoard() {
         }
     }
 
+    // ФИКС ГЕОМЕТРИИ: Ширина блока корзин ровно совпадает с шириной между крайними пинами
     const bucketsWidth = (rows + 1) * pinSpacingX;
     bucketsContainer.style.width = `${bucketsWidth}px`;
 
@@ -1468,8 +1470,8 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    const pinSpacingX = width / (rows + 2.5);
-    const pinSpacingY = height / (rows + 1.5);
+    const pinSpacingX = width / (rows + 2);
+    const pinSpacingY = height / (rows + 1.2);
 
     const ball = document.createElement('div');
     ball.className = 'plinko-ball';
@@ -1479,56 +1481,70 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
     let currentX = width / 2;
     let currentY = 0;
     
-    const yOffset = -6; 
+    const yOffsetPin = -7; // Отскок от макушки пина
+    const yOffsetBucket = 15; // Проваливание в корзину
 
     ball.style.left = `${currentX}px`;
-    ball.style.top = `-30px`; 
+    ball.style.top = `-20px`; 
 
     void ball.offsetWidth; 
 
-    const stepSpeed = 270; 
+    const stepSpeed = 280; 
     const halfSpeed = stepSpeed / 2;
 
+    // 1. Падение до первого пина
     currentY = pinSpacingY;
-    ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`; 
-    ball.style.top = `${currentY + yOffset}px`;
+    ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.4, 0, 1, 1)`; 
+    ball.style.top = `${currentY + yOffsetPin}px`;
     await new Promise(r => setTimeout(r, stepSpeed));
 
+    // 2. ХАОТИЧНАЯ ФИЗИКА ПРЫЖКОВ
     for (let i = 0; i < path.length; i++) {
         const dir = path[i]; 
         const targetX = dir === 0 ? currentX - (pinSpacingX / 2) : currentX + (pinSpacingX / 2);
         const targetY = currentY + pinSpacingY;
 
-        const peakX = (currentX + targetX) / 2;
-        const peakY = currentY - (pinSpacingY * 0.60); 
+        // Является ли этот прыжок последним (в корзину)?
+        const isLastBounce = (i === path.length - 1);
+        const finalYOffset = isLastBounce ? yOffsetBucket : yOffsetPin;
 
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.215, 0.61, 0.355, 1)`;
+        // ФИКС ФИЗИКИ: Рандомная высота отскока (от 30% до 65%) и смещение по X (шарик болтается)
+        const randomBounceHeight = pinSpacingY * (0.30 + Math.random() * 0.35);
+        const randomSwayX = (Math.random() - 0.5) * (pinSpacingX * 0.4); 
+        
+        const peakX = (currentX + targetX) / 2 + randomSwayX;
+        const peakY = currentY - randomBounceHeight; 
+
+        // ПРЫЖОК ВВЕРХ (Вылетает с пина)
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.2, 0.6, 0.4, 1)`;
         ball.style.left = `${peakX}px`;
-        ball.style.top = `${peakY + yOffset}px`;
+        ball.style.top = `${peakY + yOffsetPin}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
 
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.55, 0.055, 0.675, 0.19)`;
+        // ПАДЕНИЕ ВНИЗ (Ударяется о следующий пин ИЛИ падает в корзину)
+        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.6, 0, 0.8, 1)`;
         ball.style.left = `${targetX}px`;
-        ball.style.top = `${targetY + yOffset}px`;
+        ball.style.top = `${targetY + finalYOffset}px`;
         await new Promise(r => setTimeout(r, halfSpeed));
 
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        if (!isLastBounce && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
         currentX = targetX;
         currentY = targetY;
     }
 
-    ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.55, 0.085, 0.68, 0.53), opacity ${stepSpeed}ms ease`;
-    ball.style.top = `${currentY + pinSpacingY + 15}px`;
-    ball.style.opacity = '0'; 
-    await new Promise(r => setTimeout(r, stepSpeed));
-
+    // 3. ФИКС ИСЧЕЗНОВЕНИЯ: Шарик ударился о корзину, ждем миллисекунду и только потом растворяем
     const buckets = bucketsContainer.children;
     if(buckets[finalBucketIndex]) {
         buckets[finalBucketIndex].classList.add('active');
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
     }
+
+    await new Promise(r => setTimeout(r, 50)); // Микро-пауза на дне корзины
+    ball.style.transition = `opacity 200ms ease`;
+    ball.style.opacity = '0'; 
+    await new Promise(r => setTimeout(r, 200));
 
     ball.remove();
 
@@ -1538,9 +1554,7 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
 
 
 
-    // Когда шарик долетел, уменьшаем счетчик
     activePlinkoBalls--;
-    // Если на поле больше нет шариков, разблокируем интерфейс
     if (activePlinkoBalls <= 0) {
         activePlinkoBalls = 0;
         togglePlinkoControls(true);

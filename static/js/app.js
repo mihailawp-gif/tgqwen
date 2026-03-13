@@ -1495,6 +1495,41 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     ballEl.style.height = `${ballRadius * 2}px`;
     pinsContainer.appendChild(ballEl);
 
+    // ====================================================================
+    // ФИКС: ГЕНЕРАТОР "БАЙТОВ" (Азартные обманки)
+    // Пересобираем путь сервера визуально, не меняя итоговой лунки!
+    let customPath = [];
+    let rights = finalBucketIndex;            // Сколько шагов нужно сделать вправо
+    let lefts = rows - finalBucketIndex;      // Сколько шагов влево
+
+    // Если падает мусор (множитель меньше 2), с шансом 35% пугаем игрока!
+    if (multiplier < 2 && Math.random() < 0.35) {
+        let baitLeft = Math.random() < 0.5; // Байтим влево или вправо?
+        
+        // Байтим влево (если хватает шагов)
+        if (baitLeft && lefts > Math.floor(rows * 0.55)) {
+            let baitCount = lefts - 1; // Оставляем 1 левый шаг на финал
+            for(let i=0; i<baitCount; i++) customPath.push(0); // Жестко влево
+            lefts -= baitCount;
+        } 
+        // Байтим вправо (если хватает шагов)
+        else if (!baitLeft && rights > Math.floor(rows * 0.55)) {
+            let baitCount = rights - 1;
+            for(let i=0; i<baitCount; i++) customPath.push(1); // Жестко вправо
+            rights -= baitCount;
+        }
+    }
+
+    // Добиваем оставшиеся шаги хаотично
+    let remaining = [];
+    for(let i=0; i<lefts; i++) remaining.push(0);
+    for(let i=0; i<rights; i++) remaining.push(1);
+    remaining.sort(() => Math.random() - 0.5); // Перемешиваем остаток
+    
+    // Подменяем путь сервера на наш новый, кинематографичный маршрут
+    path = customPath.concat(remaining);
+    // ====================================================================
+
     let points = [];
     let currentX = width / 2;
     let currentY = pinSpacingY; 
@@ -1504,9 +1539,9 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     points.push({ x: currentX, y: -20 });
     points.push({ x: currentX, y: currentY - yHitOffset });
 
+    // Дальше идет старый код анимации...
     for (let i = 0; i < path.length; i++) {
         let dir = path[i];
-        
         currentX += (dir === 0) ? -(pinSpacingX / 2) : (pinSpacingX / 2);
         currentY += pinSpacingY;
         
@@ -1522,7 +1557,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     let segmentProgress = 0;  
     let lastTime = performance.now();
     let isDone = false;
-
     const baseDuration = 350 - (rows * 8); 
 
     function animate(time) {
@@ -1541,7 +1575,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         if (segmentProgress >= 1) {
             segmentProgress = 0;
             currentSegment++;
-            
             if (currentSegment > 0 && currentSegment < points.length - 1) {
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
@@ -1555,7 +1588,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
 
         let p1 = points[currentSegment];
         let p2 = points[currentSegment + 1];
-
         let t = segmentProgress;
         let x = p1.x + (p2.x - p1.x) * t; 
         let y = p1.y + (p2.y - p1.y) * t;
@@ -1565,8 +1597,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             y = p1.y + (p2.y - p1.y) * easeIn;
         } 
         else if (currentSegment < points.length - 2) {
-            // ФИКС: УВЕЛИЧЕННЫЙ ОТСКОК
-            // Теперь шарик подпрыгивает на 70-85% от расстояния между рядами (было 40-50%)
             let bounceHeight = pinSpacingY * (0.70 + Math.random() * 0.15); 
             let bounceOffset = Math.sin(t * Math.PI) * bounceHeight; 
             y -= bounceOffset; 

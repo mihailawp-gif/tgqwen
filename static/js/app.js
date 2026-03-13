@@ -177,7 +177,7 @@ async function showCasePreview(caseId) {
     if(itemsPreview) {
         itemsPreview.innerHTML = '';
         response.items.forEach((item, index) => {
-            const tgsNum = item.gift.gift_number || ((item.gift.id - 1) % 120) + 1;
+            const tgsNum = item.gift.gift_number;
             const tgsId  = `prev_${caseId}_${index}`;
 			const tile   = document.createElement('div');
             tile.className = `preview-tile rarity-unique`;
@@ -198,7 +198,7 @@ function buildPreviewRoulette(caseId, items) {
     // Снизили кол-во элементов с 40 до 20 (снимает 50% нагрузки с процессора!)
     for (let i = 0; i < 20; i++) {
         const item = items[i % items.length];
-        const tgsNum = item.gift.gift_number || ((item.gift.id - 1) % 120) + 1;
+        const tgsNum = item.gift.gift_number;
         const el = document.createElement('div');
         el.className = `preview-roulette-item rarity-${item.gift.rarity || 'common'}`;
         el.innerHTML = `${tgsEl(`prv_rou_${i}`, tgsNum, '108px')}`;
@@ -263,7 +263,7 @@ async function playOpeningAnimation(result) {
     // Снизили кол-во элементов с 60 до 35! Выигрышный предмет теперь 25-й.
     for (let i = 0; i < 35; i++) {
         const itemData = (i === 25) ? wonItemData : itemsList[Math.floor(Math.random() * itemsList.length)];
-        const tgsNum = itemData.gift.gift_number || ((itemData.gift.id - 1) % 120) + 1;
+        const tgsNum = itemData.gift.gift_number;
         const itemEl = document.createElement('div');
         itemEl.className = 'roulette-item';
         itemEl.innerHTML = `${tgsEl(`rou_${i}`, tgsNum, '90px')}<div class="roulette-item-bg"></div>`;
@@ -292,7 +292,7 @@ function showResult(result) {
     const oldTgs = imageContainer.querySelector('[data-tgs]'); if (oldTgs) oldTgs.remove();
 
     wonItemImage.style.display = 'none';
-    const tgsNum = result.gift.gift_number || ((result.gift.id - 1) % 120) + 1;
+	const tgsNum = result.gift.gift_number;
     const div = document.createElement('div'); div.innerHTML = tgsEl('result_tgs', tgsNum, '150px');
     imageContainer.insertBefore(div.firstElementChild, wonItemImage);
 
@@ -335,7 +335,8 @@ function renderInventory() {
         if (item.is_sold || item.gift?.is_stars) return;
         const itemEl = document.createElement('div'); itemEl.className = 'inventory-item';
         const gn = item.gift?.gift_number;
-        const imgContent = (gn >= 1 && gn <= 120) ? tgsEl(`inv_tgs_${index}`, gn, '60px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:60px;height:60px;object-fit:contain">`;
+        
+		const imgContent = (gn >= 1 && gn < 200) ? tgsEl(`inv_tgs_${index}`, gn, '60px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:60px;height:60px;object-fit:contain">`;
         
         let actionsHtml = '';
         let rejectedHtml = '';
@@ -358,7 +359,7 @@ function renderInventory() {
             </div>`;
         }
 
-		itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'common'}"></div><div class="inv-img">${imgContent}</div><div class="inv-name" style="display:flex;flex-direction:column;align-items:center;"><span>${item.gift?.name || 'Приз'}</span>${rejectedHtml}</div>${actionsHtml}`;
+		itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'unique'}"></div><div class="inv-badge-unique">UNIQUE</div><div class="inv-img">${imgContent}</div><div class="inv-name" style="display:flex;flex-direction:column;align-items:center;"><span>${item.gift?.name || 'Приз'}</span>${rejectedHtml}</div>${actionsHtml}`;
         list.appendChild(itemEl);
     });
     setTimeout(() => initAllTGS(), 50);
@@ -387,11 +388,11 @@ function renderHistory() {
     state.history.forEach((item, index) => {
         const card = document.createElement('div'); card.className = `live-history-card rarity-${item.gift?.rarity || 'common'}`;
         const giftNum = item.gift?.gift_number;
-        const imgContent = (giftNum && giftNum >= 1) ? tgsEl(`lh_tgs_${index}`, giftNum, '48px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:48px;height:48px;object-fit:contain;flex-shrink:0">`;
+        const imgContent = (giftNum >= 1 && giftNum < 200) ? tgsEl(`lh_tgs_${index}`, giftNum, '48px') : `<img src="${item.gift?.image_url || '/static/images/star.png'}" style="width:48px;height:48px;object-fit:contain;flex-shrink:0">`;
         card.innerHTML = `${imgContent}<div class="live-history-card-name">${item.gift?.name || 'Приз'}</div><div class="live-history-card-user">${item.user?.first_name || '...'}</div>`;
         liveScroll.appendChild(card);
     });
-    requestAnimationFrame(() => { state.history.forEach((item, index) => { if (item.gift?.gift_number && item.gift?.gift_number >= 1) renderTGS(`lh_tgs_${index}`, item.gift.gift_number); }); });
+    requestAnimationFrame(() => { state.history.forEach((item, index) => { if (item.gift?.gift_number >= 1 && item.gift?.gift_number < 200) renderTGS(`lh_tgs_${index}`, item.gift.gift_number); }); });
 }
 function startHistoryPolling() { setInterval(loadHistory, 5000); }
 

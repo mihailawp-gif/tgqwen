@@ -358,7 +358,7 @@ function renderInventory() {
             </div>`;
         }
 
-		itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'unique'}"></div><div class="inv-badge-unique">UNIQUE</div><div class="inv-img">${imgContent}</div><div class="inv-name" style="display:flex;flex-direction:column;align-items:center;"><span>${item.gift?.name || 'Приз'}</span>${rejectedHtml}</div>${actionsHtml}`;
+		itemEl.innerHTML = `<div class="inv-rarity ${item.gift?.rarity || 'common'}"></div><div class="inv-img">${imgContent}</div><div class="inv-name" style="display:flex;flex-direction:column;align-items:center;"><span>${item.gift?.name || 'Приз'}</span>${rejectedHtml}</div>${actionsHtml}`;
         list.appendChild(itemEl);
     });
     setTimeout(() => initAllTGS(), 50);

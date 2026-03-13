@@ -1312,7 +1312,14 @@ const PLINKO_COEFS = {
 let plinkoDiff = 'low';
 let plinkoPinsCount = 8;
 let isPlinkoPlaying = false;
-
+window.addEventListener('resize', () => {
+    const screen = document.getElementById('plinko-screen');
+    const pinsContainer = document.getElementById('plinkoPins');
+    // Перерисовываем только если экран Плинко открыт
+    if (screen && screen.classList.contains('active') && pinsContainer && pinsContainer.clientWidth > 0) {
+        renderPlinkoBoard();
+    }
+});
 function showPlinkoScreen() {
     switchScreen('plinko-screen');
     document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance || 0;
@@ -1354,22 +1361,20 @@ function setPlinkoPins(pins) {
 function renderPlinkoBoard() {
     const pinsContainer = document.getElementById('plinkoPins');
     const bucketsContainer = document.getElementById('plinkoBuckets');
-    if (!pinsContainer || !bucketsContainer) return;
+    if (!pinsContainer || !bucketsContainer || pinsContainer.clientWidth === 0) return;
 
     pinsContainer.innerHTML = '';
     bucketsContainer.innerHTML = '';
 
-    const width = pinsContainer.clientWidth || 340;
-    const height = pinsContainer.clientHeight || 280;
+    const width = pinsContainer.clientWidth;
+    const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    // Расчет отступов между точками
     const pinSpacingX = width / (rows + 4); 
     const pinSpacingY = height / (rows + 1);
 
-    // Рисуем точки (Пины)
     for (let i = 0; i < rows; i++) {
-        const numPins = i + 3; // В нулевом ряду 3 пина, в первом 4 и т.д.
+        const numPins = i + 3;
         const startX = width / 2 - ((numPins - 1) * pinSpacingX) / 2;
         const y = (i + 1) * pinSpacingY;
 
@@ -1383,19 +1388,22 @@ function renderPlinkoBoard() {
         }
     }
 
-    // Рисуем корзины с коэффициентами
     const coefs = PLINKO_COEFS[plinkoDiff][plinkoPinsCount];
     coefs.forEach(c => {
         const b = document.createElement('div');
         
-        // Логика раскраски корзин
-        let colorClass = 'pb-neutral'; 
-        if (c < 1) colorClass = 'pb-lose';
-        else if (c > 2 && c < 10) colorClass = 'pb-good';
-        else if (c >= 10) colorClass = 'pb-epic';
+        // ФИКС ЦВЕТОВ: Распределяем цвета как на скрине
+        let colorClass = 'pb-c-0'; 
+        if (c < 1) colorClass = 'pb-c-0'; // Оранжевый
+        else if (c >= 1 && c < 2) colorClass = 'pb-c-1'; // Желтый
+        else if (c >= 2 && c <= 5) colorClass = 'pb-c-2'; // Светло-зеленый
+        else if (c > 5) colorClass = 'pb-c-3'; // Ярко-зеленый
         
         b.className = `plinko-bucket ${colorClass}`;
-        b.textContent = (c >= 1000 ? (c/1000).toFixed(1)+'k' : c) + 'x'; // Сокращаем большие числа
+        
+        // Сокращаем тысячные числа (1000 -> 1k)
+        let text = c >= 1000 ? (c/1000).toFixed(0)+'k' : c;
+        b.textContent = text + 'x';
         bucketsContainer.appendChild(b);
     });
 }
@@ -1452,34 +1460,32 @@ async function playPlinko() {
 async function animatePlinkoBall(path, finalBucketIndex) {
     const ball = document.getElementById('plinkoBall');
     const pinsContainer = document.getElementById('plinkoPins');
-    const width = pinsContainer.clientWidth || 340;
-    const height = pinsContainer.clientHeight || 280;
+    const width = pinsContainer.clientWidth;
+    const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
     const pinSpacingX = width / (rows + 4);
     const pinSpacingY = height / (rows + 1);
 
     ball.style.transition = 'none';
-    ball.style.display = 'block';
+    
+    // ФИКС ПРОЗРАЧНОСТИ: Делаем шарик видимым
+    ball.style.opacity = '1';
 
-    // Шарик стартует с самого верха, по центру
     let currentX = width / 2;
-    let currentY = 0; 
+    let currentY = pinSpacingY / 2; // Начинаем чуть выше первого пина
     
     ball.style.left = `${currentX}px`;
     ball.style.top = `${currentY}px`;
 
-    // Заставляем браузер применить координаты без транзишена
+    // Принудительно заставляем браузер применить координаты
     void ball.offsetWidth;
 
-    // Скорость падения зависит от количества рядов (чем больше, тем быстрее)
     const stepSpeed = 350 - (rows * 10); 
-    
-    // Включаем плавную физику отскока
     ball.style.transition = `all ${stepSpeed}ms cubic-bezier(0.3, 0.1, 0.7, 1)`;
 
     for (let i = 0; i < path.length; i++) {
-        const dir = path[i]; // 0 = лево, 1 = право
+        const dir = path[i]; 
         if (dir === 0) currentX -= (pinSpacingX / 2);
         else currentX += (pinSpacingX / 2);
 
@@ -1492,12 +1498,10 @@ async function animatePlinkoBall(path, finalBucketIndex) {
         await new Promise(r => setTimeout(r, stepSpeed));
     }
 
-    // Финальное падение в корзину (чуть ниже пинов)
     currentY += pinSpacingY; 
-    ball.style.top = `${currentY + 20}px`; 
+    ball.style.top = `${currentY + 15}px`; 
     await new Promise(r => setTimeout(r, stepSpeed));
 
-    // Подсвечиваем победную корзину
     const buckets = document.getElementById('plinkoBuckets').children;
     if(buckets[finalBucketIndex]) {
         buckets[finalBucketIndex].classList.add('active');
@@ -1505,7 +1509,8 @@ async function animatePlinkoBall(path, finalBucketIndex) {
         setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 600);
     }
 
-    ball.style.display = 'none';
+    // Плавно скрываем шарик
+    ball.style.opacity = '0';
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

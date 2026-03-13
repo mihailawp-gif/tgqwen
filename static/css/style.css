@@ -840,8 +840,6 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 
 .plinko-pin {
     position: absolute;
-    width: 6px;
-    height: 6px;
     background: #ffffff;
     border-radius: 50%;
     transform: translate(-50%, -50%);

@@ -1378,16 +1378,19 @@ function renderPlinkoBoard() {
 
     pinsContainer.innerHTML = '';
     bucketsContainer.innerHTML = '';
-    window.plinkoPhysicsPins = []; // Очищаем старые пины
+    window.plinkoPhysicsPins = [];
 
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
+    // Делаем поле еще выше по вертикали, чтобы дать больше воздуха для падения
     const pinSpacingX = width / (rows + 2); 
-    const pinSpacingY = height / (rows + 1.2); 
+    const pinSpacingY = height / (rows + 0.8); // Увеличили вертикальный шаг
 
-    // Генерируем DOM элементы и одновременно сохраняем их как твердые тела для физики
+    // ФИКС: Уменьшаем радиус самих пинов на больших рядах!
+    const pinRadius = rows >= 14 ? 2 : 3; // На 14-16 рядах пины будут по 4px в ширину
+
     for (let i = 0; i < rows; i++) {
         const numPins = i + 3;
         const startX = width / 2 - ((numPins - 1) * pinSpacingX) / 2;
@@ -1397,12 +1400,15 @@ function renderPlinkoBoard() {
             const x = startX + j * pinSpacingX;
             const pin = document.createElement('div');
             pin.className = 'plinko-pin';
+            // Задаем размер пина динамически
+            pin.style.width = `${pinRadius * 2}px`;
+            pin.style.height = `${pinRadius * 2}px`;
             pin.style.left = `${x}px`;
             pin.style.top = `${y}px`;
             pinsContainer.appendChild(pin);
             
-            // Сохраняем физические данные пина (Радиус пина 3px)
-            window.plinkoPhysicsPins.push({ x: x, y: y, radius: 3 });
+            // Физическое тело пина теперь меньше, места для шарика больше!
+            window.plinkoPhysicsPins.push({ x: x, y: y, radius: pinRadius });
         }
     }
 
@@ -1464,20 +1470,6 @@ async function playPlinko() {
     }
 }
 
-Ошибку понял! Если они "магнитятся" и сползают по пинам, значит наша "подруливающая сила ветра" (diff * 0.005) была слишком мощной — она перебивала физику отскока и вдавливала шарик в штырь. А низкая скорость делала это похожим на кисель.
-
-Чтобы получить настоящую жесткую физику Money-X, мы сделаем хитрый ход:
-
-    Мы полностью отключаем магнитный ветер.
-
-    Увеличиваем гравитацию в 4 раза и снимаем лимит скорости.
-
-    СЕКРЕТ ПЛИНКО: Теперь шарик будет получать физический импульс ровно в момент удара. Если он падает на пин сверху, движок сам подбросит его вверх (kickY) и оттолкнет строго влево или вправо (kickX) согласно серверному массиву.
-
-Результат: шарик летит как сумасшедший, жестко бьется о пины, высоко подпрыгивает в воздухе и падает ровно куда надо без всякого "магнетизма".
-
-Открой app.js и полностью замени функцию spawnPlinkoBall на этот заряженный код:
-JavaScript
 
 function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const pinsContainer = document.getElementById('plinkoPins');
@@ -1488,26 +1480,30 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
     const pinSpacingX = width / (rows + 2);
-    const pinSpacingY = height / (rows + 1.2);
+    const pinSpacingY = height / (rows + 0.8);
+
+    // Шарик теперь всегда хорошего, видимого размера (10px шириной)
+    let ballRadius = 5; 
 
     const ballEl = document.createElement('div');
     ballEl.className = 'plinko-ball';
     ballEl.style.opacity = '1';
+    ballEl.style.width = `${ballRadius * 2}px`;
+    ballEl.style.height = `${ballRadius * 2}px`;
     pinsContainer.appendChild(ballEl);
 
-    // --- 1. СКОРОСТНЫЕ ФИЗИЧЕСКИЕ ПАРАМЕТРЫ ---
     let ball = {
         x: width / 2 + (Math.random() - 0.5) * 4, 
-        y: -15,
-        vx: (Math.random() - 0.5) * 2,
+        y: -10,
+        vx: (Math.random() - 0.5) * 1,
         vy: 0,
-        radius: 6 // Радиус из CSS (12px / 2)
+        radius: ballRadius 
     };
 
-    const gravity = 0.6;        // ФИКС: Быстрая, тяжелая гравитация
+    const gravity = 0.25;  
     const friction = 0.99;      
-    const restitution = 0.6;    // Базовая упругость
-    const maxSpeed = 22;        // ФИКС: Высокая скорость падения
+    const restitution = 0.70; 
+    const maxSpeed = pinSpacingY * 0.6; // Ограничение скорости
 
     let idealPathX = [width / 2];
     let currX = width / 2;
@@ -1521,20 +1517,17 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     function updatePhysics() {
         if (isDone) return;
 
-        // ВЕТЕР ПОЧТИ ОТКЛЮЧЕН (оставлена 1/10 силы чисто для страховки от вылета за экран)
-        let currentRow = Math.floor(ball.y / pinSpacingY);
+        let currentRow = Math.floor((ball.y + pinSpacingY / 2) / pinSpacingY);
         if (currentRow >= 0 && currentRow < idealPathX.length) {
             let targetX = idealPathX[currentRow];
             let diff = targetX - ball.x;
-            ball.vx += diff * 0.001; 
+            ball.vx += diff * 0.005; 
         }
 
-        // Применяем гравитацию
         ball.vy += gravity; 
         ball.vx *= friction; 
         ball.vy *= friction; 
 
-        // Ограничение максимальной скорости
         let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
         if (speed > maxSpeed) {
             ball.vx = (ball.vx / speed) * maxSpeed;
@@ -1544,7 +1537,6 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // --- 2. ЖЕСТКАЯ ОБРАБОТКА СТОЛКНОВЕНИЙ ---
         for (let pin of window.plinkoPhysicsPins) {
             let dx = ball.x - pin.x;
             let dy = ball.y - pin.y;
@@ -1552,11 +1544,9 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
             let minDist = ball.radius + pin.radius;
 
             if (distance < minDist) {
-                // Вектор нормали
                 let nx = dx / distance;
                 let ny = dy / distance;
 
-                // МОМЕНТАЛЬНОЕ ВЫТАЛКИВАНИЕ (Шарик больше не застревает в пинах)
                 let penetration = minDist - distance;
                 ball.x += nx * penetration;
                 ball.y += ny * penetration;
@@ -1564,47 +1554,19 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
                 let dotProduct = ball.vx * nx + ball.vy * ny;
                 
                 if (dotProduct < 0) {
-                    // Базовое отражение
                     ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
                     ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
                     
-                    // --- 3. НАПРАВЛЕННЫЙ ВЗРЫВНОЙ ОТСКОК ---
-                    // Если шарик ударился о верхнюю половину пина (ny < -0.1 означает, что шарик выше пина)
-                    if (ny < -0.1) {
-                        // Вычисляем, в каком ряду находится этот пин
-                        let hitRow = Math.round(pin.y / pinSpacingY) - 1;
-                        
-                        if (hitRow >= 0 && hitRow < path.length) {
-                            let dir = path[hitRow]; // Сервер: 0 = лево, 1 = право
-                            
-                            // Даем физический "пинок" (kick) влево/вправо и вверх
-                            let kickX = 2.5 + Math.random() * 1.5; // Сила отлета вбок
-                            let kickY = 2.0 + Math.random() * 2.0; // Сила прыжка вверх
-
-                            if (dir === 0) {
-                                ball.vx = -Math.abs(ball.vx * 0.5) - kickX; // Жестко влево
-                            } else {
-                                ball.vx = Math.abs(ball.vx * 0.5) + kickX;  // Жестко вправо
-                            }
-                            
-                            // Жестко вверх (имитация упругости)
-                            ball.vy = -Math.abs(ball.vy * 0.5) - kickY; 
-                        }
-                    } else {
-                        // Если ударился сбоку или снизу - просто случайный хаос
-                        ball.vx += (Math.random() - 0.5) * 1.5;
-                    }
+                    ball.vx += (Math.random() - 0.5) * 0.05;
 
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 }
             }
         }
 
-        // Отрисовка
         ballEl.style.left = `${ball.x - ball.radius}px`;
         ballEl.style.top = `${ball.y - ball.radius}px`;
 
-        // Уничтожение о дно
         if (ball.y + ball.radius >= height) {
             isDone = true;
             finishDrop();
@@ -1628,7 +1590,9 @@ function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
         updateUserDisplay();
         document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
 
-
+        if (multiplier >= 2) {
+            showToast(`x${multiplier}! <img src="/static/images/star.png" style="width:14px;height:14px;vertical-align:middle;position:relative;top:-1px;">`);
+        }
 
         activePlinkoBalls--;
         if (activePlinkoBalls <= 0) {

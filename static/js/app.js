@@ -1370,7 +1370,7 @@ window.addEventListener('resize', () => {
         renderPlinkoBoard();
     }
 });
-
+window.plinkoPhysicsPins = [];
 function renderPlinkoBoard() {
     const pinsContainer = document.getElementById('plinkoPins');
     const bucketsContainer = document.getElementById('plinkoBuckets');
@@ -1378,15 +1378,16 @@ function renderPlinkoBoard() {
 
     pinsContainer.innerHTML = '';
     bucketsContainer.innerHTML = '';
+    window.plinkoPhysicsPins = []; // Очищаем старые пины
 
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
 
-    // Рассчитываем сетку
     const pinSpacingX = width / (rows + 2); 
     const pinSpacingY = height / (rows + 1.2); 
 
+    // Генерируем DOM элементы и одновременно сохраняем их как твердые тела для физики
     for (let i = 0; i < rows; i++) {
         const numPins = i + 3;
         const startX = width / 2 - ((numPins - 1) * pinSpacingX) / 2;
@@ -1399,10 +1400,12 @@ function renderPlinkoBoard() {
             pin.style.left = `${x}px`;
             pin.style.top = `${y}px`;
             pinsContainer.appendChild(pin);
+            
+            // Сохраняем физические данные пина (Радиус пина 3px)
+            window.plinkoPhysicsPins.push({ x: x, y: y, radius: 3 });
         }
     }
 
-    // ФИКС ГЕОМЕТРИИ: Ширина блока корзин ровно совпадает с шириной между крайними пинами
     const bucketsWidth = (rows + 1) * pinSpacingX;
     bucketsContainer.style.width = `${bucketsWidth}px`;
 
@@ -1461,7 +1464,7 @@ async function playPlinko() {
     }
 }
 
-async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
+function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance) {
     const pinsContainer = document.getElementById('plinkoPins');
     const bucketsContainer = document.getElementById('plinkoBuckets');
     if (!pinsContainer || !bucketsContainer) return;
@@ -1469,96 +1472,138 @@ async function spawnPlinkoBall(path, finalBucketIndex, multiplier, finalBalance)
     const width = pinsContainer.clientWidth;
     const height = pinsContainer.clientHeight;
     const rows = plinkoPinsCount;
-
     const pinSpacingX = width / (rows + 2);
     const pinSpacingY = height / (rows + 1.2);
 
-    const ball = document.createElement('div');
-    ball.className = 'plinko-ball';
-    ball.style.opacity = '1';
-    pinsContainer.appendChild(ball);
+    // Создаем элемент шарика
+    const ballEl = document.createElement('div');
+    ballEl.className = 'plinko-ball';
+    ballEl.style.opacity = '1';
+    pinsContainer.appendChild(ballEl);
 
-    let currentX = width / 2;
-    let currentY = 0;
+    // --- ФИЗИЧЕСКИЕ ПАРАМЕТРЫ ---
+    let ball = {
+        x: width / 2 + (Math.random() - 0.5) * 6, // Случайный стартовый микро-разброс по X
+        y: -10,
+        vx: (Math.random() - 0.5) * 2, // Начальная случайная скорость
+        vy: 0,
+        radius: 6 // Радиус шарика (12px ширина / 2)
+    };
+
+    const gravity = 0.45;       // Сила притяжения (g)
+    const friction = 0.99;      // Сопротивление воздуха
+    const restitution = 0.75;   // Коэффициент упругости отскока (75% энергии сохраняется)
     
-    const yOffsetPin = -7; // Отскок от макушки пина
-    const yOffsetBucket = 15; // Проваливание в корзину
-
-    ball.style.left = `${currentX}px`;
-    ball.style.top = `-20px`; 
-
-    void ball.offsetWidth; 
-
-    const stepSpeed = 280; 
-    const halfSpeed = stepSpeed / 2;
-
-    // 1. Падение до первого пина
-    currentY = pinSpacingY;
-    ball.style.transition = `top ${stepSpeed}ms cubic-bezier(0.4, 0, 1, 1)`; 
-    ball.style.top = `${currentY + yOffsetPin}px`;
-    await new Promise(r => setTimeout(r, stepSpeed));
-
-    // 2. ХАОТИЧНАЯ ФИЗИКА ПРЫЖКОВ
+    // Рассчитываем ИДЕАЛЬНЫЙ путь (target X для каждого ряда), чтобы направить шарик
+    let idealPathX = [width / 2];
+    let currX = width / 2;
     for (let i = 0; i < path.length; i++) {
-        const dir = path[i]; 
-        const targetX = dir === 0 ? currentX - (pinSpacingX / 2) : currentX + (pinSpacingX / 2);
-        const targetY = currentY + pinSpacingY;
+        currX += path[i] === 0 ? -(pinSpacingX / 2) : (pinSpacingX / 2);
+        idealPathX.push(currX);
+    }
 
-        // Является ли этот прыжок последним (в корзину)?
-        const isLastBounce = (i === path.length - 1);
-        const finalYOffset = isLastBounce ? yOffsetBucket : yOffsetPin;
+    let isDone = false;
 
-        // ФИКС ФИЗИКИ: Рандомная высота отскока (от 30% до 65%) и смещение по X (шарик болтается)
-        const randomBounceHeight = pinSpacingY * (0.30 + Math.random() * 0.35);
-        const randomSwayX = (Math.random() - 0.5) * (pinSpacingX * 0.4); 
+    // Главный цикл симуляции физики (60 кадров в секунду)
+    function updatePhysics() {
+        if (isDone) return;
+
+        // 1. УПРАВЛЕНИЕ ТРАЕКТОРИЕЙ (Микро-ветер, направляющий шарик по пути сервера)
+        // Определяем, между какими рядами находится шарик
+        let currentRow = Math.floor((ball.y + pinSpacingY / 2) / pinSpacingY);
+        if (currentRow >= 0 && currentRow < idealPathX.length) {
+            let targetX = idealPathX[currentRow];
+            let diff = targetX - ball.x;
+            // Применяем легкую подруливающую силу
+            ball.vx += diff * 0.015; 
+        }
+
+        // 2. БАЗОВАЯ ФИЗИКА
+        ball.vy += gravity; // Применяем гравитацию
+        ball.vx *= friction; // Трение
+        ball.vy *= friction; // Трение
         
-        const peakX = (currentX + targetX) / 2 + randomSwayX;
-        const peakY = currentY - randomBounceHeight; 
+        // Добавляем микро-шум для хаоса, как ты просил
+        ball.vx += (Math.random() - 0.5) * 0.1;
 
-        // ПРЫЖОК ВВЕРХ (Вылетает с пина)
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.2, 0.6, 0.4, 1)`;
-        ball.style.left = `${peakX}px`;
-        ball.style.top = `${peakY + yOffsetPin}px`;
-        await new Promise(r => setTimeout(r, halfSpeed));
+        // Обновляем позицию
+        ball.x += ball.vx;
+        ball.y += ball.vy;
 
-        // ПАДЕНИЕ ВНИЗ (Ударяется о следующий пин ИЛИ падает в корзину)
-        ball.style.transition = `left ${halfSpeed}ms linear, top ${halfSpeed}ms cubic-bezier(0.6, 0, 0.8, 1)`;
-        ball.style.left = `${targetX}px`;
-        ball.style.top = `${targetY + finalYOffset}px`;
-        await new Promise(r => setTimeout(r, halfSpeed));
+        // 3. ОБРАБОТКА СТОЛКНОВЕНИЙ СО ВСЕМИ ПИНАМИ
+        for (let pin of window.plinkoPhysicsPins) {
+            let dx = ball.x - pin.x;
+            let dy = ball.y - pin.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            let minDist = ball.radius + pin.radius;
 
-        if (!isLastBounce && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            // Если произошло столкновение
+            if (distance < minDist) {
+                // Вычисляем нормаль столкновения (вектор от центра пина к центру шарика)
+                let nx = dx / distance;
+                let ny = dy / distance;
 
-        currentX = targetX;
-        currentY = targetY;
+                // Разрешение проникновения (выталкиваем шарик из пина, чтобы он не застрял)
+                let overlap = minDist - distance;
+                ball.x += nx * overlap;
+                ball.y += ny * overlap;
+
+                // Отражаем вектор скорости по формуле: v' = v - 2(v * n)n
+                let dotProduct = ball.vx * nx + ball.vy * ny;
+                
+                // Отражаем только если они двигаются друг на друга
+                if (dotProduct < 0) {
+                    ball.vx = (ball.vx - 2 * dotProduct * nx) * restitution;
+                    ball.vy = (ball.vy - 2 * dotProduct * ny) * restitution;
+                    
+                    // Вибрация при ударе
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                }
+            }
+        }
+
+        // Отрисовка шарика на экране (центрируем координаты)
+        ballEl.style.left = `${ball.x - ball.radius}px`;
+        ballEl.style.top = `${ball.y - ball.radius}px`;
+
+        // 4. ПРОВЕРКА ПОПАДАНИЯ В КОРЗИНУ
+        const endY = height;
+        if (ball.y > endY) {
+            isDone = true;
+            finishDrop();
+        } else {
+            requestAnimationFrame(updatePhysics);
+        }
     }
 
-    // 3. ФИКС ИСЧЕЗНОВЕНИЯ: Шарик ударился о корзину, ждем миллисекунду и только потом растворяем
-    const buckets = bucketsContainer.children;
-    if(buckets[finalBucketIndex]) {
-        buckets[finalBucketIndex].classList.add('active');
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
+    // Завершение падения
+    function finishDrop() {
+        const buckets = bucketsContainer.children;
+        if(buckets[finalBucketIndex]) {
+            buckets[finalBucketIndex].classList.add('active');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
+        }
+
+        // Плавно растворяем шарик
+        ballEl.style.transition = 'opacity 200ms ease';
+        ballEl.style.opacity = '0';
+        setTimeout(() => ballEl.remove(), 200);
+
+        state.user.balance = finalBalance;
+        updateUserDisplay();
+        document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
+
+
+        activePlinkoBalls--;
+        if (activePlinkoBalls <= 0) {
+            activePlinkoBalls = 0;
+            togglePlinkoControls(true);
+        }
     }
 
-    await new Promise(r => setTimeout(r, 50)); // Микро-пауза на дне корзины
-    ball.style.transition = `opacity 200ms ease`;
-    ball.style.opacity = '0'; 
-    await new Promise(r => setTimeout(r, 200));
-
-    ball.remove();
-
-    state.user.balance = finalBalance;
-    updateUserDisplay();
-    document.getElementById('plinkoBalanceDisplay').textContent = state.user.balance;
-
-
-
-    activePlinkoBalls--;
-    if (activePlinkoBalls <= 0) {
-        activePlinkoBalls = 0;
-        togglePlinkoControls(true);
-    }
+    // Запускаем двигатель физики
+    requestAnimationFrame(updatePhysics);
 }
 // === ПРОФИЛЬ И РЕФЕРАЛЫ ===
 function openProfile() {

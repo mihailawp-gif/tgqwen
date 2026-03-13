@@ -722,26 +722,29 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .promo-input-group button { background: linear-gradient(135deg, var(--blue), #2563eb); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-family: 'Exo 2', sans-serif; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: transform 0.15s; }
 .promo-input-group button:active { transform: scale(0.95); }
 /* ===== АНИМАЦИЯ ПЛИНКО В МЕНЮ ===== */
+/* ===== ОБНОВЛЕННАЯ АНИМАЦИЯ ПЛИНКО (БОЛЬШЕ ФОН + "ПОП-АП" ШАРИКИ) ===== */
+
+/* 1. Делаем сам контейнер и фон больше по размеру */
 .plinko-anim-wrapper {
     position: relative;
-    width: 100px;
-    height: 100px;
+    width: 150px; /* <--- Было 100px. Сделали БОЛЬШЕ по ширине */
+    height: 150px; /* <--- Было 100px. Сделали БОЛЬШЕ по высоте */
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden; /* <--- ВАЖНО: прячет все, что вылетает за этот квадрат */
 }
 
 /* Фон с точками */
 .plinko-bg {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    /* CSS Магия: убивает весь черный/темный фон у SVG, оставляя только светлые точки */
+    object-fit: cover; /* Растягивает SVG на весь наш новый большой размер */
     mix-blend-mode: screen; 
-    opacity: 0.6; /* Делаем точки полупрозрачными, чтобы не отвлекали от шариков */
+    opacity: 0.8; /* <--- Чуть ярче сделали точки, раз фон больше */
 }
 
-/* Шарики */
+/* Шарики - без изменений, только чуть быстрее */
 .plinko-ball {
     position: absolute;
     width: 8px;
@@ -751,47 +754,64 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     box-shadow: 0 0 10px #ffffff, 0 0 4px rgba(255,255,255,0.8);
     top: 0;
     left: 50%;
-    margin-left: -4px; /* Центрируем по оси X */
+    margin-left: -4px;
     opacity: 0;
 }
 
-/* Привязываем разные анимации и задержки к каждому шарику */
-.pb-1 { animation: pFall1 2.2s infinite linear; }
-.pb-2 { animation: pFall2 2.5s infinite linear 0.7s; }
-.pb-3 { animation: pFall3 2.8s infinite linear 1.4s; }
+/* Привязываем новые анимации "поп-ап" */
+/* Привязываем анимации с реалистичной скоростью падения */
+/* Привязываем анимации. Обязательно "linear", чтобы физика отскоков была равномерной */
+.pb-1 { animation: pFall1 2.4s infinite linear; }
+.pb-2 { animation: pFall2 2.6s infinite linear 0.8s; }
+.pb-3 { animation: pFall3 2.8s infinite linear 1.6s; }
 
-/* Траектория 1 (падает зигзагом) */
+/* Траектория 1 (Зигзаг влево с отскоками) */
 @keyframes pFall1 {
-    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
-    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
-    25%  { top: 30%; left: 40%; }
-    40%  { top: 45%; left: 50%; }
-    55%  { top: 60%; left: 60%; }
-    70%  { top: 75%; left: 50%; }
-    85%  { top: 85%; left: 40%; opacity: 1; }
-    100% { top: 95%; left: 45%; opacity: 0; transform: scale(0.5); }
+    0%   { top: 5%; left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 18%; left: 50%; opacity: 1; transform: scale(1); } /* Удар о 1-й ряд */
+    15%  { top: 15%; left: 45%; } /* Отскок вверх-влево */
+    25%  { top: 32%; left: 42%; } /* Удар о 2-й ряд */
+    30%  { top: 29%; left: 46%; } /* Отскок вверх-вправо */
+    45%  { top: 48%; left: 50%; } /* Удар о 3-й ряд */
+    50%  { top: 45%; left: 45%; } /* Отскок вверх-влево */
+    65%  { top: 63%; left: 40%; } /* Удар о 4-й ряд */
+    70%  { top: 60%; left: 44%; } /* Отскок вверх-вправо */
+    80%  { top: 78%; left: 48%; opacity: 1; } /* Удар о последний ряд */
+    83%  { top: 75%; left: 45%; opacity: 0.8; transform: scale(1); } /* Последний отскок */
+    88%  { top: 84%; left: 42%; opacity: 0; transform: scale(0.8); } /* Моментально исчезает */
+    100% { top: 84%; left: 42%; opacity: 0; }
 }
 
-/* Траектория 2 (отскакивает вправо) */
+/* Траектория 2 (Зигзаг вправо с отскоками) */
 @keyframes pFall2 {
-    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
-    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
-    25%  { top: 30%; left: 60%; }
-    40%  { top: 45%; left: 70%; }
-    55%  { top: 60%; left: 60%; }
-    70%  { top: 75%; left: 50%; }
-    85%  { top: 85%; left: 60%; opacity: 1; }
-    100% { top: 95%; left: 55%; opacity: 0; transform: scale(0.5); }
+    0%   { top: 5%; left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 18%; left: 50%; opacity: 1; transform: scale(1); }
+    15%  { top: 15%; left: 55%; } 
+    25%  { top: 32%; left: 58%; } 
+    30%  { top: 29%; left: 54%; } 
+    45%  { top: 48%; left: 50%; } 
+    50%  { top: 45%; left: 55%; } 
+    65%  { top: 63%; left: 60%; } 
+    70%  { top: 60%; left: 64%; } 
+    80%  { top: 78%; left: 68%; opacity: 1; } 
+    83%  { top: 75%; left: 65%; opacity: 0.8; transform: scale(1); } 
+    88%  { top: 84%; left: 62%; opacity: 0; transform: scale(0.8); } 
+    100% { top: 84%; left: 62%; opacity: 0; }
 }
 
-/* Траектория 3 (отскакивает влево) */
+/* Траектория 3 (По центру с разбросом) */
 @keyframes pFall3 {
-    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
-    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
-    25%  { top: 30%; left: 40%; }
-    40%  { top: 45%; left: 30%; }
-    55%  { top: 60%; left: 40%; }
-    70%  { top: 75%; left: 30%; }
-    85%  { top: 85%; left: 40%; opacity: 1; }
-    100% { top: 95%; left: 35%; opacity: 0; transform: scale(0.5); }
+    0%   { top: 5%; left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 18%; left: 50%; opacity: 1; transform: scale(1); }
+    15%  { top: 15%; left: 47%; } 
+    30%  { top: 38%; left: 44%; } 
+    35%  { top: 35%; left: 48%; } 
+    50%  { top: 52%; left: 52%; } 
+    55%  { top: 49%; left: 56%; } 
+    70%  { top: 66%; left: 60%; } 
+    75%  { top: 63%; left: 55%; } 
+    85%  { top: 78%; left: 50%; opacity: 1; } 
+    88%  { top: 75%; left: 48%; opacity: 0.8; transform: scale(1); } 
+    93%  { top: 84%; left: 46%; opacity: 0; transform: scale(0.8); } 
+    100% { top: 84%; left: 46%; opacity: 0; }
 }

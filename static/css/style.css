@@ -180,28 +180,7 @@ body {
 }
 
 /* Колесо рулетки (аккуратное, на CSS) */
-.css-wheel {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 4px solid #fff;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    animation: spinWheel 6s linear infinite;
-}
-.css-wheel::before {
-    content: ''; position: absolute; inset: 0;
-    background: conic-gradient(#ffc107 0 90deg, #03a9f4 90deg 180deg, #4caf50 180deg 270deg, #e91e63 270deg 360deg);
-}
-.css-wheel::after {
-    content: ''; position: absolute;
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 16px; height: 16px;
-    background: #fff; border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-@keyframes spinWheel { to { transform: rotate(360deg); } }
+
 
 /* ===== BOTTOM NAVIGATION ===== */
 /* ===== BOTTOM NAVIGATION ===== */
@@ -742,3 +721,77 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .promo-input-group input::placeholder { text-transform: none; font-weight: 500; color: var(--txt3); }
 .promo-input-group button { background: linear-gradient(135deg, var(--blue), #2563eb); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-family: 'Exo 2', sans-serif; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: transform 0.15s; }
 .promo-input-group button:active { transform: scale(0.95); }
+/* ===== АНИМАЦИЯ ПЛИНКО В МЕНЮ ===== */
+.plinko-anim-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Фон с точками */
+.plinko-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* CSS Магия: убивает весь черный/темный фон у SVG, оставляя только светлые точки */
+    mix-blend-mode: screen; 
+    opacity: 0.6; /* Делаем точки полупрозрачными, чтобы не отвлекали от шариков */
+}
+
+/* Шарики */
+.plinko-ball {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ffffff, 0 0 4px rgba(255,255,255,0.8);
+    top: 0;
+    left: 50%;
+    margin-left: -4px; /* Центрируем по оси X */
+    opacity: 0;
+}
+
+/* Привязываем разные анимации и задержки к каждому шарику */
+.pb-1 { animation: pFall1 2.2s infinite linear; }
+.pb-2 { animation: pFall2 2.5s infinite linear 0.7s; }
+.pb-3 { animation: pFall3 2.8s infinite linear 1.4s; }
+
+/* Траектория 1 (падает зигзагом) */
+@keyframes pFall1 {
+    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
+    25%  { top: 30%; left: 40%; }
+    40%  { top: 45%; left: 50%; }
+    55%  { top: 60%; left: 60%; }
+    70%  { top: 75%; left: 50%; }
+    85%  { top: 85%; left: 40%; opacity: 1; }
+    100% { top: 95%; left: 45%; opacity: 0; transform: scale(0.5); }
+}
+
+/* Траектория 2 (отскакивает вправо) */
+@keyframes pFall2 {
+    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
+    25%  { top: 30%; left: 60%; }
+    40%  { top: 45%; left: 70%; }
+    55%  { top: 60%; left: 60%; }
+    70%  { top: 75%; left: 50%; }
+    85%  { top: 85%; left: 60%; opacity: 1; }
+    100% { top: 95%; left: 55%; opacity: 0; transform: scale(0.5); }
+}
+
+/* Траектория 3 (отскакивает влево) */
+@keyframes pFall3 {
+    0%   { top: 5%;  left: 50%; opacity: 0; transform: scale(0.5); }
+    10%  { top: 15%; left: 50%; opacity: 1; transform: scale(1); }
+    25%  { top: 30%; left: 40%; }
+    40%  { top: 45%; left: 30%; }
+    55%  { top: 60%; left: 40%; }
+    70%  { top: 75%; left: 30%; }
+    85%  { top: 85%; left: 40%; opacity: 1; }
+    100% { top: 95%; left: 35%; opacity: 0; transform: scale(0.5); }
+}

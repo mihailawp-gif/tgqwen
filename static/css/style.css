@@ -625,74 +625,172 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 /* --- КРАШ --- */
 /* --- КРАШ --- */
-.crash-history { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
-.crash-history::-webkit-scrollbar { display: none; }
-.crash-hist-item { padding: 4px 8px; border-radius: 8px; font-family: 'Exo 2', sans-serif; font-size: 11px; font-weight: 800; color: #fff; background: var(--card); border: 1px solid var(--border); flex-shrink: 0; }
-.crash-hist-item.good { color: var(--green); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); }
-.crash-hist-item.epic { color: var(--gold); border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); text-shadow: 0 0 10px var(--gold); }
-
-/* Игровое поле */
-.crash-game-area { 
-    width: 100%; 
-    height: 250px; /* Сделали чуть выше для красивого полета */
-    background: #090a0f; 
-    border-radius: 16px; 
-    border: 1px solid var(--border); 
-    position: relative; 
-    overflow: hidden; 
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.8); 
+/* =========================================
+   CRASH GAME (SYNTHWAVE UI)
+========================================= */
+.crash-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 70px);
+    background: #000000;
 }
+
+.crash-game-area {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    background: #020202;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
 #crashCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 .crash-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 2;}
 
-/* Текст множителя (Зеленый по умолчанию, как на видео) */
-.crash-multiplier { 
-    font-family: 'Exo 2', sans-serif; 
-    font-size: 54px; 
-    font-weight: 900; 
-    color: var(--green); 
-    text-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); 
-    transition: color 0.1s; 
+.crash-multiplier {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 64px;
+    font-weight: 900;
+    color: #39ff14;
+    text-shadow: 0 0 20px rgba(57, 255, 20, 0.6), 0 0 40px rgba(57, 255, 20, 0.2);
+    letter-spacing: -2px;
+    transition: color 0.1s, text-shadow 0.1s;
+    margin-top: -40px;
+    margin-left: -60px;
 }
-.crash-multiplier.crashed { 
-    color: #ef4444; 
-    text-shadow: 0 4px 20px rgba(239, 68, 68, 0.5); 
+
+.crash-multiplier.crashed {
+    color: #ff003c;
+    text-shadow: 0 0 20px rgba(255, 0, 60, 0.6), 0 0 40px rgba(255, 0, 60, 0.2);
 }
+
 .crash-timer { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt2); margin-top: 8px; background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px; }
 
-/* Ракета и взрыв */
 #crashRocket {
     position: absolute;
-    width: 70px; /* Размер ракеты (подстрой под свою гифку) */
+    width: 85px;
     height: auto;
     z-index: 5;
     pointer-events: none;
     transform-origin: center;
-    /* Если ракета на гифке смотрит вправо, мы будем вращать ее скриптом */
+    display: none;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
 }
 
 #crashExplosion {
     position: absolute;
-    width: 160px; /* Размер взрыва */
-    height: 160px;
+    width: 180px;
+    height: 180px;
     transform: translate(-50%, -50%);
     z-index: 6;
     pointer-events: none;
     display: none;
 }
 
-.crash-players-list-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.crash-players-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; }
-.crash-player-item { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); }
-.crash-player-left { display: flex; align-items: center; gap: 10px; }
-.crash-player-avatar { width: 28px; height: 28px; border-radius: 8px; background: var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 14px;}
-.crash-player-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.crash-player-name { font-size: 13px; font-weight: 600; color: var(--txt); }
-.crash-player-bet { font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 700; color: var(--txt2); display: flex; align-items: center; gap: 4px; }
-.crash-player-bet img { width: 12px; }
-.crash-player-win { font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 800; color: var(--green); background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 6px; }
+.crash-history-wrapper { background: #0a0a0a; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.crash-history-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.crash-history-pills::-webkit-scrollbar { display: none; }
 
-.btn-cashout { background: linear-gradient(135deg, var(--gold), #ff7700) !important; color: #000 !important; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4) !important; }
+.history-pill {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    background: #1a1a1a;
+    color: #666;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+.history-pill.current {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+.crash-action-container { padding: 16px; background: #000; }
+
+.btn-crash-main {
+    width: 100%;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 18px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    transition: transform 0.1s;
+}
+.btn-crash-main:active { transform: scale(0.97); }
+.btn-crash-main.disabled { background: #1a1a1a; color: #666; box-shadow: none; pointer-events: none; }
+.btn-crash-main.cashout { background: #39ff14; color: #000; box-shadow: 0 4px 20px rgba(57, 255, 20, 0.4); }
+
+.crash-players-section {
+    flex: 1;
+    background: #0a0a0a;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.crash-players-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+
+.crash-player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.c-player-info { display: flex; align-items: center; gap: 12px; }
+.c-avatar { width: 36px; height: 36px; border-radius: 50%; background: #222; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 18px;}
+.c-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.c-details { display: flex; flex-direction: column; gap: 4px; }
+.c-name { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: #fff; }
+.c-bet { display: flex; align-items: center; gap: 4px; font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 700; color: #f59e0b; }
+.c-bet img { width: 14px; }
+.c-win { font-family: 'Exo 2', sans-serif; font-size: 15px; font-weight: 800; color: #39ff14; display: flex; align-items: center; gap: 6px; }
+.c-win img { width: 16px; }
+
+.crash-total-bets { text-align: center; font-size: 12px; color: #666; padding-top: 12px; font-weight: 600; }
+
+/* --- Модалка Ставки --- */
+.crash-bet-modal { background: #0c0c0c !important; padding: 0 0 20px 0 !important; }
+.crash-bet-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
+.crash-bet-header h3 { font-size: 18px; color: #fff; }
+.crash-bet-tabs { display: flex; background: #1a1a1a; border-radius: 12px; margin: 0 20px 20px; padding: 4px; }
+.crash-tab { flex: 1; background: transparent; border: none; color: #666; padding: 10px; font-size: 14px; font-weight: 700; border-radius: 8px; }
+.crash-tab.active { background: #3b82f6; color: #fff; }
+
+.crash-big-input-wrapper { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; }
+.crash-big-input-wrapper input { background: transparent; border: none; color: #fff; font-family: 'Exo 2', sans-serif; font-size: 48px; font-weight: 900; width: 140px; text-align: center; outline: none; }
+.crash-big-input-wrapper img { width: 32px; height: 32px; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4)); }
+
+.crash-quick-amounts { display: flex; gap: 8px; padding: 0 20px; margin-bottom: 24px; }
+.crash-quick-amounts button { flex: 1; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; padding: 12px 0; font-family: 'Exo 2', sans-serif; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.crash-quick-amounts button img { width: 12px; }
+
+.crash-auto-row { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 24px; }
+.crash-checkbox { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.crash-checkbox input { display: none; }
+.crash-checkbox .checkmark { width: 20px; height: 20px; border: 2px solid #333; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.crash-checkbox input:checked + .checkmark { background: #3b82f6; border-color: #3b82f6; }
+.crash-checkbox input:checked + .checkmark::after { content: '✔'; color: #fff; font-size: 12px; }
+
+.crash-auto-controls { display: flex; align-items: center; background: #1a1a1a; border-radius: 8px; padding: 4px; }
+.crash-auto-controls button { background: transparent; border: none; color: #fff; width: 32px; height: 32px; font-size: 18px; cursor: pointer; }
+.auto-val-display { color: #fff; font-family: 'Exo 2', sans-serif; font-weight: 700; display: flex; align-items: center; }
+.auto-val-display input { background: transparent; border: none; color: #fff; width: 40px; font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 14px; outline: none; text-align: center; }
+
+.btn-crash-submit { width: calc(100% - 40px); margin: 0 20px; background: #2563eb; color: #fff; border: none; border-radius: 12px; padding: 16px; font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 800; }
 /* --- ТУМБЛЕР АВТОВЫВОДА --- */
 .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
 .switch input { opacity: 0; width: 0; height: 0; }

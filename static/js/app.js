@@ -1101,18 +1101,16 @@ function renderCrashLoop() {
     const w = crashCanvas.width;
     const h = crashCanvas.height;
     
-    // Очищаем экран 
     crashCtx.fillStyle = '#020308'; 
     crashCtx.fillRect(0, 0, w, h);
 
     let multiplier = crashRenderData.multiplier;
     let stateStr = crashRenderData.state;
 
-    // Скорость 3D фона (замирает при взрыве)
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
     if (stateStr === 'CRASHED') speed = 0; 
     
-    // --- Отрисовка 3D Сетки ---
+    // --- 3D Сетка ---
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1136,7 +1134,7 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
-    // --- Отрисовка Звезд ---
+    // --- Звезды ---
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1159,23 +1157,33 @@ function renderCrashLoop() {
 
     const rocket = document.getElementById('crashRocket');
 
-    // --- ИДЕАЛЬНЫЙ РЕНДЕР ГРАФИКА И РАКЕТЫ ---
+    // --- ЛОГИКА ПОЛЕТА РАКЕТЫ ---
     if (stateStr === 'FLYING') {
-        // НОВАЯ ФОРМУЛА: Логарифмический рост. 
-        // Ракета быстро взлетает, а потом плавно тянется вправо, не улетая за экран!
-        let visualProgress = 1 - Math.exp(-0.4 * (multiplier - 1)); 
+        let progress = Math.min((multiplier - 1) / 2.0, 1); 
         
-        const startX = -10;
-        const startY = h + 10;
-        // Максимальная высота - 65% экрана, максимальная ширина - 85%
-        const endX = (w * 0.15) + (w * 0.70) * visualProgress; 
-        const endY = startY - (h * 0.65) * visualProgress; 
-        
-        // Точка изгиба для создания красивой дуги (Безье)
-        const ctrlX = startX + (endX - startX) * 0.5; 
-        const ctrlY = h + 10;
+        // ФИКС 1: Точка старта теперь выше (не уходит за край экрана)
+        const startX = 0;
+        const startY = h - 20; 
 
-        // Заливка под графиком
+        // ФИКС 2: Динамическое покачивание ракеты вперед-назад (Турбулентность)
+        // Используем performance.now() для создания плавной синусоиды
+        let time = performance.now() * 0.002;
+        let wobbleX = Math.sin(time) * 15; // Покачивание по оси X на 15px
+        let wobbleY = Math.cos(time * 1.5) * 10; // Покачивание по оси Y на 10px
+
+        // ФИКС 3: Базовая точка конца (правее от центра)
+        let baseEndX = w * 0.2 + (w * 0.5) * progress; 
+        let baseEndY = startY - (h * 0.55) * progress;
+
+        // Итоговые координаты конца линии (с учетом турбулентности)
+        const endX = baseEndX + wobbleX;
+        const endY = baseEndY + wobbleY;
+
+        // Точка изгиба кривой
+        const ctrlX = startX + (endX - startX) * 0.6; 
+        const ctrlY = h - 10;
+
+        // Заливка под линией
         const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
         fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); 
         fillGrad.addColorStop(1, 'transparent');
@@ -1189,7 +1197,7 @@ function renderCrashLoop() {
         crashCtx.fillStyle = fillGrad;
         crashCtx.fill();
 
-        // Яркая неоновая линия
+        // Сама линия
         crashCtx.beginPath();
         crashCtx.moveTo(startX, startY);
         crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
@@ -1199,33 +1207,26 @@ function renderCrashLoop() {
         crashCtx.shadowColor = '#f59e0b';
         crashCtx.shadowBlur = 15;
         crashCtx.stroke();
-        crashCtx.shadowBlur = 0; // Сброс тени
+        crashCtx.shadowBlur = 0; 
 
-        // Математика угла (ракета смотрит ровно по касательной к линии)
-        let dx = endX - ctrlX;
-        let dy = endY - ctrlY;
-        let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
-        
-        // Не даем ракете опустить нос ниже -10 градусов
-        let tilt = Math.min(angleDeg - 5, -10); 
+        // Математика угла (жестко держим нос вверх)
+        let tilt = -30; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // ФИКС КРЕПЛЕНИЯ: translate(-25%, -75%) смещает ракету так, 
-            // что линия графики исходит ровно из выхлопной трубы ракеты!
-            rocket.style.transform = `translate(-25%, -75%) rotate(${tilt}deg)`;
+            // ФИКС 4: Центрирование ракеты так, чтобы огонь ложился на конец линии
+            // Если огонь у ракеты сзади-снизу, translate(-15%, -75%) обычно попадает идеально.
+            rocket.style.transform = `translate(-15%, -75%) rotate(${tilt}deg)`;
         }
 
-        // Обновляем бегущие цифры выигрыша в списке игроков
         document.querySelectorAll('.dynamic-win').forEach(el => {
             const b = parseFloat(el.getAttribute('data-bet'));
             if(b) el.innerHTML = `<img src="/static/images/star.png">${Math.floor(b * multiplier)}`;
         });
 
     } else {
-        // При Взрыве графика и ракета мгновенно исчезают
         if (rocket) rocket.style.display = 'none';
     }
 

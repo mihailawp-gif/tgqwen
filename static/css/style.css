@@ -685,7 +685,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .crash-anim-text {
     /* ФИКС: Задержка ровно 3.2 секунды */
-    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.2s forwards; 
+    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.5s forwards; 
 }
 
 #crashRocket { 

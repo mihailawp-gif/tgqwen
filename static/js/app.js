@@ -1000,7 +1000,7 @@ function updateCrashUI(data) {
                     mulEl.style.display = 'block';
                     mulEl.classList.add('crash-anim-text');
                 }
-            }, 3700); 
+            }, 4000); 
         }
     }
 
@@ -1178,7 +1178,7 @@ function renderCrashLoop() {
         const startY = h; 
 
         const targetX = w * 0.65; 
-        const targetY = h * 0.55;
+        const targetY = h * 0.70;
 
         // Идеальное покачивание (турбулентность)
         let wobbleX = 0;

@@ -684,8 +684,8 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .crash-anim-text {
-    /* ФИКС: Убрали CSS-задержку, управляем ею через JS */
-    animation: crashPulseFade 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+    /* ФИКС: Увеличили задержку до 2.5 секунд (взрыв полностью успеет пройти) */
+    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2.5s forwards; 
 }
 
 #crashRocket { 

@@ -1001,7 +1001,7 @@ function updateCrashUI(data) {
                     mulEl.style.display = 'block';
                     mulEl.classList.add('crash-anim-text');
                 }
-            }, 2000);
+            }, 2500);
         }
     }
 
@@ -1118,7 +1118,7 @@ function renderCrashLoop() {
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
     if (stateStr === 'CRASHED') speed = 0; 
     
-    // Сетка
+    // --- Сетка ---
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1142,7 +1142,7 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
-    // Звезды
+    // --- Звезды ---
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1166,31 +1166,32 @@ function renderCrashLoop() {
     const rocket = document.getElementById('crashRocket');
 
     if (stateStr === 'FLYING') {
-        // ФИКС 1: Ракета пулей вылетает на позицию (к моменту x1.05 она уже на месте)
-        let flyProgress = Math.min((multiplier - 1) / 0.05, 1); 
-        let easeProgress = 1 - Math.pow(1 - flyProgress, 3); // Плавное торможение на месте
+        // ФИКС 1: Резкий старт и плавное торможение (Ease Out Quart)
+        // Ракета долетает до центра очень быстро (к x1.30) и замирает
+        let flyProgress = Math.min((multiplier - 1) / 0.3, 1); 
+        let easeProgress = 1 - Math.pow(1 - flyProgress, 4); 
         
         const startX = -20;
         const startY = h + 20; 
 
-        // ФИКС 2: Целевая позиция четко справа от икса
-        const targetX = w * 0.75;
-        const targetY = h * 0.35;
+        // ФИКС 2: Опустили целевую позицию (h * 0.55 - это середина экрана)
+        const targetX = w * 0.65; // Позиция по горизонтали
+        const targetY = h * 0.55; // Позиция по вертикали (ниже, чем было)
 
-        // ФИКС 3: Турбулентность (ракета качается, когда долетела до точки)
+        // Турбулентность
         let wobbleX = 0;
         let wobbleY = 0;
         if (flyProgress === 1) {
             let time = performance.now() * 0.002;
-            wobbleX = Math.sin(time) * 15; // Раскачка влево-вправо
-            wobbleY = Math.cos(time * 1.5) * 10; // Вверх-вниз
+            wobbleX = Math.sin(time) * 12; 
+            wobbleY = Math.cos(time * 1.5) * 8; 
         }
 
         const endX = startX + (targetX - startX) * easeProgress + wobbleX;
         const endY = startY + (targetY - startY) * easeProgress + wobbleY;
 
         const ctrlX = startX + (endX - startX) * 0.6; 
-        const ctrlY = h - 10;
+        const ctrlY = h - 5; 
 
         const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
         fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); 
@@ -1216,15 +1217,15 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        // Нос жестко вверх
         let tilt = -25; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // ФИКС 4: Идеальный стык. Линия бьет ровно в сопло!
-            rocket.style.transform = `translate(-15%, -85%) rotate(${tilt}deg)`;
+            // ФИКС 3: Идеальный стык! Мы опустили саму картинку ракеты, 
+            // теперь желтая линия будет исходить ровно из огня внизу! (было -85%)
+            rocket.style.transform = `translate(-15%, -60%) rotate(${tilt}deg)`;
         }
 
         document.querySelectorAll('.dynamic-win').forEach(el => {
@@ -1233,7 +1234,6 @@ function renderCrashLoop() {
         });
 
     } else {
-        // При краше или ожидании линия и ракета моментально прячутся
         if (rocket) rocket.style.display = 'none';
     }
 

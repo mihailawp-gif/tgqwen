@@ -865,6 +865,7 @@ async function collectMines() {
 // === ЛОГИКА CRASH (MULTIPLAYER) ===
 // === ЛОГИКА CRASH (MULTIPLAYER) ===
 // === ЛОГИКА CRASH (MULTIPLAYER & 3D RENDER) ===
+// === ЛОГИКА CRASH (MULTIPLAYER & 3D RENDER) ===
 let crashSocket = null;
 let currentCrashState = 'WAITING';
 let myCrashBetAmount = 0;
@@ -877,7 +878,7 @@ let crashStars = [];
 let crashExplosionAnim = null;
 let gridZOffset = 0; 
 let crashAnimFrame = null;
-let crashRenderData = { multiplier: 1.00, state: 'WAITING' }; // Синхронизация данных и отрисовки
+let crashRenderData = { multiplier: 1.00, state: 'WAITING' };
 
 function showCrashScreen() {
     switchScreen('crash-screen');
@@ -908,6 +909,7 @@ function connectCrashWebSocket() {
 
 function updateCrashUI(data) {
     currentCrashState = data.state;
+    // Синхронизируем данные для 60FPS Канваса
     crashRenderData.multiplier = data.multiplier;
     crashRenderData.state = data.state;
 
@@ -933,7 +935,7 @@ function updateCrashUI(data) {
     }
 
     if (data.state === 'WAITING') {
-        mulEl.style.display = 'none'; // Скрываем текст
+        mulEl.style.display = 'none'; // Скрываем текст икса между играми
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
         timerEl.style.display = 'block';
@@ -954,8 +956,8 @@ function updateCrashUI(data) {
     } 
     else if (data.state === 'FLYING') {
         mulEl.style.display = 'block';
-        mulEl.className = 'crash-multiplier'; // Зеленый
-        mulEl.style.opacity = '1'; // Показываем принудительно
+        mulEl.className = 'crash-multiplier'; // Возвращаем зеленый цвет
+        mulEl.style.opacity = '1'; 
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -971,14 +973,14 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        // Если только что крашнулось
+        // Защита от двойного срабатывания взрыва
         if (!mulEl.classList.contains('crashed')) {
             mulEl.style.display = 'block';
             mulEl.textContent = 'x' + data.multiplier.toFixed(2);
-            // Включаем класс crashed (он скрывает текст через CSS) и анимацию (которая покажет его через 0.8s)
+            // Добавляем класс crashed (прячет текст) и crash-anim-text (запускает задержку и появление)
             mulEl.className = 'crash-multiplier crashed crash-anim-text'; 
             
-            // Запускаем взрыв
+            // Включаем взрыв на весь экран!
             explosion.style.display = 'flex';
             if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
 
@@ -993,6 +995,7 @@ function updateCrashUI(data) {
         }
     }
 
+    // История пилюли 
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
@@ -1002,17 +1005,15 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
+    // Подсчет суммы всех ставок
     const totalBetSum = data.players.reduce((sum, p) => sum + p.bet, 0);
     document.getElementById('crashTotalPlayers').textContent = totalBetSum;
 
     const list = document.getElementById('crashPlayersList');
     const section = document.getElementById('crashPlayersSection');
     
-    if (data.players.length === 0) {
-        section.style.padding = '0';
-    } else {
-        section.style.padding = '12px 16px'; 
-    }
+    if (data.players.length === 0) section.style.padding = '0';
+    else section.style.padding = '12px 16px'; 
 
     list.innerHTML = '';
     const sortedPlayers = data.players.sort((a, b) => {
@@ -1034,6 +1035,7 @@ function updateCrashUI(data) {
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
             rightHtml = `<div class="c-win danger">-${p.bet} <img src="/static/images/star.png"></div>`;
         } else {
+            // Крутящиеся цифры выигрыша в полете
             rightHtml = `<div class="c-win flying dynamic-win" data-bet="${p.bet}"><img src="/static/images/star.png">${Math.floor(p.bet * data.multiplier)}</div>`;
         }
         
@@ -1053,6 +1055,43 @@ function updateCrashUI(data) {
     });
 }
 
+function initCrashCanvas() {
+    crashCanvas = document.getElementById('crashCanvas');
+    if (!crashCanvas) return;
+    crashCtx = crashCanvas.getContext('2d');
+    
+    const resize = () => {
+        crashCanvas.width = crashCanvas.parentElement.clientWidth;
+        crashCanvas.height = crashCanvas.parentElement.clientHeight;
+    };
+    resize();
+    window.removeEventListener('resize', resize);
+    window.addEventListener('resize', resize);
+
+    crashStars = [];
+    for(let i = 0; i < 60; i++) {
+        crashStars.push({
+            x: (Math.random() - 0.5) * 1000,
+            y: (Math.random() - 0.5) * 1000,
+            z: Math.random() * 1000,
+            pz: Math.random() * 1000
+        });
+    }
+
+    const expEl = document.getElementById('crashExplosion');
+    if (expEl && !crashExplosionAnim) {
+        crashExplosionAnim = bodymovin.loadAnimation({
+            container: expEl,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            path: '/static/lose.json' 
+        });
+    }
+
+    if (!crashAnimFrame) renderCrashLoop();
+}
+
 function renderCrashLoop() {
     if (!crashCtx || !document.getElementById('crash-screen').classList.contains('active')) {
         crashAnimFrame = requestAnimationFrame(renderCrashLoop);
@@ -1062,19 +1101,16 @@ function renderCrashLoop() {
     const w = crashCanvas.width;
     const h = crashCanvas.height;
     
-    // Очищаем экран каждый кадр
     crashCtx.fillStyle = '#020308'; 
     crashCtx.fillRect(0, 0, w, h);
 
     let multiplier = crashRenderData.multiplier;
     let stateStr = crashRenderData.state;
 
-    // Скорость 3D фона
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
-    if (stateStr === 'CRASHED') speed = 0; // Фон полностью замирает при взрыве
-    if (stateStr === 'WAITING') speed = 1; // Легкий дрейф в ожидании
+    if (stateStr === 'CRASHED') speed = 0; // При взрыве фон замирает
     
-    // Отрисовка 3D-сетки
+    // Отрисовка 3D Сетки
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1098,7 +1134,7 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
-    // Отрисовка летящих звезд
+    // Отрисовка звезд
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1121,7 +1157,7 @@ function renderCrashLoop() {
 
     const rocket = document.getElementById('crashRocket');
 
-    // ФИКС: Линия графика и ракета рендерятся ТОЛЬКО когда идет полет (FLYING)
+    // ФИКС: График и ракета рисуются ТОЛЬКО в полете. Если краш — линия пропадает мгновенно.
     if (stateStr === 'FLYING') {
         let progress = Math.min((multiplier - 1) / 2.0, 1); 
         
@@ -1156,196 +1192,37 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        // ФИКС УГЛА: Ракета всегда смотрит ВВЕРХ (никакого выравнивания в горизонт)
-        let tilt = -35; 
+        // ИДЕАЛЬНАЯ МАТЕМАТИКА УГЛА РАКЕТЫ (по касательной к кривой Безье)
+        let dx = endX - ctrlX;
+        let dy = endY - ctrlY;
+        let angleRad = Math.atan2(dy, dx);
+        let angleDeg = angleRad * (180 / Math.PI);
+        
+        // Минус 10 градусов, чтобы нос всегда был "вздернут" вверх
+        let tilt = angleDeg - 10; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // Применяем жесткий угол наклона
             rocket.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
         }
 
-        // Обновляем бегущие цифры возможного выигрыша у игроков
+        // Обновляем бегущие цифры выигрыша у игроков
         document.querySelectorAll('.dynamic-win').forEach(el => {
             const b = parseFloat(el.getAttribute('data-bet'));
             if(b) el.innerHTML = `<img src="/static/images/star.png">${Math.floor(b * multiplier)}`;
         });
 
     } else {
-        // Если краш или ожидание — графика нет, ракеты нет (линия полностью пропадает)
+        // При взрыве прячем ракету и линию
         if (rocket) rocket.style.display = 'none';
     }
 
     crashAnimFrame = requestAnimationFrame(renderCrashLoop);
 }
 
-// --- 3D CANVAS LOOP ---
-function initCrashCanvas() {
-    crashCanvas = document.getElementById('crashCanvas');
-    if (!crashCanvas) return;
-    crashCtx = crashCanvas.getContext('2d');
-    
-    const resize = () => {
-        crashCanvas.width = crashCanvas.parentElement.clientWidth;
-        crashCanvas.height = crashCanvas.parentElement.clientHeight;
-    };
-    resize();
-    window.removeEventListener('resize', resize);
-    window.addEventListener('resize', resize);
-
-    crashStars = [];
-    for(let i = 0; i < 60; i++) {
-        crashStars.push({
-            x: (Math.random() - 0.5) * 1000,
-            y: (Math.random() - 0.5) * 1000,
-            z: Math.random() * 1000,
-            pz: Math.random() * 1000
-        });
-    }
-
-    const expEl = document.getElementById('crashExplosion');
-    if (expEl && !crashExplosionAnim) {
-        crashExplosionAnim = bodymovin.loadAnimation({
-            container: expEl,
-            renderer: 'svg',
-            loop: false,
-            autoplay: false,
-            path: '/static/images/lose.json' 
-        });
-    }
-
-    // Запускаем бесконечный цикл рендера
-    if (!crashAnimFrame) {
-        renderCrashLoop();
-    }
-}
-
-function renderCrashLoop() {
-    if (!crashCtx || !document.getElementById('crash-screen').classList.contains('active')) {
-        crashAnimFrame = requestAnimationFrame(renderCrashLoop);
-        return;
-    }
-
-    const w = crashCanvas.width;
-    const h = crashCanvas.height;
-    
-    crashCtx.fillStyle = '#020308'; 
-    crashCtx.fillRect(0, 0, w, h);
-
-    let multiplier = crashRenderData.multiplier;
-    let stateStr = crashRenderData.state;
-
-    let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
-    if (stateStr === 'CRASHED') speed = 0;
-    
-    // Сетка
-    const horizonY = h * 0.4;
-    const vpX = w / 2; 
-    
-    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; 
-    crashCtx.lineWidth = 1;
-    crashCtx.beginPath();
-    for (let i = -15; i <= 15; i++) {
-        crashCtx.moveTo(vpX, horizonY);
-        crashCtx.lineTo(vpX + i * 40, h);
-    }
-    if (speed > 0) {
-        gridZOffset -= speed;
-        if (gridZOffset <= 0) gridZOffset += 40;
-    }
-    for (let y = gridZOffset; y < 200; y += 20) {
-        let py = horizonY + Math.pow(y / 15, 1.8); 
-        if (py > horizonY && py <= h) {
-            crashCtx.moveTo(0, py);
-            crashCtx.lineTo(w, py);
-        }
-    }
-    crashCtx.stroke();
-
-    // Звезды
-    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    crashCtx.beginPath();
-    for(let star of crashStars) {
-        if (speed > 0) star.z -= speed * 1.5;
-        if(star.z < 1) {
-            star.z = 1000; star.pz = 1000;
-            star.x = (Math.random() - 0.5) * 1000;
-            star.y = (Math.random() - 0.5) * 1000;
-        }
-        let cx = w / 2, cy = h / 2;
-        let sx = (star.x / star.z) * 100 + cx;
-        let sy = (star.y / star.z) * 100 + cy;
-        let px = (star.x / star.pz) * 100 + cx;
-        let py = (star.y / star.pz) * 100 + cy;
-        star.pz = star.z;
-        crashCtx.moveTo(px, py);
-        crashCtx.lineTo(sx, sy);
-    }
-    crashCtx.stroke();
-
-    // График и Ракета
-    const rocket = document.getElementById('crashRocket');
-
-    if (stateStr === 'WAITING') {
-        if (rocket) rocket.style.display = 'none';
-    } else {
-        let progress = Math.min((multiplier - 1) / 2.0, 1); 
-        
-        const startX = -20;
-        const startY = h + 20;
-        const endX = w * 0.8; 
-        const endY = h - 50 - (h - 100) * progress;
-        const ctrlX = w * 0.4 * progress; 
-        const ctrlY = h;
-
-        const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
-        fillGrad.addColorStop(0, stateStr === 'CRASHED' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'); 
-        fillGrad.addColorStop(1, 'transparent');
-
-        crashCtx.beginPath();
-        crashCtx.moveTo(startX, h);
-        crashCtx.lineTo(startX, startY);
-        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-        crashCtx.lineTo(endX, h);
-        crashCtx.closePath();
-        crashCtx.fillStyle = fillGrad;
-        crashCtx.fill();
-
-        crashCtx.beginPath();
-        crashCtx.moveTo(startX, startY);
-        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-        crashCtx.strokeStyle = stateStr === 'CRASHED' ? '#ef4444' : '#f59e0b'; 
-        crashCtx.lineWidth = 4;
-        crashCtx.lineCap = 'round';
-        crashCtx.shadowColor = stateStr === 'CRASHED' ? '#ef4444' : '#f59e0b';
-        crashCtx.shadowBlur = 10;
-        crashCtx.stroke();
-        crashCtx.shadowBlur = 0; 
-
-        let prevProgress = Math.max(0, progress - 0.05);
-        let prevX = startX + (w * 0.8 - startX) * prevProgress;
-        let prevY = h - 50 - (h - 100) * prevProgress;
-        let angleRad = Math.atan2(endY - prevY, endX - prevX);
-        let angleDeg = angleRad * (180 / Math.PI);
-
-        if (stateStr === 'FLYING') {
-            if (rocket) {
-                rocket.style.display = 'block';
-                rocket.style.left = `${endX}px`;
-                rocket.style.top = `${endY}px`;
-                rocket.style.transform = `translate(-50%, -50%) rotate(${angleDeg + 25}deg)`;
-            }
-        } else if (stateStr === 'CRASHED') {
-            if (rocket) rocket.style.display = 'none';
-        }
-    }
-
-    crashAnimFrame = requestAnimationFrame(renderCrashLoop);
-}
-
-// === КНОПКА ДЕЙСТВИЯ ===
+// === КНОПКИ ДЕЙСТВИЯ И МОДАЛКА ===
 async function handleCrashMainAction() {
     if (currentCrashState === 'WAITING' && !didIbet) {
         openCrashBetModal();
@@ -1370,7 +1247,6 @@ async function handleCrashMainAction() {
     }
 }
 
-// === ЛОГИКА САМОЙ СТАВКИ В МОДАЛКЕ ===
 async function submitCrashBet() {
     closeCrashBetModal();
     
@@ -1408,7 +1284,6 @@ async function submitCrashBet() {
     }
 }
 
-// UI Логика Модалки
 function openCrashBetModal() { document.getElementById('crashBetModal').classList.add('active'); }
 function closeCrashBetModal() { document.getElementById('crashBetModal').classList.remove('active'); }
 function modifyCrashBet(action, val) {

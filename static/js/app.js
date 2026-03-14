@@ -878,7 +878,7 @@ let crashStars = [];
 let crashExplosionAnim = null;
 let gridZOffset = 0; 
 let crashAnimFrame = null;
-let crashRenderData = { multiplier: 1.00, state: 'WAITING' };
+let crashRenderData = { multiplier: 1.00, state: 'WAITING', isCrashed: false };
 
 function showCrashScreen() {
     switchScreen('crash-screen');
@@ -909,7 +909,6 @@ function connectCrashWebSocket() {
 
 function updateCrashUI(data) {
     currentCrashState = data.state;
-    // Синхронизируем данные для 60FPS Канваса
     crashRenderData.multiplier = data.multiplier;
     crashRenderData.state = data.state;
 
@@ -935,7 +934,8 @@ function updateCrashUI(data) {
     }
 
     if (data.state === 'WAITING') {
-        mulEl.style.display = 'none'; // Скрываем текст икса между играми
+        crashRenderData.isCrashed = false; // Сбрасываем флаг краша
+        mulEl.style.display = 'none'; 
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
         timerEl.style.display = 'block';
@@ -956,8 +956,7 @@ function updateCrashUI(data) {
     } 
     else if (data.state === 'FLYING') {
         mulEl.style.display = 'block';
-        mulEl.className = 'crash-multiplier'; // Возвращаем зеленый цвет
-        mulEl.style.opacity = '1'; 
+        mulEl.className = 'crash-multiplier'; 
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -973,14 +972,16 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        // Защита от двойного срабатывания взрыва
-        if (!mulEl.classList.contains('crashed')) {
-            mulEl.style.display = 'block';
-            mulEl.textContent = 'x' + data.multiplier.toFixed(2);
-            // Добавляем класс crashed (прячет текст) и crash-anim-text (запускает задержку и появление)
-            mulEl.className = 'crash-multiplier crashed crash-anim-text'; 
+        // ФИКС: Логика взрыва срабатывает ровно один раз
+        if (!crashRenderData.isCrashed) {
+            crashRenderData.isCrashed = true;
             
-            // Включаем взрыв на весь экран!
+            // 1. Моментально ПРЯЧЕМ зеленый текст икса
+            mulEl.style.display = 'none';
+            mulEl.className = 'crash-multiplier crashed'; 
+            mulEl.textContent = 'x' + data.multiplier.toFixed(2);
+            
+            // 2. Включаем взрыв
             explosion.style.display = 'flex';
             if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
 
@@ -992,10 +993,19 @@ function updateCrashUI(data) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 didIbet = false; 
             }
+
+            // 3. ФИКС: Ждем ровно 2 секунды, пока рассеется дым взрыва, и показываем красный икс
+            setTimeout(() => {
+                // Проверяем, не начался ли уже новый раунд (WAITING)
+                if (currentCrashState === 'CRASHED') {
+                    mulEl.style.display = 'block';
+                    mulEl.classList.add('crash-anim-text');
+                }
+            }, 2000);
         }
     }
 
-    // История пилюли 
+    // История
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
@@ -1005,7 +1015,6 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
-    // Подсчет суммы всех ставок
     const totalBetSum = data.players.reduce((sum, p) => sum + p.bet, 0);
     document.getElementById('crashTotalPlayers').textContent = totalBetSum;
 
@@ -1035,7 +1044,6 @@ function updateCrashUI(data) {
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
             rightHtml = `<div class="c-win danger">-${p.bet} <img src="/static/images/star.png"></div>`;
         } else {
-            // Крутящиеся цифры выигрыша в полете
             rightHtml = `<div class="c-win flying dynamic-win" data-bet="${p.bet}"><img src="/static/images/star.png">${Math.floor(p.bet * data.multiplier)}</div>`;
         }
         
@@ -1110,7 +1118,7 @@ function renderCrashLoop() {
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
     if (stateStr === 'CRASHED') speed = 0; 
     
-    // --- Сетка ---
+    // Сетка
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1134,7 +1142,7 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
-    // --- Звезды ---
+    // Звезды
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1158,23 +1166,28 @@ function renderCrashLoop() {
     const rocket = document.getElementById('crashRocket');
 
     if (stateStr === 'FLYING') {
-        // ФИКС 1: Ракета "выстреливает" на позицию за первые 0.4 икса (до x1.40) и зависает там
-        let visualProgress = Math.min((multiplier - 1) / 0.4, 1); 
+        // ФИКС 1: Ракета пулей вылетает на позицию (к моменту x1.05 она уже на месте)
+        let flyProgress = Math.min((multiplier - 1) / 0.05, 1); 
+        let easeProgress = 1 - Math.pow(1 - flyProgress, 3); // Плавное торможение на месте
         
         const startX = -20;
         const startY = h + 20; 
 
-        // ФИКС 2: Турбулентность (качание)
-        let time = performance.now() * 0.002;
-        let wobbleX = Math.sin(time) * 12; 
-        let wobbleY = Math.cos(time * 1.5) * 8; 
+        // ФИКС 2: Целевая позиция четко справа от икса
+        const targetX = w * 0.75;
+        const targetY = h * 0.35;
 
-        // ФИКС 3: Конечная точка стала ниже (0.45 от высоты) и правее от икса
-        let baseEndX = w * 0.1 + (w * 0.55) * visualProgress; 
-        let baseEndY = startY - (h * 0.45) * visualProgress;
+        // ФИКС 3: Турбулентность (ракета качается, когда долетела до точки)
+        let wobbleX = 0;
+        let wobbleY = 0;
+        if (flyProgress === 1) {
+            let time = performance.now() * 0.002;
+            wobbleX = Math.sin(time) * 15; // Раскачка влево-вправо
+            wobbleY = Math.cos(time * 1.5) * 10; // Вверх-вниз
+        }
 
-        const endX = baseEndX + wobbleX;
-        const endY = baseEndY + wobbleY;
+        const endX = startX + (targetX - startX) * easeProgress + wobbleX;
+        const endY = startY + (targetY - startY) * easeProgress + wobbleY;
 
         const ctrlX = startX + (endX - startX) * 0.6; 
         const ctrlY = h - 10;
@@ -1203,16 +1216,15 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        // Жестко направляем нос вверх
+        // Нос жестко вверх
         let tilt = -25; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // ФИКС 4: Идеальный стык огня с линией. 
-            // -10% по X и -85% по Y сажает левый нижний край картинки (огонь) ровно на конец кривой.
-            rocket.style.transform = `translate(-10%, -85%) rotate(${tilt}deg)`;
+            // ФИКС 4: Идеальный стык. Линия бьет ровно в сопло!
+            rocket.style.transform = `translate(-15%, -85%) rotate(${tilt}deg)`;
         }
 
         document.querySelectorAll('.dynamic-win').forEach(el => {
@@ -1221,12 +1233,12 @@ function renderCrashLoop() {
         });
 
     } else {
+        // При краше или ожидании линия и ракета моментально прячутся
         if (rocket) rocket.style.display = 'none';
     }
 
     crashAnimFrame = requestAnimationFrame(renderCrashLoop);
 }
-
 // === КНОПКИ ДЕЙСТВИЯ И МОДАЛКА ===
 async function handleCrashMainAction() {
     if (currentCrashState === 'WAITING' && !didIbet) {

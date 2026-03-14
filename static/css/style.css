@@ -658,8 +658,8 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Анимация затухания красного икса */
 @keyframes crashPulseFade {
     0%   { transform: scale(0.2); opacity: 0; }
-    15%  { transform: scale(1.1); opacity: 1; }
-    30%  { transform: scale(1); opacity: 1; }
+    10%  { transform: scale(1.1); opacity: 1; }
+    20%  { transform: scale(1); opacity: 1; }
     75%  { transform: scale(1); opacity: 1; }
     100% { transform: scale(0.9); opacity: 0; }
 }
@@ -672,25 +672,25 @@ input[type="number"] { -moz-appearance: textfield; }
     text-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
     letter-spacing: -2px;
     margin-top: -30px;
-    /* ФИКС: Сдвинули икс левее, чтобы ракета его не перекрывала */
-    margin-left: -100px; 
+    /* ФИКС: Сдвигаем икс левее, чтобы ракета была четко справа */
+    margin-left: -80px; 
     transition: none; 
 }
 
 .crash-multiplier.crashed {
     color: #ff003c;
     text-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
-    opacity: 0; /* Изначально полностью скрыт, ждет окончания взрыва */
+    opacity: 1; 
 }
 
 .crash-anim-text {
-    /* ФИКС: Увеличили задержку до 2 секунд */
-    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2s forwards; 
+    /* ФИКС: Убрали CSS-задержку, управляем ею через JS */
+    animation: crashPulseFade 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
 }
 
 #crashRocket { 
     position: absolute; 
-    width: 170px; /* ФИКС: Сделали ракету еще больше */
+    width: 180px; /* ФИКС: Ракета стала еще больше! */
     height: auto; 
     z-index: 5; 
     pointer-events: none; 

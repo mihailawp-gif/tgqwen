@@ -878,8 +878,7 @@ let crashStars = [];
 let crashExplosionAnim = null;
 let gridZOffset = 0; 
 let crashAnimFrame = null;
-let crashRenderData = { multiplier: 1.00, state: 'WAITING', isCrashed: false };
-
+let crashRenderData = { multiplier: 1.00, state: 'WAITING', isCrashed: false, flightStartTime: 0 };
 function showCrashScreen() {
     switchScreen('crash-screen');
     const balEl = document.getElementById('crashBalanceDisplay');
@@ -934,6 +933,8 @@ function updateCrashUI(data) {
 
     if (data.state === 'WAITING') {
         crashRenderData.isCrashed = false; 
+        crashRenderData.flightStartTime = 0; // Сбрасываем таймер полета
+        
         mulEl.style.display = 'none'; 
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
@@ -972,6 +973,8 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
+        crashRenderData.flightStartTime = 0; // Сбрасываем таймер полета
+        
         if (!crashRenderData.isCrashed) {
             crashRenderData.isCrashed = true;
             
@@ -991,13 +994,13 @@ function updateCrashUI(data) {
                 didIbet = false; 
             }
 
-            // ФИКС 3: Задержка текста увеличена до 2800мс
+            // ФИКС КД: Задержка ровно 3.2 секунды
             setTimeout(() => {
                 if (currentCrashState === 'CRASHED') {
                     mulEl.style.display = 'block';
                     mulEl.classList.add('crash-anim-text');
                 }
-            }, 2800); 
+            }, 3200); 
         }
     }
 
@@ -1159,31 +1162,40 @@ function renderCrashLoop() {
     const rocket = document.getElementById('crashRocket');
 
     if (stateStr === 'FLYING') {
-        // ФИКС 4: Плавный, но молниеносный взлет (через функцию синуса). 
-        // Доходит до конца уже на x1.15!
-        let flyProgress = Math.min((multiplier - 1) / 0.15, 1); 
-        let easeProgress = Math.sin((flyProgress * Math.PI) / 2); 
-        
-        const startX = -20;
-        const startY = h + 20; 
+        // ЗАПУСКАЕМ ТАЙМЕР (Чтобы было 60FPS независимо от лагов сервера)
+        if (crashRenderData.flightStartTime === 0) {
+            crashRenderData.flightStartTime = performance.now();
+        }
 
-        // Центрируем ракету по красоте
-        const targetX = w * 0.55; 
+        // Полет длится ровно 1.2 секунды
+        let elapsed = performance.now() - crashRenderData.flightStartTime;
+        let flyProgress = Math.min(elapsed / 1200, 1); 
+        
+        // Мощная кривая: резкий рывок и мягкая парковка
+        let easeProgress = 1 - Math.pow(1 - flyProgress, 4); 
+        
+        const startX = 0;
+        const startY = h; 
+
+        const targetX = w * 0.65; 
         const targetY = h * 0.45; 
 
+        // Идеальное покачивание (турбулентность)
         let wobbleX = 0;
         let wobbleY = 0;
+        let wobbleTilt = 0;
         if (flyProgress === 1) {
             let time = performance.now() * 0.002;
-            wobbleX = Math.sin(time) * 10; 
-            wobbleY = Math.cos(time * 1.5) * 6; 
+            wobbleX = Math.sin(time) * 8; 
+            wobbleY = Math.cos(time * 1.3) * 6; 
+            wobbleTilt = Math.sin(time * 0.8) * 3; // Легкое качание носом
         }
 
         const endX = startX + (targetX - startX) * easeProgress + wobbleX;
         const endY = startY + (targetY - startY) * easeProgress + wobbleY;
 
-        const ctrlX = startX + (endX - startX) * 0.7; 
-        const ctrlY = h - 5; 
+        const ctrlX = startX + (endX - startX) * 0.4; 
+        const ctrlY = h; 
 
         const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
         fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); 
@@ -1209,18 +1221,14 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        // ФИКС 5: Точно рассчитываем угол линии в её конце
-        let dx = endX - ctrlX;
-        let dy = endY - ctrlY;
-        let lineAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-        let tilt = lineAngle - 10; // Держим нос чуть выше линии
+        // ФИКС УГЛА: Больше никакой дерготни! Жестко ставим -25 градусов + легкая турбулентность
+        let tilt = -25 + wobbleTilt; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // ФИКС 6: Благодаря transform-origin (в CSS) мы можем просто посадить ракету 
-            // левым нижним углом (15%, 85%) ровно на конец линии.
+            // ФИКС СТЫКА: translate(-15%, -85%) гарантированно ставит ракету выхлопной трубой на конец линии!
             rocket.style.transform = `translate(-15%, -85%) rotate(${tilt}deg)`;
         }
 

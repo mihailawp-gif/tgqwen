@@ -684,8 +684,8 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .crash-anim-text {
-    /* ФИКС 1: Увеличили задержку до 2.8 секунд */
-    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2.8s forwards; 
+    /* ФИКС: Задержка ровно 3.2 секунды */
+    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.2s forwards; 
 }
 
 #crashRocket { 
@@ -694,8 +694,8 @@ input[type="number"] { -moz-appearance: textfield; }
     height: auto; 
     z-index: 5; 
     pointer-events: none; 
-    /* ФИКС 2: Смещаем центр тяжести ракеты ровно на её выхлопную трубу (левый нижний угол) */
-    transform-origin: 15% 85%; 
+    /* ФИКС: Возвращаем в центр, чтобы математика JS работала идеально */
+    transform-origin: center; 
     display: none; 
     filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); 
 }

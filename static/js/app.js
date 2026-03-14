@@ -917,7 +917,6 @@ function updateCrashUI(data) {
     const btn = document.getElementById('btnCrashAction');
     const explosion = document.getElementById('crashExplosion');
 
-    // ГЛОБАЛЬНАЯ ПРОВЕРКА АВТОВЫВОДА
     if (didIbet && !didIcashout) {
         const myData = data.players.find(p => p.user_id === state.user.telegram_id);
         if (myData && myData.cashout !== null) {
@@ -934,7 +933,7 @@ function updateCrashUI(data) {
     }
 
     if (data.state === 'WAITING') {
-        crashRenderData.isCrashed = false; // Сбрасываем флаг краша
+        crashRenderData.isCrashed = false; 
         mulEl.style.display = 'none'; 
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
@@ -957,6 +956,7 @@ function updateCrashUI(data) {
     else if (data.state === 'FLYING') {
         mulEl.style.display = 'block';
         mulEl.className = 'crash-multiplier'; 
+        mulEl.style.opacity = '1'; 
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -972,16 +972,13 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        // ФИКС: Логика взрыва срабатывает ровно один раз
         if (!crashRenderData.isCrashed) {
             crashRenderData.isCrashed = true;
             
-            // 1. Моментально ПРЯЧЕМ зеленый текст икса
             mulEl.style.display = 'none';
             mulEl.className = 'crash-multiplier crashed'; 
             mulEl.textContent = 'x' + data.multiplier.toFixed(2);
             
-            // 2. Включаем взрыв
             explosion.style.display = 'flex';
             if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
 
@@ -994,18 +991,16 @@ function updateCrashUI(data) {
                 didIbet = false; 
             }
 
-            // 3. ФИКС: Ждем ровно 2 секунды, пока рассеется дым взрыва, и показываем красный икс
+            // ФИКС 3: Задержка текста увеличена до 2800мс
             setTimeout(() => {
-                // Проверяем, не начался ли уже новый раунд (WAITING)
                 if (currentCrashState === 'CRASHED') {
                     mulEl.style.display = 'block';
                     mulEl.classList.add('crash-anim-text');
                 }
-            }, 2500);
+            }, 2800); 
         }
     }
 
-    // История
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
@@ -1118,7 +1113,6 @@ function renderCrashLoop() {
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
     if (stateStr === 'CRASHED') speed = 0; 
     
-    // --- Сетка ---
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1142,7 +1136,6 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
-    // --- Звезды ---
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1166,31 +1159,30 @@ function renderCrashLoop() {
     const rocket = document.getElementById('crashRocket');
 
     if (stateStr === 'FLYING') {
-        // ФИКС 1: Резкий старт и плавное торможение (Ease Out Quart)
-        // Ракета долетает до центра очень быстро (к x1.30) и замирает
-        let flyProgress = Math.min((multiplier - 1) / 0.3, 1); 
-        let easeProgress = 1 - Math.pow(1 - flyProgress, 4); 
+        // ФИКС 4: Плавный, но молниеносный взлет (через функцию синуса). 
+        // Доходит до конца уже на x1.15!
+        let flyProgress = Math.min((multiplier - 1) / 0.15, 1); 
+        let easeProgress = Math.sin((flyProgress * Math.PI) / 2); 
         
         const startX = -20;
         const startY = h + 20; 
 
-        // ФИКС 2: Опустили целевую позицию (h * 0.55 - это середина экрана)
-        const targetX = w * 0.65; // Позиция по горизонтали
-        const targetY = h * 0.55; // Позиция по вертикали (ниже, чем было)
+        // Центрируем ракету по красоте
+        const targetX = w * 0.55; 
+        const targetY = h * 0.45; 
 
-        // Турбулентность
         let wobbleX = 0;
         let wobbleY = 0;
         if (flyProgress === 1) {
             let time = performance.now() * 0.002;
-            wobbleX = Math.sin(time) * 12; 
-            wobbleY = Math.cos(time * 1.5) * 8; 
+            wobbleX = Math.sin(time) * 10; 
+            wobbleY = Math.cos(time * 1.5) * 6; 
         }
 
         const endX = startX + (targetX - startX) * easeProgress + wobbleX;
         const endY = startY + (targetY - startY) * easeProgress + wobbleY;
 
-        const ctrlX = startX + (endX - startX) * 0.6; 
+        const ctrlX = startX + (endX - startX) * 0.7; 
         const ctrlY = h - 5; 
 
         const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
@@ -1217,15 +1209,19 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        let tilt = -25; 
+        // ФИКС 5: Точно рассчитываем угол линии в её конце
+        let dx = endX - ctrlX;
+        let dy = endY - ctrlY;
+        let lineAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+        let tilt = lineAngle - 10; // Держим нос чуть выше линии
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
-            // ФИКС 3: Идеальный стык! Мы опустили саму картинку ракеты, 
-            // теперь желтая линия будет исходить ровно из огня внизу! (было -85%)
-            rocket.style.transform = `translate(-15%, -60%) rotate(${tilt}deg)`;
+            // ФИКС 6: Благодаря transform-origin (в CSS) мы можем просто посадить ракету 
+            // левым нижним углом (15%, 85%) ровно на конец линии.
+            rocket.style.transform = `translate(-15%, -85%) rotate(${tilt}deg)`;
         }
 
         document.querySelectorAll('.dynamic-win').forEach(el => {

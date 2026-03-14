@@ -684,17 +684,18 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .crash-anim-text {
-    /* ФИКС: Увеличили задержку до 2.5 секунд (взрыв полностью успеет пройти) */
-    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2.5s forwards; 
+    /* ФИКС 1: Увеличили задержку до 2.8 секунд */
+    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2.8s forwards; 
 }
 
 #crashRocket { 
     position: absolute; 
-    width: 180px; /* ФИКС: Ракета стала еще больше! */
+    width: 170px; 
     height: auto; 
     z-index: 5; 
     pointer-events: none; 
-    transform-origin: center; 
+    /* ФИКС 2: Смещаем центр тяжести ракеты ровно на её выхлопную трубу (левый нижний угол) */
+    transform-origin: 15% 85%; 
     display: none; 
     filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); 
 }

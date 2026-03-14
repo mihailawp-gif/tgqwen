@@ -908,7 +908,6 @@ function connectCrashWebSocket() {
 
 function updateCrashUI(data) {
     currentCrashState = data.state;
-    // Обновляем данные для Canvas Loop
     crashRenderData.multiplier = data.multiplier;
     crashRenderData.state = data.state;
 
@@ -933,14 +932,13 @@ function updateCrashUI(data) {
         }
     }
 
-    // ЛОГИКА СОСТОЯНИЙ UI
     if (data.state === 'WAITING') {
-        mulEl.style.display = 'none'; // Скрываем иксы
+        mulEl.style.display = 'none'; // Скрываем текст между раундами
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
         timerEl.style.display = 'block';
         timerEl.textContent = `Запуск через ${data.timer.toFixed(1)}s`;
-        explosion.style.display = 'none'; // Убираем старый взрыв
+        explosion.style.display = 'none'; 
         
         if (data.timer > 7.5) { didIbet = false; didIcashout = false; }
 
@@ -956,7 +954,7 @@ function updateCrashUI(data) {
     } 
     else if (data.state === 'FLYING') {
         mulEl.style.display = 'block';
-        mulEl.className = 'crash-multiplier'; // Возвращаем зеленый цвет
+        mulEl.className = 'crash-multiplier'; 
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -972,13 +970,11 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        // Если только что крашнулось
         if (!mulEl.classList.contains('crashed')) {
             mulEl.style.display = 'block';
             mulEl.textContent = 'x' + data.multiplier.toFixed(2);
-            mulEl.className = 'crash-multiplier crashed crash-anim-text'; // Включаем красный текст и затухание
+            mulEl.className = 'crash-multiplier crashed crash-anim-text'; // Анимация взрыва текста
             
-            // Включаем ВЗРЫВ на весь экран
             explosion.style.display = 'flex';
             if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
 
@@ -993,7 +989,6 @@ function updateCrashUI(data) {
         }
     }
 
-    // История пилюли 
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
@@ -1003,16 +998,17 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
-    // Список игроков (Динамический паддинг)
-    document.getElementById('crashTotalPlayers').textContent = data.players.length;
+    // ФИКС: Считаем сумму всех ставок
+    const totalBetSum = data.players.reduce((sum, p) => sum + p.bet, 0);
+    document.getElementById('crashTotalPlayers').textContent = totalBetSum;
+
     const list = document.getElementById('crashPlayersList');
     const section = document.getElementById('crashPlayersSection');
     
-    // Если игроков нет, сужаем контейнер
     if (data.players.length === 0) {
         section.style.padding = '0';
     } else {
-        section.style.padding = '12px 0'; // Возвращаем паддинги
+        section.style.padding = '12px 16px'; 
     }
 
     list.innerHTML = '';
@@ -1030,9 +1026,15 @@ function updateCrashUI(data) {
         let rightHtml = ``;
         
         if (p.cashout) {
-            rightHtml = `<div class="c-win"><img src="/static/images/star.png">${p.profit}</div>`;
+            // Забрал (Зеленый)
+            rightHtml = `<div class="c-win success"><img src="/static/images/star.png">${p.profit}</div>`;
         } else if (data.state === 'CRASHED') {
+            // Проиграл (Красный минус)
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
+            rightHtml = `<div class="c-win danger">-${p.bet} <img src="/static/images/star.png"></div>`;
+        } else {
+            // В полете (Динамически обновляемый класс dynamic-win)
+            rightHtml = `<div class="c-win flying dynamic-win" data-bet="${p.bet}"><img src="/static/images/star.png">${Math.floor(p.bet * data.multiplier)}</div>`;
         }
         
         const avatar = p.avatar ? `<img src="${p.avatar}">` : '👤';
@@ -1049,6 +1051,128 @@ function updateCrashUI(data) {
         `;
         list.appendChild(pEl);
     });
+}
+
+function renderCrashLoop() {
+    if (!crashCtx || !document.getElementById('crash-screen').classList.contains('active')) {
+        crashAnimFrame = requestAnimationFrame(renderCrashLoop);
+        return;
+    }
+
+    const w = crashCanvas.width;
+    const h = crashCanvas.height;
+    
+    crashCtx.fillStyle = '#020308'; 
+    crashCtx.fillRect(0, 0, w, h);
+
+    let multiplier = crashRenderData.multiplier;
+    let stateStr = crashRenderData.state;
+
+    let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
+    if (stateStr === 'CRASHED') speed = 0;
+    
+    const horizonY = h * 0.4;
+    const vpX = w / 2; 
+    
+    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; 
+    crashCtx.lineWidth = 1;
+    crashCtx.beginPath();
+    for (let i = -15; i <= 15; i++) {
+        crashCtx.moveTo(vpX, horizonY);
+        crashCtx.lineTo(vpX + i * 40, h);
+    }
+    if (speed > 0) {
+        gridZOffset -= speed;
+        if (gridZOffset <= 0) gridZOffset += 40;
+    }
+    for (let y = gridZOffset; y < 200; y += 20) {
+        let py = horizonY + Math.pow(y / 15, 1.8); 
+        if (py > horizonY && py <= h) {
+            crashCtx.moveTo(0, py);
+            crashCtx.lineTo(w, py);
+        }
+    }
+    crashCtx.stroke();
+
+    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    crashCtx.beginPath();
+    for(let star of crashStars) {
+        if (speed > 0) star.z -= speed * 1.5;
+        if(star.z < 1) {
+            star.z = 1000; star.pz = 1000;
+            star.x = (Math.random() - 0.5) * 1000;
+            star.y = (Math.random() - 0.5) * 1000;
+        }
+        let cx = w / 2, cy = h / 2;
+        let sx = (star.x / star.z) * 100 + cx;
+        let sy = (star.y / star.z) * 100 + cy;
+        let px = (star.x / star.pz) * 100 + cx;
+        let py = (star.y / star.pz) * 100 + cy;
+        star.pz = star.z;
+        crashCtx.moveTo(px, py);
+        crashCtx.lineTo(sx, sy);
+    }
+    crashCtx.stroke();
+
+    const rocket = document.getElementById('crashRocket');
+
+    // ФИКС Отрисовки: Рисуем график ТОЛЬКО когда летим!
+    if (stateStr === 'FLYING') {
+        let progress = Math.min((multiplier - 1) / 2.0, 1); 
+        
+        const startX = -20;
+        const startY = h + 20;
+        const endX = w * 0.8; 
+        const endY = h - 50 - (h - 100) * progress;
+        const ctrlX = w * 0.4 * progress; 
+        const ctrlY = h;
+
+        const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
+        fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.3)'); 
+        fillGrad.addColorStop(1, 'transparent');
+
+        crashCtx.beginPath();
+        crashCtx.moveTo(startX, h);
+        crashCtx.lineTo(startX, startY);
+        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        crashCtx.lineTo(endX, h);
+        crashCtx.closePath();
+        crashCtx.fillStyle = fillGrad;
+        crashCtx.fill();
+
+        crashCtx.beginPath();
+        crashCtx.moveTo(startX, startY);
+        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        crashCtx.strokeStyle = '#f59e0b'; 
+        crashCtx.lineWidth = 4;
+        crashCtx.lineCap = 'round';
+        crashCtx.shadowColor = '#f59e0b';
+        crashCtx.shadowBlur = 10;
+        crashCtx.stroke();
+        crashCtx.shadowBlur = 0; 
+
+        // ФИКС Угла ракеты: от -45 (вверх) плавно до -15 (чуть-чуть вверх). Вниз больше не клюет.
+        let tilt = -45 + (progress * 30); 
+
+        if (rocket) {
+            rocket.style.display = 'block';
+            rocket.style.left = `${endX}px`;
+            rocket.style.top = `${endY}px`;
+            rocket.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
+        }
+
+        // ДИНАМИЧЕСКИЙ ВЫИГРЫШ ИГРОКОВ (Обновляем 60 кадров в секунду)
+        document.querySelectorAll('.dynamic-win').forEach(el => {
+            const b = parseFloat(el.getAttribute('data-bet'));
+            if(b) el.innerHTML = `<img src="/static/images/star.png">${Math.floor(b * multiplier)}`;
+        });
+
+    } else {
+        // WAITING или CRASHED (скрываем ракету, график не рисуется)
+        if (rocket) rocket.style.display = 'none';
+    }
+
+    crashAnimFrame = requestAnimationFrame(renderCrashLoop);
 }
 
 // --- 3D CANVAS LOOP ---
@@ -1082,7 +1206,7 @@ function initCrashCanvas() {
             renderer: 'svg',
             loop: false,
             autoplay: false,
-            path: '/static/lose.json' 
+            path: '/static/images/lose.json' 
         });
     }
 

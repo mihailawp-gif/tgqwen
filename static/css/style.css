@@ -657,9 +657,10 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Анимация затухания красного икса */
 @keyframes crashPulseFade {
-    0% { transform: scale(1); opacity: 1; }
-    10% { transform: scale(1.1); opacity: 1; }
-    50% { transform: scale(1); opacity: 1; }
+    0%   { transform: scale(0.2); opacity: 0; }
+    15%  { transform: scale(1.1); opacity: 1; }
+    30%  { transform: scale(1); opacity: 1; }
+    75%  { transform: scale(1); opacity: 1; }
     100% { transform: scale(0.9); opacity: 0; }
 }
 
@@ -677,8 +678,15 @@ input[type="number"] { -moz-appearance: textfield; }
     text-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
 }
 .crash-anim-text {
-    animation: crashPulseFade 3s forwards; /* Плавное затухание 3 секунды */
+    animation: crashPulseFade 3.5s forwards; /* Держится и плавно затухает */
 }
+
+/* Цвета выигрыша/проигрыша в списке игроков */
+.c-win { font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.c-win img { width: 18px; }
+.c-win.success { color: #39ff14; } /* Забрал - Зеленый */
+.c-win.danger { color: #ef4444; }  /* Разбился - Красный */
+.c-win.flying { color: #f59e0b; }  /* В полете - Желтый */
 
 .crash-timer { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt2); margin-top: 8px; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); }
 

@@ -695,7 +695,7 @@ input[type="number"] { -moz-appearance: textfield; }
     z-index: 5; 
     pointer-events: none; 
     /* ФИКС: Возвращаем в центр, чтобы математика JS работала идеально */
-    transform-origin: center; 
+    transform-origin: 30% 70%;
     display: none; 
     filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); 
 }

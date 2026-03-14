@@ -1000,7 +1000,7 @@ function updateCrashUI(data) {
                     mulEl.style.display = 'block';
                     mulEl.classList.add('crash-anim-text');
                 }
-            }, 3200); 
+            }, 3700); 
         }
     }
 
@@ -1178,7 +1178,7 @@ function renderCrashLoop() {
         const startY = h; 
 
         const targetX = w * 0.65; 
-        const targetY = h * 0.45; 
+        const targetY = h * 0.55;
 
         // Идеальное покачивание (турбулентность)
         let wobbleX = 0;
@@ -1242,7 +1242,7 @@ function renderCrashLoop() {
     }
 
     crashAnimFrame = requestAnimationFrame(renderCrashLoop);
-}
+}targetY
 // === КНОПКИ ДЕЙСТВИЯ И МОДАЛКА ===
 async function handleCrashMainAction() {
     if (currentCrashState === 'WAITING' && !didIbet) {

@@ -684,13 +684,13 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .crash-anim-text {
-    /* Задержка 1.5s: даем анимации lose.json бахнуть, затем показываем икс */
-    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1.5s forwards; 
+    /* ФИКС: Увеличили задержку до 2 секунд */
+    animation: crashPulseFade 3.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2s forwards; 
 }
 
 #crashRocket { 
     position: absolute; 
-    width: 125px; /* ФИКС: Сделали ракету значительно БОЛЬШЕ */
+    width: 170px; /* ФИКС: Сделали ракету еще больше */
     height: auto; 
     z-index: 5; 
     pointer-events: none; 

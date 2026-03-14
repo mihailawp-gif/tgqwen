@@ -628,6 +628,9 @@ input[type="number"] { -moz-appearance: textfield; }
 /* =========================================
    CRASH GAME (SYNTHWAVE UI)
 ========================================= */
+/* =========================================
+   CRASH GAME (ИДЕАЛ КАК НА СКРИНЕ)
+========================================= */
 .crash-container {
     display: flex;
     flex-direction: column;
@@ -638,11 +641,10 @@ input[type="number"] { -moz-appearance: textfield; }
 .crash-game-area {
     position: relative;
     width: 100%;
-    height: 280px;
-    background: #020202;
+    height: 250px;
+    background: #000000;
     overflow: hidden;
     flex-shrink: 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
 #crashCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
@@ -653,114 +655,51 @@ input[type="number"] { -moz-appearance: textfield; }
     font-size: 64px;
     font-weight: 900;
     color: #39ff14;
-    text-shadow: 0 0 20px rgba(57, 255, 20, 0.6), 0 0 40px rgba(57, 255, 20, 0.2);
+    text-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
     letter-spacing: -2px;
     transition: color 0.1s, text-shadow 0.1s;
-    margin-top: -40px;
-    margin-left: -60px;
+    margin-top: -30px;
+    margin-left: -50px;
 }
-
 .crash-multiplier.crashed {
     color: #ff003c;
-    text-shadow: 0 0 20px rgba(255, 0, 60, 0.6), 0 0 40px rgba(255, 0, 60, 0.2);
+    text-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
 }
-
 .crash-timer { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt2); margin-top: 8px; background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px; }
 
-#crashRocket {
-    position: absolute;
-    width: 85px;
-    height: auto;
-    z-index: 5;
-    pointer-events: none;
-    transform-origin: center;
-    display: none;
-    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
-}
+#crashRocket { position: absolute; width: 85px; height: auto; z-index: 5; pointer-events: none; transform-origin: center; display: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); }
+#crashExplosion { position: absolute; width: 180px; height: 180px; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; display: none; }
 
-#crashExplosion {
-    position: absolute;
-    width: 180px;
-    height: 180px;
-    transform: translate(-50%, -50%);
-    z-index: 6;
-    pointer-events: none;
-    display: none;
-}
-
-.crash-history-wrapper { background: #0a0a0a; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.crash-history-wrapper { padding: 12px 16px; background: transparent; }
 .crash-history-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .crash-history-pills::-webkit-scrollbar { display: none; }
+.history-pill { padding: 6px 12px; border-radius: 8px; font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 800; background: #1a1b22; color: #888; flex-shrink: 0; }
+.history-pill.current { background: #3b82f6; color: #fff; box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); }
 
-.history-pill {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-family: 'Exo 2', sans-serif;
-    font-size: 13px;
-    font-weight: 800;
-    background: #1a1a1a;
-    color: #666;
-    flex-shrink: 0;
-    border: 1px solid var(--border);
-}
-.history-pill.current {
-    background: #3b82f6;
-    color: #fff;
-    border-color: #3b82f6;
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
-}
-
-.crash-action-container { padding: 16px; background: #000; }
-
-.btn-crash-main {
-    width: 100%;
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 18px;
-    font-family: 'Exo 2', sans-serif;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-    transition: transform 0.1s;
-}
+.crash-action-container { padding: 0 16px 16px; background: transparent; }
+.btn-crash-main { width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 12px; padding: 16px; font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4); transition: transform 0.1s; }
 .btn-crash-main:active { transform: scale(0.97); }
 .btn-crash-main.disabled { background: #1a1a1a; color: #666; box-shadow: none; pointer-events: none; }
 .btn-crash-main.cashout { background: #39ff14; color: #000; box-shadow: 0 4px 20px rgba(57, 255, 20, 0.4); }
 
-.crash-players-section {
-    flex: 1;
-    background: #0a0a0a;
-    border-radius: 20px 20px 0 0;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.crash-players-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-
-.crash-player-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-}
+.crash-players-section { background: #13151c; border-radius: 20px; margin: 0 16px 20px; padding: 12px 16px; display: flex; flex-direction: column; overflow: hidden; flex: 1;}
+.crash-players-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.crash-player-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.crash-player-item:last-child { border-bottom: none; }
 
 .c-player-info { display: flex; align-items: center; gap: 12px; }
-.c-avatar { width: 36px; height: 36px; border-radius: 50%; background: #222; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 18px;}
+.c-avatar { width: 36px; height: 36px; border-radius: 10px; background: #222; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 18px;}
 .c-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .c-details { display: flex; flex-direction: column; gap: 4px; }
 .c-name { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: #fff; }
-.c-bet { display: flex; align-items: center; gap: 4px; font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 700; color: #f59e0b; }
+.c-bet { display: flex; align-items: center; gap: 4px; font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 700; color: #f59e0b; opacity: 0.8;}
 .c-bet img { width: 14px; }
-.c-win { font-family: 'Exo 2', sans-serif; font-size: 15px; font-weight: 800; color: #39ff14; display: flex; align-items: center; gap: 6px; }
-.c-win img { width: 16px; }
+.c-win { font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 800; color: #f59e0b; display: flex; align-items: center; gap: 6px; }
+.c-win img { width: 18px; }
 
-.crash-total-bets { text-align: center; font-size: 12px; color: #666; padding-top: 12px; font-weight: 600; }
+.crash-total-bets { text-align: center; font-size: 12px; color: #666; padding-top: 12px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.03);}
+
+/* В остальном модалка остается без изменений (стили из прошлого ответа) */
 
 /* --- Модалка Ставки --- */
 .crash-bet-modal { background: #0c0c0c !important; padding: 0 0 20px 0 !important; }

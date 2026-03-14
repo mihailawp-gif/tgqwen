@@ -872,14 +872,15 @@ let didIcashout = false;
 
 function showCrashScreen() {
     switchScreen('crash-screen');
-    // document.getElementById('crashBalanceDisplay').textContent = state.user.balance || 0; // Если есть элемент на экране
+    const balEl = document.getElementById('crashBalanceDisplay');
+    if (balEl && state.user) balEl.textContent = state.user.balance || 0; 
     connectCrashWebSocket();
     initCrashCanvas();
 }
 
+// ... Функция connectCrashWebSocket() остается как была ...
 function connectCrashWebSocket() {
     if (crashSocket) return; 
-    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     crashSocket = new WebSocket(`${protocol}//${host}/api/crash/ws`);
@@ -902,9 +903,8 @@ function updateCrashUI(data) {
     const mulEl = document.getElementById('crashMultiplier');
     const timerEl = document.getElementById('crashTimer');
     const btn = document.getElementById('btnCrashAction');
-    const rocket = document.getElementById('crashRocket');
 
-    // Отрисовка графики
+    // Отрисовка графики 3D
     drawCrashCanvas(data.multiplier, data.state);
 
     // ГЛОБАЛЬНАЯ ПРОВЕРКА АВТОВЫВОДА
@@ -914,7 +914,8 @@ function updateCrashUI(data) {
             didIcashout = true;
             state.user.balance += myData.profit; 
             updateUserDisplay();
-            loadUserBalance(); 
+            const balEl = document.getElementById('crashBalanceDisplay');
+            if (balEl) balEl.textContent = state.user.balance;
             
             showToast(`🚀 Автовывод! Вы забрали ${myData.profit} ⭐`);
             if (window.playSuccessAnimation) window.playSuccessAnimation();
@@ -963,7 +964,7 @@ function updateCrashUI(data) {
         btn.disabled = true;
         if (didIbet && !didIcashout) {
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            didIbet = false;
+            didIbet = false; // Ставка сгорела
         }
     }
 
@@ -972,13 +973,12 @@ function updateCrashUI(data) {
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
         const el = document.createElement('div');
-        // Добавляем синий цвет текущему/первому элементу
         el.className = `history-pill ${index === 0 ? 'current' : ''}`;
-        el.textContent = 'x' + x.toFixed(2);
+        el.textContent = x.toFixed(2);
         histContainer.appendChild(el);
     });
 
-    // Список игроков
+    // Список игроков (Обновленный под скриншот)
     document.getElementById('crashTotalPlayers').textContent = data.players.length;
     const list = document.getElementById('crashPlayersList');
     list.innerHTML = '';
@@ -993,8 +993,11 @@ function updateCrashUI(data) {
         pEl.className = 'crash-player-item';
         
         let statusHtml = `<div class="c-bet"><img src="/static/images/star.png">${p.bet}</div>`;
+        let rightHtml = ``;
+        
         if (p.cashout) {
-            statusHtml = `<div class="c-win">x${p.cashout.toFixed(2)} (+${p.profit} <img src="/static/images/star.png" style="width:12px;vertical-align:middle;top:-1px;position:relative">)</div>`;
+            // Вывод справа как на скрине (Желтый текст + звезда)
+            rightHtml = `<div class="c-win"><img src="/static/images/star.png">${p.profit}</div>`;
         } else if (data.state === 'CRASHED') {
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
         }
@@ -1006,247 +1009,81 @@ function updateCrashUI(data) {
                 <div class="c-avatar">${avatar}</div>
                 <div class="c-details">
                     <div class="c-name">${p.name}</div>
-                    <div class="c-bet"><img src="/static/images/star.png">${p.bet}</div>
+                    ${statusHtml}
                 </div>
             </div>
-            ${statusHtml}
+            ${rightHtml}
         `;
         list.appendChild(pEl);
     });
 }
 
-// 3D Canvas Рендер и Lottie
-let crashCtx = null, crashCanvas = null;
-let crashStars = [];
-let crashExplosionAnim = null;
-let gridZOffset = 0; // ИСПРАВЛЕНА ОПЕЧАТКА (было et)
+// ... Функция drawCrashCanvas и initCrashCanvas остаются такими же как в прошлом ответе ...
 
-function initCrashCanvas() {
-    crashCanvas = document.getElementById('crashCanvas');
-    if (!crashCanvas) return;
-    crashCtx = crashCanvas.getContext('2d');
-    
-    const resize = () => {
-        crashCanvas.width = crashCanvas.parentElement.clientWidth;
-        crashCanvas.height = crashCanvas.parentElement.clientHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Генерируем точки для звездного неба
-    crashStars = [];
-    for(let i = 0; i < 60; i++) {
-        crashStars.push({
-            x: (Math.random() - 0.5) * 1000,
-            y: (Math.random() - 0.5) * 1000,
-            z: Math.random() * 1000,
-            pz: Math.random() * 1000
-        });
-    }
-
-    // Инициализация Lottie взрыва (Твой bodymovin из app.js)
-    const expEl = document.getElementById('crashExplosion');
-    if (expEl && !crashExplosionAnim) {
-        crashExplosionAnim = bodymovin.loadAnimation({
-            container: expEl,
-            renderer: 'svg',
-            loop: false,
-            autoplay: false,
-            path: '/static/images/lose.json' // ПРОВЕРЬ ПУТЬ (раньше было /static/images/lose.json)
-        });
-    }
-}
-
-function drawCrashCanvas(multiplier, stateStr) {
-    if (!crashCtx) return;
-    const w = crashCanvas.width;
-    const h = crashCanvas.height;
-    
-    // 1. Очистка и темно-темно синий фон (Космос)
-    crashCtx.fillStyle = '#020308'; 
-    crashCtx.fillRect(0, 0, w, h);
-
-    let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
-    if (stateStr === 'CRASHED') speed = 0;
-    
-    // --- 2. 3D Ретро-сетка (Синтвейв стиль) ---
-    const horizonY = h * 0.4;
-    const vpX = w / 2; // Точка схода по X
-    
-    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; // Тусклые линии
-    crashCtx.lineWidth = 1;
-    crashCtx.beginPath();
-    
-    // Вертикальные перспективные линии
-    for (let i = -15; i <= 15; i++) {
-        crashCtx.moveTo(vpX, horizonY);
-        crashCtx.lineTo(vpX + i * 40, h);
-    }
-    
-    // Горизонтальные летящие на нас линии
-    if (speed > 0) {
-        gridZOffset -= speed;
-        if (gridZOffset <= 0) gridZOffset += 40;
-    }
-    
-    for (let y = gridZOffset; y < 200; y += 20) {
-        // Формула перспективы для Y
-        let py = horizonY + Math.pow(y / 15, 1.8); 
-        if (py > horizonY && py <= h) {
-            crashCtx.moveTo(0, py);
-            crashCtx.lineTo(w, py);
-        }
-    }
-    crashCtx.stroke();
-
-    // --- 3. Летящие звезды ---
-    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    crashCtx.beginPath();
-    for(let star of crashStars) {
-        if (speed > 0) star.z -= speed * 1.5;
-        if(star.z < 1) {
-            star.z = 1000;
-            star.pz = 1000;
-            star.x = (Math.random() - 0.5) * 1000;
-            star.y = (Math.random() - 0.5) * 1000;
-        }
-        let cx = w / 2, cy = h / 2;
-        let sx = (star.x / star.z) * 100 + cx;
-        let sy = (star.y / star.z) * 100 + cy;
-        let px = (star.x / star.pz) * 100 + cx;
-        let py = (star.y / star.pz) * 100 + cy;
-        star.pz = star.z;
+// === КНОПКА ДЕЙСТВИЯ (ОТВЕЧАЕТ И ЗА ОТКРЫТИЕ МОДАЛКИ И ЗА ВЫВОД) ===
+async function handleCrashMainAction() {
+    if (currentCrashState === 'WAITING' && !didIbet) {
+        openCrashBetModal();
+    } else if (currentCrashState === 'FLYING' && didIbet && !didIcashout) {
+        // НАЖАЛИ КНОПКУ "ЗАБРАТЬ" ВО ВРЕМЯ ПОЛЕТА
+        showLoader();
+        const res = await apiRequest('/crash/cashout', 'POST', { user_id: state.user.telegram_id });
+        hideLoader();
         
-        crashCtx.moveTo(px, py);
-        crashCtx.lineTo(sx, sy);
-    }
-    crashCtx.stroke();
-
-    // --- 4. Отрисовка графика полета и ракеты ---
-    const rocket = document.getElementById('crashRocket');
-    const explosion = document.getElementById('crashExplosion');
-
-    if (stateStr === 'WAITING') {
-        rocket.style.display = 'none';
-        explosion.style.display = 'none';
-        return;
-    }
-
-    // Прогресс ограничиваем, чтобы ракета не улетела за экран
-    let progress = Math.min((multiplier - 1) / 2.0, 1); 
-    
-    const startX = -20;
-    const startY = h + 20;
-    const endX = w * 0.8; 
-    const endY = h - 50 - (h - 100) * progress;
-    const ctrlX = w * 0.4 * progress; 
-    const ctrlY = h;
-
-    // Желтый градиент под графиком
-    const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
-    fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.3)'); 
-    fillGrad.addColorStop(1, 'transparent');
-
-    crashCtx.beginPath();
-    crashCtx.moveTo(startX, h);
-    crashCtx.lineTo(startX, startY);
-    crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-    crashCtx.lineTo(endX, h);
-    crashCtx.closePath();
-    crashCtx.fillStyle = fillGrad;
-    crashCtx.fill();
-
-    // Желто-оранжевая линия графика
-    crashCtx.beginPath();
-    crashCtx.moveTo(startX, startY);
-    crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-    crashCtx.strokeStyle = '#f59e0b'; 
-    crashCtx.lineWidth = 4;
-    crashCtx.lineCap = 'round';
-    crashCtx.shadowColor = '#f59e0b';
-    crashCtx.shadowBlur = 10;
-    crashCtx.stroke();
-    crashCtx.shadowBlur = 0; // Сброс тени
-
-    // Вычисляем угол наклона ракеты (Математика кривой Безье)
-    let prevProgress = Math.max(0, progress - 0.05);
-    let prevX = startX + (w * 0.8 - startX) * prevProgress;
-    let prevY = h - 50 - (h - 100) * prevProgress;
-    let angleRad = Math.atan2(endY - prevY, endX - prevX);
-    let angleDeg = angleRad * (180 / Math.PI);
-
-    if (stateStr === 'FLYING') {
-        rocket.style.display = 'block';
-        explosion.style.display = 'none';
-        
-        rocket.style.left = `${endX}px`;
-        rocket.style.top = `${endY}px`;
-        
-        // Коррекция наклона. (25deg по умолчанию подгоняет гифку ровно по линии)
-        rocket.style.transform = `translate(-50%, -50%) rotate(${angleDeg + 25}deg)`;
-        
-    } else if (stateStr === 'CRASHED') {
-        if (rocket.style.display !== 'none') {
-            rocket.style.display = 'none';
-            explosion.style.display = 'block';
-            explosion.style.left = `${endX}px`;
-            explosion.style.top = `${endY}px`;
+        if (res.success) {
+            didIcashout = true;
+            state.user.balance = res.balance;
+            updateUserDisplay();
+            const balEl = document.getElementById('crashBalanceDisplay');
+            if (balEl) balEl.textContent = state.user.balance;
             
-            if (crashExplosionAnim) {
-                crashExplosionAnim.goToAndPlay(0, true);
-            }
+            showToast(`Вы забрали ${res.win_amount} ⭐ (x${res.multiplier})`);
+            if (window.playSuccessAnimation) window.playSuccessAnimation();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            showToast('❌ ' + (res.error || 'Ошибка вывода'));
         }
     }
 }
 
-// UI Логика Модалки
-function openCrashBetModal() {
-    document.getElementById('crashBetModal').classList.add('active');
-}
-
-function closeCrashBetModal() {
-    document.getElementById('crashBetModal').classList.remove('active');
-}
-
-function modifyCrashBet(action, val) {
-    const input = document.getElementById('crashBet');
-    let current = parseInt(input.value) || 0;
-    if (action === 'set') current = val;
-    input.value = current;
-    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-}
-
-function toggleCrashAuto() {
-    const checked = document.getElementById('crashAutoToggle').checked;
-    const controls = document.getElementById('crashAutoControls');
-    if (checked) {
-        controls.style.opacity = '1';
-        controls.style.pointerEvents = 'auto';
-    } else {
-        controls.style.opacity = '0.5';
-        controls.style.pointerEvents = 'none';
-    }
-    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-}
-
-function modifyCrashAuto(val) {
-    const input = document.getElementById('crashAutoVal');
-    let current = parseFloat(input.value) || 2.0;
-    current += val;
-    if (current < 1.01) current = 1.01;
-    input.value = current.toFixed(2);
-    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-}
-
-function validateCrashBet() {
-    const input = document.getElementById('crashBet');
-    if (input.value < 0) input.value = 0;
-}
-
-function submitCrashBet() {
+// === ЛОГИКА САМОЙ СТАВКИ В МОДАЛКЕ ===
+async function submitCrashBet() {
     closeCrashBetModal();
-    actionCrash(); 
+    
+    const bet = parseInt(document.getElementById('crashBet').value);
+    if (isNaN(bet) || bet <= 0) return showToast('❌ Введите корректную ставку');
+    if (bet > state.user.balance) return showToast('❌ Недостаточно звезд');
+
+    let autoCashoutVal = null;
+    if (document.getElementById('crashAutoToggle').checked) {
+        autoCashoutVal = parseFloat(document.getElementById('crashAutoVal').value);
+    }
+
+    showLoader();
+    const res = await apiRequest('/crash/bet', 'POST', {
+        user_id: state.user.telegram_id,
+        bet: bet,
+        auto_cashout: autoCashoutVal
+    });
+    hideLoader();
+
+    if (res.success) {
+        state.user.balance = res.balance;
+        updateUserDisplay();
+        const balEl = document.getElementById('crashBalanceDisplay');
+        if (balEl) balEl.textContent = state.user.balance;
+        
+        didIbet = true;
+        didIcashout = false;
+        myCrashBetAmount = bet;
+        
+        showToast('✅ Ставка принята!');
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+        showToast('❌ ' + (res.error || 'Ошибка ставки'));
+    }
 }
+
 
 
 

@@ -227,32 +227,38 @@
  
 
 	<div id="crash-screen" class="screen tab-content">
+		<div class="preview-header">
+			<button class="btn-back" onclick="switchScreen('main-screen')">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+			</button>
+			<h2>Краш</h2>
+			<div class="mines-balance-badge">
+				<img src="/static/images/star.png" alt="⭐">
+				<span id="crashBalanceDisplay">0</span>
+			</div>
+		</div>
+		
 		<div class="crash-container">
-			
 			<div class="crash-game-area">
 				<canvas id="crashCanvas"></canvas>
-				
 				<div class="crash-status-overlay">
 					<div id="crashMultiplier" class="crash-multiplier">x1.00</div>
 					<div id="crashTimer" class="crash-timer" style="display: none;"></div>
 				</div>
-
 				<img id="crashRocket" src="/static/images/rocket.gif" alt="Rocket">
 				<div id="crashExplosion"></div>
 			</div>
 
 			<div class="crash-history-wrapper">
-				<div class="crash-history-pills" id="crashHistory">
-					</div>
+				<div class="crash-history-pills" id="crashHistory"></div>
 			</div>
 
 			<div class="crash-action-container">
-				<button id="btnCrashAction" class="btn-crash-main" onclick="openCrashBetModal()">СДЕЛАТЬ СТАВКУ</button>
+				<button id="btnCrashAction" class="btn-crash-main" onclick="handleCrashMainAction()">СДЕЛАТЬ СТАВКУ</button>
 			</div>
 
 			<div class="crash-players-section">
-				<div class="crash-players-list" id="crashPlayersList">
-					</div>
+				<div class="crash-players-list" id="crashPlayersList"></div>
 				<div class="crash-total-bets">
 					Всего ставок, <span id="crashTotalPlayers">0</span> <img src="/static/images/star.png" style="width:14px; vertical-align: middle; position: relative; top:-1px;">
 				</div>

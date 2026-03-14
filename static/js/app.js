@@ -864,11 +864,20 @@ async function collectMines() {
 }
 // === ЛОГИКА CRASH (MULTIPLAYER) ===
 // === ЛОГИКА CRASH (MULTIPLAYER) ===
+// === ЛОГИКА CRASH (MULTIPLAYER & 3D RENDER) ===
 let crashSocket = null;
 let currentCrashState = 'WAITING';
 let myCrashBetAmount = 0;
 let didIbet = false;
 let didIcashout = false;
+
+// Переменные для 3D рендера
+let crashCtx = null, crashCanvas = null;
+let crashStars = [];
+let crashExplosionAnim = null;
+let gridZOffset = 0; 
+let crashAnimFrame = null;
+let crashRenderData = { multiplier: 1.00, state: 'WAITING' }; // Синхронизация данных и отрисовки
 
 function showCrashScreen() {
     switchScreen('crash-screen');
@@ -878,7 +887,6 @@ function showCrashScreen() {
     initCrashCanvas();
 }
 
-// ... Функция connectCrashWebSocket() остается как была ...
 function connectCrashWebSocket() {
     if (crashSocket) return; 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -900,12 +908,14 @@ function connectCrashWebSocket() {
 
 function updateCrashUI(data) {
     currentCrashState = data.state;
+    // Обновляем данные для Canvas Loop
+    crashRenderData.multiplier = data.multiplier;
+    crashRenderData.state = data.state;
+
     const mulEl = document.getElementById('crashMultiplier');
     const timerEl = document.getElementById('crashTimer');
     const btn = document.getElementById('btnCrashAction');
-
-    // Отрисовка графики 3D
-    drawCrashCanvas(data.multiplier, data.state);
+    const explosion = document.getElementById('crashExplosion');
 
     // ГЛОБАЛЬНАЯ ПРОВЕРКА АВТОВЫВОДА
     if (didIbet && !didIcashout) {
@@ -923,11 +933,14 @@ function updateCrashUI(data) {
         }
     }
 
+    // ЛОГИКА СОСТОЯНИЙ UI
     if (data.state === 'WAITING') {
-        mulEl.textContent = 'x1.00';
-        mulEl.classList.remove('crashed');
+        mulEl.style.display = 'none'; // Скрываем иксы
+        mulEl.classList.remove('crashed', 'crash-anim-text');
+        
         timerEl.style.display = 'block';
         timerEl.textContent = `Запуск через ${data.timer.toFixed(1)}s`;
+        explosion.style.display = 'none'; // Убираем старый взрыв
         
         if (data.timer > 7.5) { didIbet = false; didIcashout = false; }
 
@@ -942,6 +955,8 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'FLYING') {
+        mulEl.style.display = 'block';
+        mulEl.className = 'crash-multiplier'; // Возвращаем зеленый цвет
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -957,18 +972,28 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
-        mulEl.textContent = 'x' + data.multiplier.toFixed(2);
-        mulEl.classList.add('crashed');
-        btn.textContent = 'РАУНД ЗАВЕРШЕН';
-        btn.className = 'btn-crash-main disabled';
-        btn.disabled = true;
-        if (didIbet && !didIcashout) {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            didIbet = false; // Ставка сгорела
+        // Если только что крашнулось
+        if (!mulEl.classList.contains('crashed')) {
+            mulEl.style.display = 'block';
+            mulEl.textContent = 'x' + data.multiplier.toFixed(2);
+            mulEl.className = 'crash-multiplier crashed crash-anim-text'; // Включаем красный текст и затухание
+            
+            // Включаем ВЗРЫВ на весь экран
+            explosion.style.display = 'flex';
+            if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
+
+            btn.textContent = 'РАУНД ЗАВЕРШЕН';
+            btn.className = 'btn-crash-main disabled';
+            btn.disabled = true;
+            
+            if (didIbet && !didIcashout) {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                didIbet = false; 
+            }
         }
     }
 
-    // История пилюли (Рендер)
+    // История пилюли 
     const histContainer = document.getElementById('crashHistory');
     histContainer.innerHTML = '';
     data.history.forEach((x, index) => {
@@ -978,9 +1003,18 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
-    // Список игроков (Обновленный под скриншот)
+    // Список игроков (Динамический паддинг)
     document.getElementById('crashTotalPlayers').textContent = data.players.length;
     const list = document.getElementById('crashPlayersList');
+    const section = document.getElementById('crashPlayersSection');
+    
+    // Если игроков нет, сужаем контейнер
+    if (data.players.length === 0) {
+        section.style.padding = '0';
+    } else {
+        section.style.padding = '12px 0'; // Возвращаем паддинги
+    }
+
     list.innerHTML = '';
     const sortedPlayers = data.players.sort((a, b) => {
         if (a.cashout && !b.cashout) return -1;
@@ -996,7 +1030,6 @@ function updateCrashUI(data) {
         let rightHtml = ``;
         
         if (p.cashout) {
-            // Вывод справа как на скрине (Желтый текст + звезда)
             rightHtml = `<div class="c-win"><img src="/static/images/star.png">${p.profit}</div>`;
         } else if (data.state === 'CRASHED') {
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
@@ -1018,14 +1051,175 @@ function updateCrashUI(data) {
     });
 }
 
-// ... Функция drawCrashCanvas и initCrashCanvas остаются такими же как в прошлом ответе ...
+// --- 3D CANVAS LOOP ---
+function initCrashCanvas() {
+    crashCanvas = document.getElementById('crashCanvas');
+    if (!crashCanvas) return;
+    crashCtx = crashCanvas.getContext('2d');
+    
+    const resize = () => {
+        crashCanvas.width = crashCanvas.parentElement.clientWidth;
+        crashCanvas.height = crashCanvas.parentElement.clientHeight;
+    };
+    resize();
+    window.removeEventListener('resize', resize);
+    window.addEventListener('resize', resize);
 
-// === КНОПКА ДЕЙСТВИЯ (ОТВЕЧАЕТ И ЗА ОТКРЫТИЕ МОДАЛКИ И ЗА ВЫВОД) ===
+    crashStars = [];
+    for(let i = 0; i < 60; i++) {
+        crashStars.push({
+            x: (Math.random() - 0.5) * 1000,
+            y: (Math.random() - 0.5) * 1000,
+            z: Math.random() * 1000,
+            pz: Math.random() * 1000
+        });
+    }
+
+    const expEl = document.getElementById('crashExplosion');
+    if (expEl && !crashExplosionAnim) {
+        crashExplosionAnim = bodymovin.loadAnimation({
+            container: expEl,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            path: '/static/lose.json' 
+        });
+    }
+
+    // Запускаем бесконечный цикл рендера
+    if (!crashAnimFrame) {
+        renderCrashLoop();
+    }
+}
+
+function renderCrashLoop() {
+    if (!crashCtx || !document.getElementById('crash-screen').classList.contains('active')) {
+        crashAnimFrame = requestAnimationFrame(renderCrashLoop);
+        return;
+    }
+
+    const w = crashCanvas.width;
+    const h = crashCanvas.height;
+    
+    crashCtx.fillStyle = '#020308'; 
+    crashCtx.fillRect(0, 0, w, h);
+
+    let multiplier = crashRenderData.multiplier;
+    let stateStr = crashRenderData.state;
+
+    let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
+    if (stateStr === 'CRASHED') speed = 0;
+    
+    // Сетка
+    const horizonY = h * 0.4;
+    const vpX = w / 2; 
+    
+    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; 
+    crashCtx.lineWidth = 1;
+    crashCtx.beginPath();
+    for (let i = -15; i <= 15; i++) {
+        crashCtx.moveTo(vpX, horizonY);
+        crashCtx.lineTo(vpX + i * 40, h);
+    }
+    if (speed > 0) {
+        gridZOffset -= speed;
+        if (gridZOffset <= 0) gridZOffset += 40;
+    }
+    for (let y = gridZOffset; y < 200; y += 20) {
+        let py = horizonY + Math.pow(y / 15, 1.8); 
+        if (py > horizonY && py <= h) {
+            crashCtx.moveTo(0, py);
+            crashCtx.lineTo(w, py);
+        }
+    }
+    crashCtx.stroke();
+
+    // Звезды
+    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    crashCtx.beginPath();
+    for(let star of crashStars) {
+        if (speed > 0) star.z -= speed * 1.5;
+        if(star.z < 1) {
+            star.z = 1000; star.pz = 1000;
+            star.x = (Math.random() - 0.5) * 1000;
+            star.y = (Math.random() - 0.5) * 1000;
+        }
+        let cx = w / 2, cy = h / 2;
+        let sx = (star.x / star.z) * 100 + cx;
+        let sy = (star.y / star.z) * 100 + cy;
+        let px = (star.x / star.pz) * 100 + cx;
+        let py = (star.y / star.pz) * 100 + cy;
+        star.pz = star.z;
+        crashCtx.moveTo(px, py);
+        crashCtx.lineTo(sx, sy);
+    }
+    crashCtx.stroke();
+
+    // График и Ракета
+    const rocket = document.getElementById('crashRocket');
+
+    if (stateStr === 'WAITING') {
+        if (rocket) rocket.style.display = 'none';
+    } else {
+        let progress = Math.min((multiplier - 1) / 2.0, 1); 
+        
+        const startX = -20;
+        const startY = h + 20;
+        const endX = w * 0.8; 
+        const endY = h - 50 - (h - 100) * progress;
+        const ctrlX = w * 0.4 * progress; 
+        const ctrlY = h;
+
+        const fillGrad = crashCtx.createLinearGradient(0, endY, 0, h);
+        fillGrad.addColorStop(0, stateStr === 'CRASHED' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'); 
+        fillGrad.addColorStop(1, 'transparent');
+
+        crashCtx.beginPath();
+        crashCtx.moveTo(startX, h);
+        crashCtx.lineTo(startX, startY);
+        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        crashCtx.lineTo(endX, h);
+        crashCtx.closePath();
+        crashCtx.fillStyle = fillGrad;
+        crashCtx.fill();
+
+        crashCtx.beginPath();
+        crashCtx.moveTo(startX, startY);
+        crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+        crashCtx.strokeStyle = stateStr === 'CRASHED' ? '#ef4444' : '#f59e0b'; 
+        crashCtx.lineWidth = 4;
+        crashCtx.lineCap = 'round';
+        crashCtx.shadowColor = stateStr === 'CRASHED' ? '#ef4444' : '#f59e0b';
+        crashCtx.shadowBlur = 10;
+        crashCtx.stroke();
+        crashCtx.shadowBlur = 0; 
+
+        let prevProgress = Math.max(0, progress - 0.05);
+        let prevX = startX + (w * 0.8 - startX) * prevProgress;
+        let prevY = h - 50 - (h - 100) * prevProgress;
+        let angleRad = Math.atan2(endY - prevY, endX - prevX);
+        let angleDeg = angleRad * (180 / Math.PI);
+
+        if (stateStr === 'FLYING') {
+            if (rocket) {
+                rocket.style.display = 'block';
+                rocket.style.left = `${endX}px`;
+                rocket.style.top = `${endY}px`;
+                rocket.style.transform = `translate(-50%, -50%) rotate(${angleDeg + 25}deg)`;
+            }
+        } else if (stateStr === 'CRASHED') {
+            if (rocket) rocket.style.display = 'none';
+        }
+    }
+
+    crashAnimFrame = requestAnimationFrame(renderCrashLoop);
+}
+
+// === КНОПКА ДЕЙСТВИЯ ===
 async function handleCrashMainAction() {
     if (currentCrashState === 'WAITING' && !didIbet) {
         openCrashBetModal();
     } else if (currentCrashState === 'FLYING' && didIbet && !didIcashout) {
-        // НАЖАЛИ КНОПКУ "ЗАБРАТЬ" ВО ВРЕМЯ ПОЛЕТА
         showLoader();
         const res = await apiRequest('/crash/cashout', 'POST', { user_id: state.user.telegram_id });
         hideLoader();
@@ -1082,6 +1276,36 @@ async function submitCrashBet() {
     } else {
         showToast('❌ ' + (res.error || 'Ошибка ставки'));
     }
+}
+
+// UI Логика Модалки
+function openCrashBetModal() { document.getElementById('crashBetModal').classList.add('active'); }
+function closeCrashBetModal() { document.getElementById('crashBetModal').classList.remove('active'); }
+function modifyCrashBet(action, val) {
+    const input = document.getElementById('crashBet');
+    let current = parseInt(input.value) || 0;
+    if (action === 'set') current = val;
+    input.value = current;
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+function toggleCrashAuto() {
+    const checked = document.getElementById('crashAutoToggle').checked;
+    const controls = document.getElementById('crashAutoControls');
+    if (checked) { controls.style.opacity = '1'; controls.style.pointerEvents = 'auto'; } 
+    else { controls.style.opacity = '0.5'; controls.style.pointerEvents = 'none'; }
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+function modifyCrashAuto(val) {
+    const input = document.getElementById('crashAutoVal');
+    let current = parseFloat(input.value) || 2.0;
+    current += val;
+    if (current < 1.01) current = 1.01;
+    input.value = current.toFixed(2);
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+function validateCrashBet() {
+    const input = document.getElementById('crashBet');
+    if (input.value < 0) input.value = 0;
 }
 
 

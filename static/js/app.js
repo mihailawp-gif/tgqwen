@@ -933,7 +933,7 @@ function updateCrashUI(data) {
     }
 
     if (data.state === 'WAITING') {
-        mulEl.style.display = 'none'; // Скрываем текст между раундами
+        mulEl.style.display = 'none'; // Скрываем текст
         mulEl.classList.remove('crashed', 'crash-anim-text');
         
         timerEl.style.display = 'block';
@@ -954,7 +954,8 @@ function updateCrashUI(data) {
     } 
     else if (data.state === 'FLYING') {
         mulEl.style.display = 'block';
-        mulEl.className = 'crash-multiplier'; 
+        mulEl.className = 'crash-multiplier'; // Зеленый
+        mulEl.style.opacity = '1'; // Показываем принудительно
         mulEl.textContent = 'x' + data.multiplier.toFixed(2);
         timerEl.style.display = 'none';
 
@@ -970,11 +971,14 @@ function updateCrashUI(data) {
         }
     } 
     else if (data.state === 'CRASHED') {
+        // Если только что крашнулось
         if (!mulEl.classList.contains('crashed')) {
             mulEl.style.display = 'block';
             mulEl.textContent = 'x' + data.multiplier.toFixed(2);
-            mulEl.className = 'crash-multiplier crashed crash-anim-text'; // Анимация взрыва текста
+            // Включаем класс crashed (он скрывает текст через CSS) и анимацию (которая покажет его через 0.8s)
+            mulEl.className = 'crash-multiplier crashed crash-anim-text'; 
             
+            // Запускаем взрыв
             explosion.style.display = 'flex';
             if (crashExplosionAnim) crashExplosionAnim.goToAndPlay(0, true);
 
@@ -998,7 +1002,6 @@ function updateCrashUI(data) {
         histContainer.appendChild(el);
     });
 
-    // ФИКС: Считаем сумму всех ставок
     const totalBetSum = data.players.reduce((sum, p) => sum + p.bet, 0);
     document.getElementById('crashTotalPlayers').textContent = totalBetSum;
 
@@ -1026,14 +1029,11 @@ function updateCrashUI(data) {
         let rightHtml = ``;
         
         if (p.cashout) {
-            // Забрал (Зеленый)
             rightHtml = `<div class="c-win success"><img src="/static/images/star.png">${p.profit}</div>`;
         } else if (data.state === 'CRASHED') {
-            // Проиграл (Красный минус)
             statusHtml = `<div class="c-bet" style="color:#ef4444;text-decoration:line-through"><img src="/static/images/star.png">${p.bet}</div>`;
             rightHtml = `<div class="c-win danger">-${p.bet} <img src="/static/images/star.png"></div>`;
         } else {
-            // В полете (Динамически обновляемый класс dynamic-win)
             rightHtml = `<div class="c-win flying dynamic-win" data-bet="${p.bet}"><img src="/static/images/star.png">${Math.floor(p.bet * data.multiplier)}</div>`;
         }
         
@@ -1062,15 +1062,19 @@ function renderCrashLoop() {
     const w = crashCanvas.width;
     const h = crashCanvas.height;
     
+    // Очищаем экран каждый кадр
     crashCtx.fillStyle = '#020308'; 
     crashCtx.fillRect(0, 0, w, h);
 
     let multiplier = crashRenderData.multiplier;
     let stateStr = crashRenderData.state;
 
+    // Скорость 3D фона
     let speed = stateStr === 'FLYING' ? 4 + (multiplier * 2) : 1;
-    if (stateStr === 'CRASHED') speed = 0;
+    if (stateStr === 'CRASHED') speed = 0; // Фон полностью замирает при взрыве
+    if (stateStr === 'WAITING') speed = 1; // Легкий дрейф в ожидании
     
+    // Отрисовка 3D-сетки
     const horizonY = h * 0.4;
     const vpX = w / 2; 
     
@@ -1094,6 +1098,7 @@ function renderCrashLoop() {
     }
     crashCtx.stroke();
 
+    // Отрисовка летящих звезд
     crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     crashCtx.beginPath();
     for(let star of crashStars) {
@@ -1116,7 +1121,7 @@ function renderCrashLoop() {
 
     const rocket = document.getElementById('crashRocket');
 
-    // ФИКС Отрисовки: Рисуем график ТОЛЬКО когда летим!
+    // ФИКС: Линия графика и ракета рендерятся ТОЛЬКО когда идет полет (FLYING)
     if (stateStr === 'FLYING') {
         let progress = Math.min((multiplier - 1) / 2.0, 1); 
         
@@ -1151,24 +1156,25 @@ function renderCrashLoop() {
         crashCtx.stroke();
         crashCtx.shadowBlur = 0; 
 
-        // ФИКС Угла ракеты: от -45 (вверх) плавно до -15 (чуть-чуть вверх). Вниз больше не клюет.
-        let tilt = -45 + (progress * 30); 
+        // ФИКС УГЛА: Ракета всегда смотрит ВВЕРХ (никакого выравнивания в горизонт)
+        let tilt = -35; 
 
         if (rocket) {
             rocket.style.display = 'block';
             rocket.style.left = `${endX}px`;
             rocket.style.top = `${endY}px`;
+            // Применяем жесткий угол наклона
             rocket.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
         }
 
-        // ДИНАМИЧЕСКИЙ ВЫИГРЫШ ИГРОКОВ (Обновляем 60 кадров в секунду)
+        // Обновляем бегущие цифры возможного выигрыша у игроков
         document.querySelectorAll('.dynamic-win').forEach(el => {
             const b = parseFloat(el.getAttribute('data-bet'));
             if(b) el.innerHTML = `<img src="/static/images/star.png">${Math.floor(b * multiplier)}`;
         });
 
     } else {
-        // WAITING или CRASHED (скрываем ракету, график не рисуется)
+        // Если краш или ожидание — графика нет, ракеты нет (линия полностью пропадает)
         if (rocket) rocket.style.display = 'none';
     }
 

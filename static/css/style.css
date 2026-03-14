@@ -672,13 +672,29 @@ input[type="number"] { -moz-appearance: textfield; }
     text-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
     letter-spacing: -2px;
     margin-top: -30px;
+    transition: none; /* Убираем плавность для мгновенного скрытия */
 }
+
 .crash-multiplier.crashed {
     color: #ff003c;
     text-shadow: 0 0 20px rgba(255, 0, 60, 0.6);
+    opacity: 0; /* Изначально скрыт, чтобы дождаться конца взрыва */
 }
+
 .crash-anim-text {
-    animation: crashPulseFade 3.5s forwards; /* Держится и плавно затухает */
+    /* Задержка 0.8s: ждем пока взорвется lose.json, затем показываем икс */
+    animation: crashPulseFade 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.8s forwards; 
+}
+
+#crashRocket { 
+    position: absolute; 
+    width: 125px; /* ФИКС: Сделали ракету значительно БОЛЬШЕ */
+    height: auto; 
+    z-index: 5; 
+    pointer-events: none; 
+    transform-origin: center; 
+    display: none; 
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); 
 }
 
 /* Цвета выигрыша/проигрыша в списке игроков */
@@ -690,7 +706,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .crash-timer { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt2); margin-top: 8px; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); }
 
-#crashRocket { position: absolute; width: 85px; height: auto; z-index: 5; pointer-events: none; transform-origin: center; display: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); }
+
 
 /* Взрыв на весь экран игры */
 #crashExplosion {

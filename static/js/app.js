@@ -1084,15 +1084,43 @@ async function actionCrash() {
 }
 
 let crashCtx = null, crashCanvas = null;
+let crashStars = [];
+let crashExplosionAnim = null;
+
 function initCrashCanvas() {
     crashCanvas = document.getElementById('crashCanvas');
+    if (!crashCanvas) return;
     crashCtx = crashCanvas.getContext('2d');
+    
     const resize = () => {
         crashCanvas.width = crashCanvas.parentElement.clientWidth;
         crashCanvas.height = crashCanvas.parentElement.clientHeight;
     };
     resize();
     window.addEventListener('resize', resize);
+
+    // Генерируем 3D звезды
+    crashStars = [];
+    for(let i = 0; i < 80; i++) {
+        crashStars.push({
+            x: (Math.random() - 0.5) * 1000,
+            y: (Math.random() - 0.5) * 1000,
+            z: Math.random() * 1000,
+            pz: Math.random() * 1000
+        });
+    }
+
+    // Инициализируем Lottie взрыв (используем bodymovin, т.к. он у тебя уже есть)
+    const expEl = document.getElementById('crashExplosion');
+    if (expEl && !crashExplosionAnim) {
+        crashExplosionAnim = bodymovin.loadAnimation({
+            container: expEl,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            path: '/static/images/lose.json' // Путь к твоему взрыву
+        });
+    }
 }
 
 function drawCrashCanvas(multiplier, stateStr) {
@@ -1100,8 +1128,40 @@ function drawCrashCanvas(multiplier, stateStr) {
     const w = crashCanvas.width;
     const h = crashCanvas.height;
     
-    crashCtx.clearRect(0, 0, w, h);
+    // Темно-синий/черный фон космоса
+    crashCtx.fillStyle = '#0b0e14'; 
+    crashCtx.fillRect(0, 0, w, h);
     
+    // --- 1. Отрисовка 3D Звезд ---
+    let speed = stateStr === 'FLYING' ? 3 + (multiplier * 1.5) : 1;
+    if (stateStr === 'CRASHED') speed = 0; // Звезды останавливаются при взрыве
+    
+    crashCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    crashCtx.beginPath();
+    for(let star of crashStars) {
+        if (speed > 0) star.z -= speed;
+        if(star.z < 1) {
+            star.z = 1000;
+            star.pz = 1000;
+            star.x = (Math.random() - 0.5) * 1000;
+            star.y = (Math.random() - 0.5) * 1000;
+        }
+        let cx = w / 2, cy = h / 2;
+        let sx = (star.x / star.z) * 100 + cx;
+        let sy = (star.y / star.z) * 100 + cy;
+        let px = (star.x / star.pz) * 100 + cx;
+        let py = (star.y / star.pz) * 100 + cy;
+        star.pz = star.z;
+        
+        crashCtx.moveTo(px, py);
+        crashCtx.lineTo(sx, sy);
+    }
+    crashCtx.stroke();
+
+    // Получаем элементы UI
+    const rocket = document.getElementById('crashRocket');
+    const explosion = document.getElementById('crashExplosion');
+
     if (stateStr === 'WAITING') {
         crashCtx.beginPath();
         crashCtx.moveTo(0, h - 10);
@@ -1109,21 +1169,27 @@ function drawCrashCanvas(multiplier, stateStr) {
         crashCtx.strokeStyle = 'rgba(255,255,255,0.1)';
         crashCtx.lineWidth = 2;
         crashCtx.stroke();
+        
+        rocket.style.display = 'none';
+        explosion.style.display = 'none';
         return;
     }
 
-    let progress = Math.min((multiplier - 1) / 3, 1); 
+    // --- 2. Отрисовка графика (Безье) ---
+    // График растет от 1x до 3x визуально, потом останавливается в углу
+    let progress = Math.min((multiplier - 1) / 2.5, 1); 
     
-    const startX = 0;
-    const startY = h - 10;
-    const endX = w * 0.9; 
-    const endY = h - 10 - (h - 40) * progress;
-    const ctrlX = w * 0.6 * progress; 
+    const startX = -20;
+    const startY = h + 20;
+    const endX = w * 0.85; 
+    const endY = h - 30 - (h - 80) * progress;
+    const ctrlX = w * 0.4 * progress; 
     const ctrlY = h - 10;
 
-    const grad = crashCtx.createLinearGradient(0, h, w, 0);
-    grad.addColorStop(0, '#f59e0b');
-    grad.addColorStop(1, stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6');
+    // Градиент под линией
+    const fillGrad = crashCtx.createLinearGradient(0, 0, 0, h);
+    fillGrad.addColorStop(0, stateStr === 'CRASHED' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'); // Зеленый или красный
+    fillGrad.addColorStop(1, 'transparent');
 
     crashCtx.beginPath();
     crashCtx.moveTo(startX, h);
@@ -1131,29 +1197,44 @@ function drawCrashCanvas(multiplier, stateStr) {
     crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
     crashCtx.lineTo(endX, h);
     crashCtx.closePath();
-    
-    const fillGrad = crashCtx.createLinearGradient(0, 0, 0, h);
-    fillGrad.addColorStop(0, stateStr === 'CRASHED' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.3)');
-    fillGrad.addColorStop(1, 'transparent');
     crashCtx.fillStyle = fillGrad;
     crashCtx.fill();
 
+    // Сама светящаяся линия
     crashCtx.beginPath();
     crashCtx.moveTo(startX, startY);
     crashCtx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-    crashCtx.strokeStyle = grad;
+    crashCtx.strokeStyle = stateStr === 'CRASHED' ? '#ef4444' : '#10b981'; // Изумрудный цвет
     crashCtx.lineWidth = 4;
     crashCtx.lineCap = 'round';
     crashCtx.stroke();
 
-    crashCtx.beginPath();
-    crashCtx.arc(endX, endY, 6, 0, Math.PI * 2);
-    crashCtx.fillStyle = '#fff';
-    crashCtx.fill();
-    crashCtx.shadowColor = stateStr === 'CRASHED' ? '#ef4444' : '#3b82f6';
-    crashCtx.shadowBlur = 15;
-    crashCtx.fill();
-    crashCtx.shadowBlur = 0; 
+    // --- 3. Позиционирование Ракеты и Взрыва ---
+    if (stateStr === 'FLYING') {
+        rocket.style.display = 'block';
+        explosion.style.display = 'none';
+        
+        // Вращаем ракету по мере взлета (от 0 до -45 градусов)
+        let angle = -45 * progress; 
+        
+        rocket.style.left = `${endX}px`;
+        rocket.style.top = `${endY}px`;
+        // Если на гифке ракета смотрит вправо (➡️), то этот код загнет её нос вверх
+        rocket.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+        
+    } else if (stateStr === 'CRASHED') {
+        // Скрываем ракету и показываем взрыв ТОЛЬКО ОДИН РАЗ
+        if (rocket.style.display !== 'none') {
+            rocket.style.display = 'none';
+            explosion.style.display = 'block';
+            explosion.style.left = `${endX}px`;
+            explosion.style.top = `${endY}px`;
+            
+            if (crashExplosionAnim) {
+                crashExplosionAnim.goToAndPlay(0, true);
+            }
+        }
+    }
 }
 // dice
 // === ЛОГИКА DICE ===

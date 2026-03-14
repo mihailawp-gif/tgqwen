@@ -624,18 +624,62 @@ input[type="number"] { -moz-appearance: textfield; }
     filter: drop-shadow(0 0 4px rgba(255,200,0,0.5));
 }
 /* --- КРАШ --- */
+/* --- КРАШ --- */
 .crash-history { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
 .crash-history::-webkit-scrollbar { display: none; }
 .crash-hist-item { padding: 4px 8px; border-radius: 8px; font-family: 'Exo 2', sans-serif; font-size: 11px; font-weight: 800; color: #fff; background: var(--card); border: 1px solid var(--border); flex-shrink: 0; }
 .crash-hist-item.good { color: var(--green); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); }
 .crash-hist-item.epic { color: var(--gold); border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); text-shadow: 0 0 10px var(--gold); }
 
-.crash-game-area { width: 100%; height: 220px; background: linear-gradient(180deg, #101218 0%, #0d0f14 100%); border-radius: 16px; border: 1px solid var(--border); position: relative; overflow: hidden; box-shadow: inset 0 0 40px rgba(0,0,0,0.8); }
-#crashCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.crash-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-.crash-multiplier { font-family: 'Exo 2', sans-serif; font-size: 54px; font-weight: 900; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.8); transition: color 0.3s; }
-.crash-multiplier.crashed { color: #ef4444; text-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
+/* Игровое поле */
+.crash-game-area { 
+    width: 100%; 
+    height: 250px; /* Сделали чуть выше для красивого полета */
+    background: #090a0f; 
+    border-radius: 16px; 
+    border: 1px solid var(--border); 
+    position: relative; 
+    overflow: hidden; 
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.8); 
+}
+#crashCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.crash-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 2;}
+
+/* Текст множителя (Зеленый по умолчанию, как на видео) */
+.crash-multiplier { 
+    font-family: 'Exo 2', sans-serif; 
+    font-size: 54px; 
+    font-weight: 900; 
+    color: var(--green); 
+    text-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); 
+    transition: color 0.1s; 
+}
+.crash-multiplier.crashed { 
+    color: #ef4444; 
+    text-shadow: 0 4px 20px rgba(239, 68, 68, 0.5); 
+}
 .crash-timer { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--txt2); margin-top: 8px; background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px; }
+
+/* Ракета и взрыв */
+#crashRocket {
+    position: absolute;
+    width: 70px; /* Размер ракеты (подстрой под свою гифку) */
+    height: auto;
+    z-index: 5;
+    pointer-events: none;
+    transform-origin: center;
+    /* Если ракета на гифке смотрит вправо, мы будем вращать ее скриптом */
+}
+
+#crashExplosion {
+    position: absolute;
+    width: 160px; /* Размер взрыва */
+    height: 160px;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    pointer-events: none;
+    display: none;
+}
 
 .crash-players-list-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .crash-players-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; }

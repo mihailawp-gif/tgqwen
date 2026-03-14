@@ -224,47 +224,41 @@
             </div>
         </div>
     </div>
-	Всё понял! Я внимательно изучил твои файлы. В твоем app.js уже есть bodymovin (он используется для крестика ошибки), поэтому нам даже не нужно подключать новые библиотеки — анимация взрыва заведется сразу! Плюс я заметил опечатку в твоем коде (et gridZOffset = 0;), я ее тоже исправлю.
+ 
 
-Ниже готовые куски кода, которые нужно просто заменить в твоих файлах. Бэкенд (server.py и БД) мы вообще не трогаем, логика там уже отличная.
-ШАГ 1: Обновляем index.html
+	<div id="crash-screen" class="screen tab-content">
+		<div class="crash-container">
+			
+			<div class="crash-game-area">
+				<canvas id="crashCanvas"></canvas>
+				
+				<div class="crash-status-overlay">
+					<div id="crashMultiplier" class="crash-multiplier">x1.00</div>
+					<div id="crashTimer" class="crash-timer" style="display: none;"></div>
+				</div>
 
-Найди в своем index.html блок <div id="crash-screen" class="screen tab-content">...</div> (и всё, что внутри него) и полностью замени его на этот код. Сюда же включено модальное окно ставки в точности как на скрине:
-HTML
+				<img id="crashRocket" src="/static/images/rocket.gif" alt="Rocket">
+				<div id="crashExplosion"></div>
+			</div>
 
-<div id="crash-screen" class="screen tab-content">
-    <div class="crash-container">
-        
-        <div class="crash-game-area">
-            <canvas id="crashCanvas"></canvas>
-            
-            <div class="crash-status-overlay">
-                <div id="crashMultiplier" class="crash-multiplier">x1.00</div>
-                <div id="crashTimer" class="crash-timer" style="display: none;"></div>
-            </div>
+			<div class="crash-history-wrapper">
+				<div class="crash-history-pills" id="crashHistory">
+					</div>
+			</div>
 
-            <img id="crashRocket" src="/static/images/rocket.gif" alt="Rocket">
-            <div id="crashExplosion"></div>
-        </div>
+			<div class="crash-action-container">
+				<button id="btnCrashAction" class="btn-crash-main" onclick="openCrashBetModal()">СДЕЛАТЬ СТАВКУ</button>
+			</div>
 
-        <div class="crash-history-wrapper">
-            <div class="crash-history-pills" id="crashHistory">
-                </div>
-        </div>
-
-        <div class="crash-action-container">
-            <button id="btnCrashAction" class="btn-crash-main" onclick="openCrashBetModal()">СДЕЛАТЬ СТАВКУ</button>
-        </div>
-
-        <div class="crash-players-section">
-            <div class="crash-players-list" id="crashPlayersList">
-                </div>
-            <div class="crash-total-bets">
-                Всего ставок, <span id="crashTotalPlayers">0</span> <img src="/static/images/star.png" style="width:14px; vertical-align: middle; position: relative; top:-1px;">
-            </div>
-        </div>
-    </div>
-</div>
+			<div class="crash-players-section">
+				<div class="crash-players-list" id="crashPlayersList">
+					</div>
+				<div class="crash-total-bets">
+					Всего ставок, <span id="crashTotalPlayers">0</span> <img src="/static/images/star.png" style="width:14px; vertical-align: middle; position: relative; top:-1px;">
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<div id="crashBetModal" class="modal">
 		<div class="modal-overlay" onclick="closeCrashBetModal()"></div>

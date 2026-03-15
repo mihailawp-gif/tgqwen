@@ -1242,7 +1242,7 @@ function renderCrashLoop() {
     }
 
     crashAnimFrame = requestAnimationFrame(renderCrashLoop);
-}targetY
+}
 // === КНОПКИ ДЕЙСТВИЯ И МОДАЛКА ===
 async function handleCrashMainAction() {
     if (currentCrashState === 'WAITING' && !didIbet) {

@@ -102,7 +102,7 @@ export default function DiceScreen() {
                 </button>
                 <h2>Дайс</h2>
                 <div className="mines-balance-badge">
-                    <img src="/static/images/star.png" alt="⭐" />
+                    <img src="/assets/images/star.png" alt="⭐" />
                     <span>{balance}</span>
                 </div>
             </div>
@@ -118,7 +118,7 @@ export default function DiceScreen() {
                         style={{ color: resultStatus === 'win' ? 'var(--green)' : resultStatus === 'lose' ? '#ef4444' : 'var(--txt3)' }}>
                         {resultLabel}
                         {resultStatus !== 'idle' && (
-                            <img src="/static/images/star.png" style={{ width: '20px', height: '20px', verticalAlign: 'middle', position: 'relative', top: '-2px', marginLeft: '4px' }} />
+                            <img src="/assets/images/star.png" style={{ width: '20px', height: '20px', verticalAlign: 'middle', position: 'relative', top: '-2px', marginLeft: '4px' }} />
                         )}
                     </div>
                 </div>
@@ -129,7 +129,7 @@ export default function DiceScreen() {
                         <label>Сумма ставки</label>
                         <div className="input-with-icon">
                             <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
-                            <img src="/static/images/star.png" alt="⭐" />
+                            <img src="/assets/images/star.png" alt="⭐" />
                         </div>
                         <div className="quick-buttons">
                             <button onClick={() => modifyBet('add', 10)}>+10</button>
@@ -165,7 +165,7 @@ export default function DiceScreen() {
                         <span>Выигрыш</span>
                         <div>
                             <span>{possibleWin}</span>
-                            <img src="/static/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
+                            <img src="/assets/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
                         </div>
                     </div>
                 </div>

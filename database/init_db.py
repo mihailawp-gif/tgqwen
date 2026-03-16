@@ -149,7 +149,7 @@ CASES_CONFIG = [
         "description": "Открывай раз в 24 часа бесплатно!",
         "price": 0,
         "is_free": True,
-        "image_url": "/static/images/cases/free.png",
+        "image_url": "/assets/images/cases/free.png",
         "items": [
             # ID гифта/ключа : Шанс выпадения (Сумма не обязательно 100, но так удобнее)
             {"key": 200, "chance": 89.8}, # 10 звезд (Частый дроп)
@@ -169,7 +169,7 @@ CASES_CONFIG = [
         "description": "Эксклюзивные подарки Telegram!",
         "price": 350,
         "is_free": False,
-        "image_url": "/static/images/cases/case_2.png",
+        "image_url": "/assets/images/cases/case_2.png",
         "items": [
             {"key": 122, "chance": 40.0}, # Heart (Цена 150 - Окуп 1х)
             {"key": 14, "chance": 4.0}, # HappyBrownie
@@ -187,7 +187,7 @@ CASES_CONFIG = [
         "description": "Максимальные шансы на жирный дроп!",
         "price": 777,
         "is_free": False,
-        "image_url": "/static/images/cases/case_3.png",
+        "image_url": "/assets/images/cases/case_3.png",
         "items": [
             {"key": 114, "chance": 45.0}, # Santa Hat (Цена 555 - Окуп 1х)
             {"key": 78,  "chance": 1.0}, # Loot Bag (Цена 671)
@@ -216,7 +216,7 @@ CASES_CONFIG = [
         "description": "Испытай удачу",
         "price": 5000,
         "is_free": False,
-        "image_url": "/static/images/cases/bigboom.jpg",
+        "image_url": "/assets/images/cases/bigboom.jpg",
         "items": [
             {"key": 114, "chance": 25.0}, # Santa Hat 
             {"key": 78,  "chance": 1.0}, # Loot Bag 
@@ -253,7 +253,7 @@ async def populate_db():
         gift_objs = {}
         for num, name, value in GIFTS_CATALOG:
             is_stars = num >= 200
-            image_url = "/static/images/star.png" if is_stars else f"/static/images/gift_limited_{num}.tgs"
+            image_url = "/assets/images/star.png" if is_stars else f"/assets/images/gift_limited_{num}.tgs"
             try:
                 result = await session.execute(select(Gift).where(Gift.gift_number == num))
                 gift = result.scalar_one_or_none()
@@ -273,7 +273,7 @@ async def populate_db():
                 if gift:
                     gift.name = name; gift.value = value; gift.rarity = 'unique'
                 else:
-                    gift = Gift(name=name, gift_id=key, rarity='unique', value=value, gift_number=None, image_url="/static/images/star.png")
+                    gift = Gift(name=name, gift_id=key, rarity='unique', value=value, gift_number=None, image_url="/assets/images/star.png")
                     session.add(gift)
                 await session.flush() # Сразу записываем в базу, чтобы получить ID
                 gift_objs[key] = gift.id # Храним только ЧИСЛО (ID)

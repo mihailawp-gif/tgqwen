@@ -112,7 +112,7 @@ export default function PlinkoScreen() {
                 </button>
                 <h2>PLINKO</h2>
                 <div className="mines-balance-badge">
-                    <img src="/static/images/star.png" alt="⭐" />
+                    <img src="/assets/images/star.png" alt="⭐" />
                     <span>{balance}</span>
                 </div>
             </div>
@@ -125,7 +125,7 @@ export default function PlinkoScreen() {
                             <label>Ставка</label>
                             <div className="input-with-icon">
                                 <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
-                                <img src="/static/images/star.png" alt="star" />
+                                <img src="/assets/images/star.png" alt="star" />
                             </div>
                             <div className="quick-buttons">
                                 <button onClick={() => modifyBet('add', 10)}>+10</button>

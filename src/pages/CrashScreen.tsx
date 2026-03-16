@@ -351,7 +351,7 @@ export default function CrashScreen() {
                 </button>
                 <h2>CRASH</h2>
                 <div className="mines-balance-badge">
-                    <img src="/static/images/star.png" alt="⭐" />
+                    <img src="/assets/images/star.png" alt="⭐" />
                     <span>{balance}</span>
                 </div>
             </div>
@@ -390,7 +390,7 @@ export default function CrashScreen() {
                 }>
                     {getButtonText()}
                     {crashState === 'FLYING' && didIBet && !didICashout && (
-                        <img src="/static/images/star.png" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px' }} />
+                        <img src="/assets/images/star.png" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginLeft: '4px' }} />
                     )}
                 </button>
             </div>
@@ -408,21 +408,21 @@ export default function CrashScreen() {
                                 <div className="c-details">
                                     <div className="c-name">{p.name}</div>
                                     <div className="c-bet" style={crashState === 'CRASHED' && !p.cashout ? { color: '#ef4444', textDecoration: 'line-through' } : undefined}>
-                                        <img src="/static/images/star.png" style={{ width: '14px' }} />{p.bet}
+                                        <img src="/assets/images/star.png" style={{ width: '14px' }} />{p.bet}
                                     </div>
                                 </div>
                             </div>
                             {p.cashout ? (
                                 <div className="c-win success">
-                                    <img src="/static/images/star.png" />{p.profit}
+                                    <img src="/assets/images/star.png" />{p.profit}
                                 </div>
                             ) : crashState === 'CRASHED' ? (
                                 <div className="c-win danger">
-                                    -{p.bet} <img src="/static/images/star.png" />
+                                    -{p.bet} <img src="/assets/images/star.png" />
                                 </div>
                             ) : (
                                 <div className="c-win flying">
-                                    <img src="/static/images/star.png" />{Math.floor(p.bet * multiplier)}
+                                    <img src="/assets/images/star.png" />{Math.floor(p.bet * multiplier)}
                                 </div>
                             )}
                         </div>
@@ -447,13 +447,13 @@ export default function CrashScreen() {
 
                         <div className="crash-big-input-wrapper">
                             <input type="number" value={betInput} onChange={(e) => setBetInput(Number(e.target.value))} />
-                            <img src="/static/images/star.png" alt="star" />
+                            <img src="/assets/images/star.png" alt="star" />
                         </div>
 
                         <div className="crash-quick-amounts">
                             {[10, 50, 100, 500].map(v => (
                                 <button key={v} onClick={() => setBetInput(v)}>
-                                    {v} <img src="/static/images/star.png" />
+                                    {v} <img src="/assets/images/star.png" />
                                 </button>
                             ))}
                         </div>

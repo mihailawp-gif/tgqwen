@@ -355,8 +355,8 @@ async def list_cases(request):
         cases = result.scalars().all()
         cases_data = []
         for case in cases:
-            local_img = f'static/images/cases/case_{case.id}.png'
-            image_url = f'/static/images/cases/case_{case.id}.png' if os.path.exists(local_img) else (case.image_url or '/static/images/free-stars-case.png')
+            local_img = f'dist/assets/images/cases/case_{case.id}.png'
+            image_url = f'/assets/images/cases/case_{case.id}.png' if os.path.exists(local_img) else (case.image_url or '/assets/images/free-stars-case.png')
             cases_data.append({
                 'id': case.id, 'name': case.name, 'description': case.description,
                 'price': case.price, 'image_url': image_url, 'is_free': case.is_free
@@ -1054,7 +1054,12 @@ async def create_app():
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))
     app.router.add_get('/', index)
     app.router.add_get('/favicon.svg', favicon)
-    app.router.add_static('/static', 'static', show_index=False)
+    
+    import os
+    
+    os.makedirs('dist/assets', exist_ok=True)
+    
+    
     app.router.add_static('/assets', 'dist/assets', show_index=False)
     
     # Жесткий фикс базы при старте

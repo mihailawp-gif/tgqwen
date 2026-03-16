@@ -117,7 +117,7 @@ export default function ProfilePage() {
                         <div className="ref-header">
                             <h2>Рефералы</h2>
                             <div className="ref-balance-badge">
-                                <img src="/static/images/star.png" style={{ width: '16px', height: '16px' }} alt="star" />
+                                <img src="/assets/images/star.png" style={{ width: '16px', height: '16px' }} alt="star" />
                                 {balance}
                             </div>
                         </div>
@@ -143,7 +143,7 @@ export default function ProfilePage() {
                                 <div className="ref-stat-box">
                                     <div className="ref-stat-label">ДОСТУПНО</div>
                                     <div className="ref-stat-value">
-                                        <img src="/static/images/star.png" style={{ width: '20px', height: '20px' }} alt="star" />
+                                        <img src="/assets/images/star.png" style={{ width: '20px', height: '20px' }} alt="star" />
                                         {refEarned}
                                     </div>
                                 </div>
@@ -182,7 +182,7 @@ export default function ProfilePage() {
                                             <div className="ml-right">
                                                 <div className="ml-value positive">
                                                     +{ref.total_earned || 0}
-                                                    <img src="/static/images/star.png" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} alt="star" />
+                                                    <img src="/assets/images/star.png" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} alt="star" />
                                                 </div>
                                             </div>
                                         </div>
@@ -214,7 +214,7 @@ export default function ProfilePage() {
                 <div className="profile-balance-card">
                     <div className="balance-label">Баланс</div>
                     <div className="balance-amount">
-                        <img src="/static/images/star.png" className="profile-star-icon" alt="star" />
+                        <img src="/assets/images/star.png" className="profile-star-icon" alt="star" />
                         <span>{profileData?.balance ?? balance}</span>
                     </div>
                 </div>

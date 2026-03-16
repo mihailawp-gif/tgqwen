@@ -10,7 +10,7 @@ export default function BottomNav() {
                 <span className="nav-label">Играть</span>
             </button>
             <button className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
-                <img src="/static/images/tab-inventory.png" alt="" style={{ width: '24px', height: '24px' }} />
+                <img src="/assets/images/tab-inventory.png" alt="" style={{ width: '24px', height: '24px' }} />
                 <span className="nav-label">Инвентарь</span>
             </button>
             <button className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>

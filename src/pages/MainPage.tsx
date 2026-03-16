@@ -39,7 +39,7 @@ export default function MainPage() {
             <div className="main-games-grid">
                 <div className="game-block block-crash align-right" onClick={() => setActiveScreen('crash-screen')}>
                     <div className="art-left">
-                        <TgsAnimation url="/static/images/crash.tgs" width={110} height={110} />
+                        <TgsAnimation url="/assets/images/crash.tgs" width={110} height={110} />
                     </div>
                     <div className="info">
                         <h2>КРАШ</h2>
@@ -52,11 +52,11 @@ export default function MainPage() {
                     <div className="art-left">
                         <div className="mines-menu-anim">
                             <div className="gem-wrapper">
-                                <img src="/static/images/diamond.png" alt="Diamond" className="gem-img" />
+                                <img src="/assets/images/diamond.png" alt="Diamond" className="gem-img" />
                                 <div className="mine-shadow gem-shadow" />
                             </div>
                             <div className="bomb-wrapper">
-                                <img src="/static/images/bomb.png" alt="Bomb" className="bomb-img" />
+                                <img src="/assets/images/bomb.png" alt="Bomb" className="bomb-img" />
                                 <div className="mine-shadow bomb-shadow" />
                             </div>
                         </div>
@@ -69,7 +69,7 @@ export default function MainPage() {
 
                 <div className="game-block block-cases align-right" onClick={() => setActiveTab('cases')}>
                     <div className="art-left">
-                        <TgsAnimation url="/static/images/gift_limited_22.tgs" width={110} height={110} />
+                        <TgsAnimation url="/assets/images/gift_limited_22.tgs" width={110} height={110} />
                     </div>
                     <div className="info">
                         <h2>КЕЙСЫ</h2>
@@ -80,7 +80,7 @@ export default function MainPage() {
 
                 <div className="game-block block-dice align-right" onClick={() => setActiveScreen('dice-screen')}>
                     <div className="art-left">
-                        <TgsAnimation url="/static/images/dice.tgs" width={100} height={100} />
+                        <TgsAnimation url="/assets/images/dice.tgs" width={100} height={100} />
                     </div>
                     <div className="info">
                         <h2>ДАЙС</h2>
@@ -121,7 +121,7 @@ export default function MainPage() {
                         {history.map((item) => (
                             <div key={item.id} className={`live-history-card rarity-${item.gift?.rarity || 'common'}`}>
                                 <img
-                                    src={item.gift?.image_url || '/static/images/star.png'}
+                                    src={item.gift?.image_url || '/assets/images/star.png'}
                                     style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
                                     alt={item.gift?.name || ''}
                                 />

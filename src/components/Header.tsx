@@ -11,7 +11,7 @@ export default function Header() {
                 <div className="user-info">
                     <div className="user-name">{name}</div>
                     <div className="user-balance">
-                        <img src="/static/images/star.png" alt="⭐" className="balance-star-icon" />
+                        <img src="/assets/images/star.png" alt="⭐" className="balance-star-icon" />
                         <span>{balance}</span>
                     </div>
                 </div>

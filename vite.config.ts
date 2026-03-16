@@ -14,8 +14,8 @@ export default defineConfig({
         secure: false,
         ws: true,
       },
-      '/static': {
-        target: 'http://127.0.0.1:8000',
+      '/assets': {
+        target: 'http://127.0.0.1:8443',
         changeOrigin: true,
         secure: false,
       }

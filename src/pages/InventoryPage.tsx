@@ -87,7 +87,7 @@ export default function InventoryPage() {
                 ) : filteredInventory.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">
-                            <img src="/static/images/tab-inventory.png" className="empty-state-icon-img" alt="" />
+                            <img src="/assets/images/tab-inventory.png" className="empty-state-icon-img" alt="" />
                         </div>
                         <div className="empty-state-text">Инвентарь пуст — открой кейс!</div>
                     </div>
@@ -98,7 +98,7 @@ export default function InventoryPage() {
                                 <div className={`inv-rarity ${item.gift?.rarity || 'unique'}`} />
                                 <div className="inv-badge-unique">UNIQUE</div>
                                 <div className="inv-img">
-                                    <img src={item.gift?.image_url || '/static/images/star.png'}
+                                    <img src={item.gift?.image_url || '/assets/images/star.png'}
                                         style={{ width: '60px', height: '60px', objectFit: 'contain' }}
                                         alt={item.gift?.name} />
                                 </div>
@@ -124,7 +124,7 @@ export default function InventoryPage() {
                                         <button className="btn-inv btn-inv-sell" onClick={() => sellItem(item.opening_id, item.gift?.value || 0)}>
                                             <span className="btn-inv-sell-label">Продать за</span>
                                             <span className="btn-inv-sell-row">
-                                                <img src="/static/images/star.png" className="btn-inv-star-icon" alt="star" />
+                                                <img src="/assets/images/star.png" className="btn-inv-star-icon" alt="star" />
                                                 {item.gift?.value || 0}
                                             </span>
                                         </button>

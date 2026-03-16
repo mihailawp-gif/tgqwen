@@ -60,7 +60,7 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
 
                 <div className="payment-options">
                     <div className="payment-header">
-                        <img src="/static/images/star.png" className="stars-icon-large" alt="star" />
+                        <img src="/assets/images/star.png" className="stars-icon-large" alt="star" />
                         <p>Выберите количество звёзд</p>
                     </div>
 
@@ -68,7 +68,7 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
                         {AMOUNTS.map(amount => (
                             <button key={amount} className="amount-card" onClick={() => createInvoice(amount)}>
                                 <div className="amount-stars">
-                                    <img src="/static/images/star.png" className="amount-star-icon" alt="star" />
+                                    <img src="/assets/images/star.png" className="amount-star-icon" alt="star" />
                                     {amount}
                                 </div>
                             </button>

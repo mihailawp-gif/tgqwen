@@ -163,7 +163,7 @@ export default function MinesScreen() {
                 </div>
                 <div className="mines-balance-badge">
                     <span>{balance}</span>
-                    <img src="/static/images/star.png" alt="star" />
+                    <img src="/assets/images/star.png" alt="star" />
                 </div>
             </div>
 
@@ -175,7 +175,7 @@ export default function MinesScreen() {
                             <label>Ставка</label>
                             <div className="input-with-icon">
                                 <input type="number" id="minesBet" value={bet} onChange={(e) => setBet(Number(e.target.value))} />
-                                <img src="/static/images/star.png" alt="star" />
+                                <img src="/assets/images/star.png" alt="star" />
                             </div>
                             <div className="quick-buttons">
                                 <button onClick={() => modifyBet('clear')}>MIN</button>
@@ -273,7 +273,7 @@ export default function MinesScreen() {
                     </button>
                 ) : (
                     <button id="btnMinesAction" className="btn-open-case free w-full mt-2" onClick={handleCollectMines}>
-                        Забрать: {winAmount || bet} <img src="/static/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
+                        Забрать: {winAmount || bet} <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
                     </button>
                 )}
             </div>

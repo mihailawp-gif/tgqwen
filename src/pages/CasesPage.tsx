@@ -108,7 +108,7 @@ export default function CasesPage() {
                 <div className="won-item-showcase">
                     <div className="item-glow-effect" />
                     <div className="won-item-card">
-                        <img src={resultData.gift?.image_url || '/static/images/star.png'} alt={resultData.gift?.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                         <div className="item-rarity-badge unique">LIMITED</div>
                     </div>
                 </div>
@@ -118,7 +118,7 @@ export default function CasesPage() {
                         <div className="item-value">
                             <span>Стоимость:</span>
                             <div className="value-amount">
-                                <img src="/static/images/star.png" className="value-icon" alt="star" />
+                                <img src="/assets/images/star.png" className="value-icon" alt="star" />
                                 {resultData.gift?.value || 0}
                             </div>
                         </div>
@@ -127,7 +127,7 @@ export default function CasesPage() {
                 <div className="result-actions">
                     {!resultData.gift?.is_stars && (
                         <button className="btn-action btn-sell-result" onClick={sellResult}>
-                            Продать за <img src="/static/images/star.png" className="btn-sell-star-icon" alt="star" /> {resultData.gift?.value || 0}
+                            Продать за <img src="/assets/images/star.png" className="btn-sell-star-icon" alt="star" /> {resultData.gift?.value || 0}
                         </button>
                     )}
                     <button className="btn-action btn-continue" onClick={() => { setShowResult(false); setShowPreview(false); }}>
@@ -162,7 +162,7 @@ export default function CasesPage() {
                             {previewItems.map((item, i) => (
                                 <div key={i} className="preview-tile rarity-unique">
                                     <div className="preview-tile-tgs">
-                                        <img src={item.gift.image_url || '/static/images/star.png'} alt={item.gift.name}
+                                        <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name}
                                             style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
                                     </div>
                                     <div className="preview-tile-name">{item.gift.name}</div>
@@ -178,7 +178,7 @@ export default function CasesPage() {
                 <div className="open-case-footer">
                     {!previewCase.is_free && (
                         <div className="case-price-display">
-                            <img src="/static/images/star.png" className="price-icon" alt="star" />
+                            <img src="/assets/images/star.png" className="price-icon" alt="star" />
                             <span>{previewCase.price}</span>
                         </div>
                     )}
@@ -211,7 +211,7 @@ export default function CasesPage() {
                         {cases.map(c => (
                             <div key={c.id} className="case-card" onClick={() => openPreview(c)}>
                                 <div className="case-image-wrapper">
-                                    <img className="case-image" src={c.image_url || '/static/images/free-stars-case.png'} alt={c.name} />
+                                    <img className="case-image" src={c.image_url || '/assets/images/free-stars-case.png'} alt={c.name} />
                                 </div>
                                 <div className="case-info">
                                     <div className="case-name">{c.name.replace(/[^\w\s\u0400-\u04FF]/gu, '').trim()}</div>
@@ -219,7 +219,7 @@ export default function CasesPage() {
                                         <div className="case-price free">Открыть бесплатно</div>
                                     ) : (
                                         <div className="case-price">
-                                            <img src="/static/images/star.png" className="price-star-icon" alt="star" />
+                                            <img src="/assets/images/star.png" className="price-star-icon" alt="star" />
                                             {c.price}
                                         </div>
                                     )}

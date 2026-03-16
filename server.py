@@ -784,7 +784,10 @@ async def activate_promo(request):
 
         return web.json_response({'success': True, 'message': f'Активировано! +{promo.value} ⭐', 'balance': user.balance})
 async def index(request):
-    with open('templates/index.html', 'r', encoding='utf-8') as f: return web.Response(text=f.read(), content_type='text/html')
+    with open('react/dist/index.html', 'r', encoding='utf-8') as f: return web.Response(text=f.read(), content_type='text/html')
+
+async def favicon(request):
+    return web.FileResponse('react/dist/favicon.svg')
     
 async def dice_play(request):
     data = await request.json()
@@ -1050,7 +1053,9 @@ async def create_app():
 
     for route in api_routes: cors.add(app.router.add_route(route.method, route.path, route.handler))
     app.router.add_get('/', index)
+    app.router.add_get('/favicon.svg', favicon)
     app.router.add_static('/static', 'static', show_index=False)
+    app.router.add_static('/assets', 'react/dist/assets', show_index=False)
     
     # Жесткий фикс базы при старте
     await init_db()

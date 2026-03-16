@@ -59,6 +59,9 @@ export default function TgsAnimation({
         };
     }, [url]);
 
+    // Защита от странных импортов lottie в Vite (иногда приходит как { default: Component })
+    const LottieComponent = (Lottie as any).default || Lottie;
+
     if (error) {
         return (
             <div className={className} style={{ ...style, width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
@@ -67,13 +70,13 @@ export default function TgsAnimation({
         );
     }
 
-    if (!animationData) {
+    if (!animationData || typeof LottieComponent !== 'function' && typeof LottieComponent !== 'object') {
         return <div className={className} style={{ ...style, width, height }} />;
     }
 
     return (
         <div className={className} style={{ ...style, width, height }}>
-            <Lottie
+            <LottieComponent
                 lottieRef={lottieRef}
                 animationData={animationData}
                 loop={loop}

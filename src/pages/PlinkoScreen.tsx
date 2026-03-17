@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { playPlinkoApi } from '../api/api';
 
@@ -38,192 +38,279 @@ const PLINKO_COEFS: Record<string, Record<number, number[]>> = {
     }
 };
 
+interface Point {
+    x: number;
+    y: number;
+}
+
 export default function PlinkoScreen() {
     const { setActiveScreen, showToast } = useAppStore();
     const { balance, setBalance } = useUserStore();
 
     const [bet, setBet] = useState(10);
     const [difficulty, setDifficulty] = useState<'low' | 'medium' | 'high'>('low');
-    const [pins, setPins] = useState(8);
+    const [pinsCount, setPinsCount] = useState(8);
     const [activeBalls, setActiveBalls] = useState(0);
-    const [lastResult, setLastResult] = useState<{ bucket: number; multiplier: number } | null>(null);
 
     const pinsContainerRef = useRef<HTMLDivElement>(null);
     const bucketsContainerRef = useRef<HTMLDivElement>(null);
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
-    const currentMultipliers = PLINKO_COEFS[difficulty]?.[pins] || [];
+    useEffect(() => {
+        renderPlinkoBoard();
+        window.addEventListener('resize', renderPlinkoBoard);
+        return () => window.removeEventListener('resize', renderPlinkoBoard);
+    }, [pinsCount, difficulty]);
 
-    const modifyBet = (action: string, val?: number) => {
-        if (activeBalls > 0) return;
-        setBet(prev => {
-            let current = prev;
-            if (action === 'add' && val) current += val;
-            if (action === 'mult' && val) current = Math.floor(current * val);
-            if (action === 'clear') current = 1;
-            if (current < 1) current = 1;
-            return current;
+    const renderPlinkoBoard = () => {
+        if (!pinsContainerRef.current || !bucketsContainerRef.current) return;
+        
+        const pinsContainer = pinsContainerRef.current;
+        const bucketsContainer = bucketsContainerRef.current;
+        
+        pinsContainer.innerHTML = '';
+        bucketsContainer.innerHTML = '';
+
+        const width = pinsContainer.clientWidth;
+        const height = pinsContainer.clientHeight;
+        const rows = pinsCount;
+
+        if (width === 0) return;
+
+        const pinSpacingX = width / (rows + 2);
+        const pinSpacingY = height / (rows + 0.8);
+
+        let pinRadius = 3;
+        if (rows === 8) pinRadius = 5;
+        else if (rows === 10) pinRadius = 4.5;
+        else if (rows === 12) pinRadius = 3.5;
+        else if (rows === 14) pinRadius = 2.5;
+        else if (rows === 16) pinRadius = 2;
+
+        for (let i = 0; i < rows; i++) {
+            const numPins = i + 3;
+            const startX = width / 2 - ((numPins - 1) * pinSpacingX) / 2;
+            const y = (i + 1) * pinSpacingY;
+
+            for (let j = 0; j < numPins; j++) {
+                const x = startX + j * pinSpacingX;
+                const pin = document.createElement('div');
+                pin.className = 'plinko-pin';
+                pin.style.width = `${pinRadius * 2}px`;
+                pin.style.height = `${pinRadius * 2}px`;
+                pin.style.left = `${x}px`;
+                pin.style.top = `${y}px`;
+                pinsContainer.appendChild(pin);
+            }
+        }
+
+        const bucketsWidth = (rows + 1) * pinSpacingX;
+        bucketsContainer.style.width = `${bucketsWidth}px`;
+
+        const coefs = PLINKO_COEFS[difficulty][pinsCount];
+        coefs.forEach(c => {
+            const b = document.createElement('div');
+            let colorClass = 'pb-c-0';
+            if (c >= 1 && c < 2) colorClass = 'pb-c-1';
+            else if (c >= 2 && c <= 5) colorClass = 'pb-c-2';
+            else if (c > 5) colorClass = 'pb-c-3';
+            
+            b.className = `plinko-bucket ${colorClass}`;
+            b.textContent = c.toString();
+            bucketsContainer.appendChild(b);
         });
     };
 
+    const spawnBall = (path: number[], finalBucketIndex: number, multiplier: number, finalBalance: number) => {
+        const pinsContainer = pinsContainerRef.current;
+        const bucketsContainer = bucketsContainerRef.current;
+        if (!pinsContainer || !bucketsContainer) return;
+
+        const width = pinsContainer.clientWidth;
+        const height = pinsContainer.clientHeight;
+        const rows = pinsCount;
+        
+        const pinSpacingX = width / (rows + 2);
+        const pinSpacingY = height / (rows + 0.8);
+        const ballRadius = 5;
+
+        const ballEl = document.createElement('div');
+        ballEl.className = 'plinko-ball';
+        ballEl.style.width = `${ballRadius * 2}px`;
+        ballEl.style.height = `${ballRadius * 2}px`;
+        pinsContainer.appendChild(ballEl);
+
+        const points: Point[] = [];
+        let currentX = width / 2;
+        let currentY = pinSpacingY; 
+        const yHitOffset = 6;
+        
+        points.push({ x: currentX, y: -20 });
+        points.push({ x: currentX, y: currentY - yHitOffset });
+
+        for (let i = 0; i < path.length; i++) {
+            let dir = path[i];
+            currentX += (dir === 0) ? -(pinSpacingX / 2) : (pinSpacingX / 2);
+            currentY += pinSpacingY;
+            
+            if (i === path.length - 1) {
+                points.push({ x: currentX, y: height - ballRadius + 2 }); 
+            } else {
+                let noiseX = (Math.random() - 0.5) * 4;
+                points.push({ x: currentX + noiseX, y: currentY - yHitOffset });
+            }
+        }
+
+        let currentSegment = 0;
+        let segmentProgress = 0;
+        let lastTime = performance.now();
+        const baseDuration = 350 - (rows * 8);
+
+        function animate(time: number) {
+            let dt = time - lastTime;
+            lastTime = time;
+            
+            let segmentDuration = baseDuration + (Math.random() * 30 - 15);
+            segmentProgress += dt / segmentDuration;
+
+            if (segmentProgress >= 1) {
+                segmentProgress = 0;
+                currentSegment++;
+                if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+                    (window as any).Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                }
+            }
+
+            if (currentSegment >= points.length - 1) {
+                finishDrop();
+                return;
+            }
+
+            let p1 = points[currentSegment];
+            let p2 = points[currentSegment + 1];
+            let t = segmentProgress;
+            let x = p1.x + (p2.x - p1.x) * t;
+            let y = p1.y + (p2.y - p1.y) * t;
+
+            if (currentSegment === 0) {
+                y = p1.y + (p2.y - p1.y) * (t * t);
+            } else if (currentSegment < points.length - 2) {
+                let bounceHeight = pinSpacingY * (0.70 + Math.random() * 0.15);
+                let bounceOffset = Math.sin(t * Math.PI) * bounceHeight;
+                y -= bounceOffset;
+            } else {
+                y = p1.y + (p2.y - p1.y) * (t * t);
+            }
+
+            ballEl.style.left = `${x - ballRadius}px`;
+            ballEl.style.top = `${y - ballRadius}px`;
+            requestAnimationFrame(animate);
+        }
+
+        function finishDrop() {
+            const container = bucketsContainerRef.current;
+            if(container) {
+                const buckets = container.children;
+                if(buckets[finalBucketIndex]) {
+                    buckets[finalBucketIndex].classList.add('active');
+                    if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+                        (window as any).Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                    setTimeout(() => buckets[finalBucketIndex].classList.remove('active'), 200);
+                }
+            }
+            ballEl.remove();
+            setBalance(finalBalance);
+            setActiveBalls(prev => Math.max(0, prev - 1));
+            if (multiplier >= 2) {
+                showToast(`🎉 x${multiplier}! +${Math.floor(bet * multiplier)} ⭐`);
+            }
+        }
+
+        requestAnimationFrame(animate);
+    };
+
     const handlePlay = async () => {
-        if (bet < 1) return showToast('❌ Введите ставку');
-        if (bet > balance) return showToast('❌ Недостаточно звезд');
+        if (bet < 1) return showToast('\u274c \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0442\u0430\u0432\u043a\u0443');
+        if (bet > balance) return showToast('\u274c \u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u0437\u0432\u0435\u0437\u0434');
 
         setBalance(balance - bet);
         setActiveBalls(prev => prev + 1);
 
-        const res = await playPlinkoApi(telegramId, bet, difficulty, pins);
-
+        const res = await playPlinkoApi(telegramId, bet, difficulty, pinsCount);
         if (res.success) {
-            setLastResult({ bucket: res.bucket, multiplier: res.multiplier });
-            // Animate ball drop with a timeout to simulate the physics
-            setTimeout(() => {
-                setBalance(res.balance);
-                setActiveBalls(prev => {
-                    const next = prev - 1;
-                    return Math.max(0, next);
-                });
-                if (res.multiplier >= 2) {
-                    showToast(`🎉 x${res.multiplier}! Вы выиграли ${Math.floor(bet * res.multiplier)} ⭐`);
-                    if ((window as any).Telegram?.WebApp?.HapticFeedback) {
-                        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                    }
-                }
-            }, 2000);
+            spawnBall(res.path, res.bucket, res.multiplier, res.balance);
         } else {
             showToast(res.error);
-            setBalance(balance); // Revert
+            setBalance(balance);
             setActiveBalls(prev => Math.max(0, prev - 1));
         }
     };
 
-    const controlsDisabled = activeBalls > 0;
-
     return (
         <div className="flex flex-col min-h-screen bg-[var(--bg)]">
-            {/* Header */}
             <div className="preview-header">
                 <button className="btn-back" onClick={() => setActiveScreen('main-screen')}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <h2>PLINKO</h2>
+                <h2>\u041f\u043b\u0438\u043d\u043a\u043e</h2>
                 <div className="mines-balance-badge">
-                    <img src="/assets/images/star.png" alt="⭐" />
+                    <img src="/assets/images/star.png" alt="\u2b50" />
                     <span>{balance}</span>
                 </div>
             </div>
 
             <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto">
-                {/* Controls */}
-                <div style={{ opacity: controlsDisabled ? 0.5 : 1, pointerEvents: controlsDisabled ? 'none' : 'auto', transition: 'all 0.3s ease' }}>
-                    <div className="mines-controls-panel">
-                        <div className="control-group">
-                            <label>Ставка</label>
-                            <div className="input-with-icon">
-                                <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
-                                <img src="/assets/images/star.png" alt="star" />
-                            </div>
-                            <div className="quick-buttons">
-                                <button onClick={() => modifyBet('add', 10)}>+10</button>
-                                <button onClick={() => modifyBet('add', 50)}>+50</button>
-                                <button onClick={() => modifyBet('mult', 2)}>X2</button>
-                                <button onClick={() => modifyBet('mult', 0.5)}>/2</button>
-                                <button onClick={() => modifyBet('clear')}>MIN</button>
-                            </div>
-                        </div>
+                <div className="plinko-game-area" style={{ position: 'relative', height: '350px', flexShrink: 0 }}>
+                    <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
+                    <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets"></div>
+                </div>
 
-                        <div className="control-group">
-                            <label>Сложность</label>
-                            <div className="quick-buttons diff-buttons">
-                                {(['low', 'medium', 'high'] as const).map(d => (
-                                    <button key={d} className={difficulty === d ? 'active' : ''} onClick={() => setDifficulty(d)}>
-                                        {d === 'low' ? 'Низкая' : d === 'medium' ? 'Средняя' : 'Высокая'}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="mines-controls-panel" style={{ opacity: activeBalls > 0 ? 0.5 : 1, pointerEvents: activeBalls > 0 ? 'none' : 'auto' }}>
+                    <div className="control-group">
+                        <label>\u0421\u0443\u043c\u043c\u0430 \u0441\u0442\u0430\u0432\u043a\u0438</label>
+                        <div className="input-with-icon">
+                            <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
+                            <img src="/assets/images/star.png" alt="star" />
                         </div>
+                        <div className="quick-buttons">
+                            <button onClick={() => setBet(prev => prev + 10)}>+10</button>
+                            <button onClick={() => setBet(prev => prev + 50)}>+50</button>
+                            <button onClick={() => setBet(prev => Math.floor(prev * 2))}>x2</button>
+                            <button onClick={() => setBet(prev => Math.max(1, Math.floor(prev / 2)))}>/2</button>
+                        </div>
+                    </div>
 
-                        <div className="control-group">
-                            <label>Количество рядов</label>
-                            <div className="quick-buttons pins-buttons">
-                                {[8, 10, 12, 14, 16].map(p => (
-                                    <button key={p} className={pins === p ? 'active' : ''} onClick={() => setPins(p)}>
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="control-group">
+                        <label>\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c</label>
+                        <div className="quick-buttons diff-buttons">
+                            {(['low', 'medium', 'high'] as const).map(d => (
+                                <button key={d} className={difficulty === d ? 'active' : ''} onClick={() => setDifficulty(d)}>
+                                    {d === 'low' ? '\u041b\u0435\u0433\u043a\u043e' : d === 'medium' ? '\u0421\u0440\u0435\u0434\u043d\u0435' : '\u0421\u043b\u043e\u0436\u043d\u043e'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="control-group">
+                        <label>\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e \u0440\u044f\u0434\u043e\u0432</label>
+                        <div className="quick-buttons pins-buttons">
+                            {[8, 10, 12, 14, 16].map(p => (
+                                <button key={p} className={pinsCount === p ? 'active' : ''} onClick={() => setPinsCount(p)}>
+                                    {p}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
-
-                {/* Plinko Board (simplified visual) */}
-                <div ref={pinsContainerRef} className="flex-1 flex flex-col items-center justify-center gap-2 min-h-[200px] relative"
-                    style={{ background: 'radial-gradient(circle at center, rgba(139, 92, 246, 0.08) 0%, transparent 70%)', borderRadius: '24px', padding: '16px' }}>
-                    {/* Pin rows */}
-                    {Array.from({ length: pins }).map((_, row) => (
-                        <div key={row} className="flex gap-1 justify-center" style={{ width: '100%' }}>
-                            {Array.from({ length: row + 3 }).map((_, col) => (
-                                <div key={col} className="rounded-full"
-                                    style={{
-                                        width: Math.max(4, 10 - pins * 0.3) + 'px',
-                                        height: Math.max(4, 10 - pins * 0.3) + 'px',
-                                        background: 'rgba(255, 255, 255, 0.3)',
-                                        boxShadow: '0 0 4px rgba(255,255,255,0.15)',
-                                        flexShrink: 0,
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    ))}
-
-                    {/* Last result indicator */}
-                    {lastResult && (
-                        <div className="absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-bold"
-                            style={{
-                                background: lastResult.multiplier >= 2 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                                color: lastResult.multiplier >= 2 ? 'var(--green)' : 'var(--txt2)',
-                                border: `1px solid ${lastResult.multiplier >= 2 ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
-                                fontFamily: "'Exo 2', sans-serif",
-                            }}>
-                            x{lastResult.multiplier}
-                        </div>
-                    )}
-                </div>
-
-                {/* Multiplier Buckets */}
-                <div ref={bucketsContainerRef} className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-                    {currentMultipliers.map((m, i) => {
-                        const isHighlight = lastResult && lastResult.bucket === i;
-                        const isHigh = m >= 5;
-                        const isMed = m >= 2;
-                        return (
-                            <div key={i} className="flex-shrink-0 text-center rounded-lg px-1 py-2"
-                                style={{
-                                    minWidth: `${Math.max(100 / (currentMultipliers.length + 1), 5)}%`,
-                                    fontSize: '10px',
-                                    fontWeight: 800,
-                                    fontFamily: "'Exo 2', sans-serif",
-                                    background: isHighlight ? (isHigh ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.2)') : 'rgba(255,255,255,0.03)',
-                                    color: isHigh ? '#f59e0b' : isMed ? 'var(--blue)' : 'var(--txt3)',
-                                    border: isHighlight ? '1px solid rgba(245,158,11,0.5)' : '1px solid var(--border)',
-                                    transition: 'all 0.3s',
-                                    transform: isHighlight ? 'scale(1.1)' : undefined,
-                                }}>
-                                {m}x
-                            </div>
-                        );
-                    })}
-                </div>
             </div>
 
-            {/* Play button */}
             <div className="open-case-footer">
                 <button className="btn-open-case w-full" onClick={handlePlay}>
-                    {activeBalls > 0 ? `Шариков в полете: ${activeBalls}` : 'Бросить шарик'}
+                    {activeBalls > 0 ? `\u0428\u0430\u0440\u0438\u043a\u043e\u0432 \u0432 \u043f\u043e\u043b\u0435\u0442\u0435: ${activeBalls}` : '\u0418\u0413\u0420\u0410\u0422\u042c'}
                 </button>
             </div>
         </div>

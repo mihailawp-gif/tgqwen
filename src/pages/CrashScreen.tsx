@@ -245,15 +245,20 @@ export default function CrashScreen() {
                 ctx.stroke();
                 ctx.shadowBlur = 0;
 
-                // Rocket dot
-                ctx.beginPath();
-                ctx.arc(endX, endY, 6, 0, Math.PI * 2);
-                ctx.fillStyle = '#f59e0b';
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(endX, endY, 3, 0, Math.PI * 2);
-                ctx.fillStyle = '#fff';
-                ctx.fill();
+                // Rocket logic
+                const rocket = document.getElementById('crashRocket');
+                if (rocket) {
+                    // ФИКС УГЛА: Больше никакой дерготни! Жестко ставим -25 градусов + легкая турбулентность
+                    let tilt = -25 + (flyProgress === 1 ? Math.sin(performance.now() * 0.0016) * 3 : 0); 
+                    rocket.style.display = 'block';
+                    rocket.style.left = `${endX}px`;
+                    rocket.style.top = `${endY}px`;
+                    // ФИКС СТЫКА: translate(-15%, -85%) гарантированно ставит ракету выхлопной трубой на конец линии!
+                    rocket.style.transform = `translate(-15%, -85%) rotate(${tilt}deg)`;
+                }
+            } else {
+                const rocket = document.getElementById('crashRocket');
+                if (rocket) rocket.style.display = 'none';
             }
 
             animFrameRef.current = requestAnimationFrame(renderLoop);
@@ -364,12 +369,15 @@ export default function CrashScreen() {
                         <div className="crash-timer">Запуск через {timer.toFixed(1)}s</div>
                     )}
                     {crashState === 'FLYING' && (
-                        <div className="crash-multiplier">x{multiplier.toFixed(2)}</div>
+                        <div id="crashMultiplier" className="crash-multiplier">x{multiplier.toFixed(2)}</div>
                     )}
                     {crashState === 'CRASHED' && (
-                        <div className="crash-multiplier crashed">x{multiplier.toFixed(2)}</div>
+                        <div id="crashMultiplier" className="crash-multiplier crashed">x{multiplier.toFixed(2)}</div>
                     )}
                 </div>
+
+                <img id="crashRocket" src="/assets/images/rocket.gif" alt="Rocket" style={{ display: 'none' }} />
+                <div id="crashExplosion" style={{ display: crashState === 'CRASHED' ? 'flex' : 'none' }}></div>
             </div>
 
             {/* History pills */}

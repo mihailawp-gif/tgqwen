@@ -151,7 +151,7 @@ export default function MinesScreen() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen pb-10 bg-bg">
+        <div className="flex flex-col min-h-screen pb-10 bg-[var(--bg)]">
             <div className="preview-header flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button className="btn-back" onClick={() => setActiveScreen('main-screen')}>
@@ -167,7 +167,7 @@ export default function MinesScreen() {
                 </div>
             </div>
 
-            <div className="flex-1 p-4 flex flex-col pt-2 bg-gradient-to-t from-bg to-bg/50 overflow-y-auto">
+            <div className="flex-1 p-4 flex flex-col pt-2 bg-gradient-to-t from-[var(--bg)] to-[var(--bg)]/50 overflow-y-auto">
                 {/* Control Panel */}
                 <div className={`transition-all duration-300 ${gameActive ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="mines-controls-panel">
@@ -266,7 +266,7 @@ export default function MinesScreen() {
             </div>
 
             {/* Action Area */}
-            <div className="open-case-footer p-4 pt-2 shrink-0 border-t border-border bg-bg2 text-center rounded-t-[32px] overflow-hidden">
+            <div className="open-case-footer p-4 pt-2 shrink-0 border-t border-border bg-[var(--bg2)] text-center rounded-t-[32px] overflow-hidden">
                 {!gameActive ? (
                     <button id="btnMinesAction" className="btn-open-case w-full mt-2" onClick={handleStartMines}>
                         {minesGrid.length > 0 ? 'Попробовать еще раз' : 'Играть'}

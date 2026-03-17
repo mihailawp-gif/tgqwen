@@ -23,45 +23,59 @@ function App() {
       useAppStore.getState().setLoaderVisible(true);
       try {
         let user: any = null;
+        const tg = (window as any).Telegram?.WebApp;
         
-        // 1. Попытка через современный SDK
+        // 1. Попытка через SDK
         try {
           const lp = retrieveLaunchParams() as any;
           if (lp && lp.initData && lp.initData.user) {
             user = lp.initData.user;
           }
         } catch (sdkError) {
-          console.warn('SDK Init failed, trying fallback...', sdkError);
+          console.warn('SDK Init failed, trying fallback...');
         }
 
         // 2. Фолбек на классический window.Telegram.WebApp
-        if (!user) {
-          const tg = (window as any).Telegram?.WebApp;
-          if (tg?.initDataUnsafe?.user) {
-            const u = tg.initDataUnsafe.user;
-            user = {
-              id: u.id,
-              username: u.username,
-              firstName: u.first_name,
-              lastName: u.last_name,
-              photoUrl: u.photo_url
-            };
-          }
+        if (!user && tg?.initDataUnsafe?.user) {
+          const u = tg.initDataUnsafe.user;
+          user = {
+            id: u.id,
+            username: u.username,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            photoUrl: u.photo_url
+          };
         }
 
-        // 3. Режим отладки для локалки
+        // 3. Последний шанс: если мы внутри iframe и есть initData в URL (hash или search)
+        if (!user) {
+            const hash = window.location.hash.substring(1);
+            const search = window.location.search.substring(1);
+            const combinedParams = new URLSearchParams(hash + '&' + search);
+            const initData = combinedParams.get('tgWebAppData');
+            if (initData) {
+                const params = new URLSearchParams(initData);
+                const userJson = params.get('user');
+                if (userJson) {
+                    try {
+                        const u = JSON.parse(userJson);
+                        user = {
+                            id: u.id,
+                            username: u.username,
+                            firstName: u.first_name,
+                            lastName: u.last_name,
+                            photoUrl: u.photo_url
+                        };
+                    } catch(e) {}
+                }
+            }
+        }
+
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (user || isLocal) {
           useAppStore.getState().setDesktopGuardVisible(false);
-          
-          // Для локалки создаем тестового юзера
-          const finalUser = user || {
-            id: 12345678,
-            username: 'debug_user',
-            firstName: 'Local',
-            lastName: 'Tester'
-          };
+          const finalUser = user || { id: 12345678, username: 'local_debug', firstName: 'Local', lastName: 'Tester' };
 
           await initUserApi({
             telegram_id: finalUser.id,
@@ -70,12 +84,16 @@ function App() {
             last_name: finalUser.lastName,
             photo_url: finalUser.photoUrl
           });
+          
+          if (tg) {
+            tg.expand?.();
+            tg.ready?.();
+          }
         } else {
           useAppStore.getState().setDesktopGuardVisible(true);
         }
       } catch (e) {
         console.error('Final Init Error:', e);
-        // Если совсем всё плохо и мы не на локалке - включаем гварда
         if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
            useAppStore.getState().setDesktopGuardVisible(true);
         }

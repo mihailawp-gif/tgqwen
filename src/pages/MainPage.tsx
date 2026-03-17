@@ -120,11 +120,15 @@ export default function MainPage() {
                     <div className="live-history-scroll" id="liveHistoryScroll">
                         {history.map((item) => (
                             <div key={item.id} className={`live-history-card rarity-${item.gift?.rarity || 'common'}`}>
-                                <img
-                                    src={item.gift?.image_url || '/assets/images/star.png'}
-                                    style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
-                                    alt={item.gift?.name || ''}
-                                />
+                                {item.gift?.image_url?.endsWith('.tgs') ? (
+                                    <TgsAnimation url={item.gift.image_url} width={48} height={48} />
+                                ) : (
+                                    <img
+                                        src={item.gift?.image_url || '/assets/images/star.png'}
+                                        style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
+                                        alt={item.gift?.name || ''}
+                                    />
+                                )}
                                 <div className="live-history-card-name">{item.gift?.name || 'Приз'}</div>
                                 <div className="live-history-card-user">{item.user?.first_name || '...'}</div>
                             </div>

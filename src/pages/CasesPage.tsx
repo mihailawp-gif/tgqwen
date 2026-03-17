@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
-import { fetchCasesApi, fetchCaseItemsApi, openCaseApi } from '../api/api';
+import { fetchCasesApi, fetchCaseItemsApi, openCaseApi, fetchHistoryApi } from '../api/api';
+import TgsAnimation from '../components/TgsAnimation';
 
 interface CaseItem {
     id: number;
@@ -24,26 +25,47 @@ interface CaseGift {
     drop_chance: number;
 }
 
+interface HistoryItem {
+    id: number;
+    gift?: {
+        name: string;
+        rarity?: string;
+        image_url?: string;
+    };
+    user?: {
+        first_name?: string;
+    };
+}
+
 export default function CasesPage() {
     const { showToast, setLoaderVisible } = useAppStore();
     const { balance, setBalance } = useUserStore();
 
     const [cases, setCases] = useState<CaseItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [history, setHistory] = useState<HistoryItem[]>([]);
 
     // Preview state
     const [previewCase, setPreviewCase] = useState<CaseItem | null>(null);
     const [previewItems, setPreviewItems] = useState<CaseGift[]>([]);
     const [showPreview, setShowPreview] = useState(false);
 
+    // Opening state
+    const [isOpening, setIsOpening] = useState(false);
+    const [rouletteItems, setRouletteItems] = useState<any[]>([]);
+
     // Result state
     const [showResult, setShowResult] = useState(false);
     const [resultData, setResultData] = useState<any>(null);
 
+    const rouletteTrackRef = useRef<HTMLDivElement>(null);
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     useEffect(() => {
         loadCases();
+        loadHistory();
+        const interval = setInterval(loadHistory, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     const loadCases = async () => {
@@ -53,6 +75,11 @@ export default function CasesPage() {
             setCases(res.cases || []);
         }
         setLoading(false);
+    };
+
+    const loadHistory = async () => {
+        const res = await fetchHistoryApi();
+        if (res?.success) setHistory(res.history || []);
     };
 
     const openPreview = async (caseItem: CaseItem) => {
@@ -72,17 +99,43 @@ export default function CasesPage() {
             return showToast('❌ Недостаточно звезд!');
         }
 
-        setLoaderVisible(true);
         const res = await openCaseApi(previewCase.id, telegramId);
-        setLoaderVisible(false);
-
         if (res.success) {
             setBalance(res.balance);
-            setResultData(res);
-            setShowResult(true);
+            startRoulette(res);
         } else {
             showToast('❌ ' + (res.error || 'Ошибка открытия кейса'));
         }
+    };
+
+    const startRoulette = (res: any) => {
+        // Generate ~50 items for the roulette
+        const items = [];
+        for (let i = 0; i < 50; i++) {
+            const randomItem = previewItems[Math.floor(Math.random() * previewItems.length)];
+            items.push(randomItem.gift);
+        }
+        // Force the won item at specific position (e.g., 45th)
+        items[45] = res.gift;
+        setRouletteItems(items);
+        setIsOpening(true);
+
+        setTimeout(() => {
+            if (rouletteTrackRef.current) {
+                // Width of item (118px) + gap (8px) = 126px
+                const itemWidth = 126;
+                const offset = 45 * itemWidth - (window.innerWidth / 2) + (itemWidth / 2);
+                const randomSmallOffset = Math.random() * 40 - 20;
+                rouletteTrackRef.current.style.transform = `translateX(-${offset + randomSmallOffset}px)`;
+            }
+        }, 50);
+
+        setTimeout(() => {
+            setResultData(res);
+            setShowResult(true);
+            setIsOpening(false);
+            if (rouletteTrackRef.current) rouletteTrackRef.current.style.transform = 'translateX(0)';
+        }, 5500);
     };
 
     const sellResult = async () => {
@@ -108,8 +161,12 @@ export default function CasesPage() {
                 <div className="won-item-showcase">
                     <div className="item-glow-effect" />
                     <div className="won-item-card">
-                        <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                        <div className="item-rarity-badge unique">LIMITED</div>
+                        {resultData.gift?.image_url?.endsWith('.tgs') ? (
+                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} />
+                        ) : (
+                            <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        )}
+                        <div className={`item-rarity-badge ${resultData.gift?.rarity || 'common'}`}>{resultData.gift?.rarity?.toUpperCase() || 'COMMON'}</div>
                     </div>
                 </div>
                 <div className="won-item-details">
@@ -138,6 +195,33 @@ export default function CasesPage() {
         );
     }
 
+    // Opening animation screen
+    if (isOpening) {
+        return (
+            <div className="screen active" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0d0d17', justifyContent: 'center' }}>
+                <div className="roulette-wrapper">
+                    <div className="roulette-indicator" />
+                    <div className="roulette-track-container">
+                        <div ref={rouletteTrackRef} className="roulette-track" style={{ display: 'flex', gap: '8px', transition: 'transform 5s cubic-bezier(0.1, 0, 0.1, 1)' }}>
+                            {rouletteItems.map((item, i) => (
+                                <div key={i} className={`roulette-item rarity-${item.rarity || 'common'}`} style={{ width: '80px', height: '100px', flexShrink: 0, background: 'rgba(255,255,255,0.05)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                    {item.image_url?.endsWith('.tgs') ? (
+                                        <TgsAnimation url={item.image_url} width={60} height={60} />
+                                    ) : (
+                                        <img src={item.image_url || '/assets/images/star.png'} alt="" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="opening-status" style={{ textAlign: 'center', marginTop: '40px', color: '#fff', fontSize: '18px', fontWeight: 800 }}>
+                    ОТКРЫВАЕМ КЕЙС...
+                </div>
+            </div>
+        );
+    }
+
     // Preview screen
     if (showPreview && previewCase) {
         return (
@@ -160,10 +244,14 @@ export default function CasesPage() {
                         <h3>Содержимое кейса</h3>
                         <div className="preview-tiles-grid">
                             {previewItems.map((item, i) => (
-                                <div key={i} className="preview-tile rarity-unique">
+                                <div key={i} className={`preview-tile rarity-${item.gift.rarity || 'common'}`}>
                                     <div className="preview-tile-tgs">
-                                        <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name}
-                                            style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+                                        {item.gift.image_url?.endsWith('.tgs') ? (
+                                            <TgsAnimation url={item.gift.image_url} width={80} height={80} />
+                                        ) : (
+                                            <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name}
+                                                style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+                                        )}
                                     </div>
                                     <div className="preview-tile-name">{item.gift.name}</div>
                                     <div className="preview-tile-footer">
@@ -196,6 +284,32 @@ export default function CasesPage() {
     // Cases grid
     return (
         <div className="tab-content active">
+             {/* Live History at the top */}
+             {history.length > 0 && (
+                <div className="live-history-section" style={{ margin: '0 0 16px 0', borderRadius: '0' }}>
+                    <div className="live-history-header">
+                        <span>🔴 Последние выигрыши</span>
+                    </div>
+                    <div className="live-history-scroll">
+                        {history.map((item) => (
+                            <div key={item.id} className={`live-history-card rarity-${item.gift?.rarity || 'common'}`}>
+                                {item.gift?.image_url?.endsWith('.tgs') ? (
+                                    <TgsAnimation url={item.gift.image_url} width={48} height={48} />
+                                ) : (
+                                    <img
+                                        src={item.gift?.image_url || '/assets/images/star.png'}
+                                        style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
+                                        alt=""
+                                    />
+                                )}
+                                <div className="live-history-card-name">{item.gift?.name || 'Приз'}</div>
+                                <div className="live-history-card-user">{item.user?.first_name || '...'}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="cases-container">
                 {loading ? (
                     <div className="flex items-center justify-center py-20">

@@ -42,7 +42,7 @@ interface CaseGift {
 export default function CasesPage() {
     const { showToast, setLoaderVisible } = useAppStore();
     const { balance, setBalance } = useUserStore();
-
+    const [showConfirm, setShowConfirm] = useState(false);
     const [cases, setCases] = useState<CaseItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -267,7 +267,7 @@ export default function CasesPage() {
                     </div>
                 </div>
 
-                <div className="open-case-footer">
+                <div className="open-case-footer" style={{ flexShrink: 0, position: 'relative', zIndex: 10 }}>
                     {!previewCase.is_free && (
                         <div className="case-price-display">
                             <img src="/assets/images/star.png" className="price-icon" alt="star" />
@@ -281,6 +281,21 @@ export default function CasesPage() {
                         {previewCase.is_free ? 'Открыть бесплатно' : 'Открыть кейс'}
                     </button>
                 </div>
+                {/* МОДАЛКА ПОДТВЕРЖДЕНИЯ */}
+                {showConfirm && (
+                    <div className="modal active">
+                        <div className="modal-overlay" onClick={() => setShowConfirm(false)}></div>
+                        <div className="modal-content confirm-modal">
+                            <div className="modal-handle"></div>
+                            <h3>Подтверждение</h3>
+                            <p>Вы уверены, что хотите открыть {previewCase.name}?</p>
+                            <div className="modal-actions">
+                                <button className="btn-modal btn-cancel" onClick={() => setShowConfirm(false)}>Отмена</button>
+                                <button className="btn-modal btn-confirm" onClick={() => { setShowConfirm(false); handleOpenCase(); }}>Открыть</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -288,11 +303,12 @@ export default function CasesPage() {
     // Cases grid
     return (
         <div className="tab-content active">
-             {/* Live History at the top */}
-             {history.length > 0 && (
+            {/* Live History at the top */}
+            {history.length > 0 && (
                 <div className="live-history-section" style={{ margin: '0 0 16px 0', borderRadius: '0' }}>
                     <div className="live-history-header">
-                        <span>🔴 Последние выигрыши</span>
+                        <span className="live-history-title">Последние выигрыши</span>
+                        <div className="live-indicator"><span className="live-dot"></span><span>LIVE</span></div>
                     </div>
                     <div className="live-history-scroll">
                         {history.map((item) => (

@@ -139,8 +139,27 @@ export default function CrashScreen() {
         window.addEventListener('resize', resize);
 
         const renderLoop = () => {
+            const canvas = canvasRef.current;
+            if (!canvas || !canvas.parentElement) {
+                animFrameRef.current = requestAnimationFrame(renderLoop);
+                return;
+            }
+
+            // ФИКС: Динамически растягиваем канвас, если открыли вкладку
+            if (canvas.width !== canvas.parentElement.clientWidth) {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+
             const w = canvas.width;
             const h = canvas.height;
+
+            // Если канвас всё ещё 0 - ждем
+            if (w === 0 || h === 0) {
+                animFrameRef.current = requestAnimationFrame(renderLoop);
+                return;
+            }
+
             ctx.fillStyle = '#020308';
             ctx.fillRect(0, 0, w, h);
 
@@ -249,7 +268,7 @@ export default function CrashScreen() {
                 const rocket = document.getElementById('crashRocket');
                 if (rocket) {
                     // ФИКС УГЛА: Больше никакой дерготни! Жестко ставим -25 градусов + легкая турбулентность
-                    let tilt = -25 + (flyProgress === 1 ? Math.sin(performance.now() * 0.0016) * 3 : 0); 
+                    let tilt = -25 + (flyProgress === 1 ? Math.sin(performance.now() * 0.0016) * 3 : 0);
                     rocket.style.display = 'block';
                     rocket.style.left = `${endX}px`;
                     rocket.style.top = `${endY}px`;

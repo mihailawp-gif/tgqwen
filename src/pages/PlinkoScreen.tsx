@@ -65,10 +65,10 @@ export default function PlinkoScreen() {
 
     const renderPlinkoBoard = () => {
         if (!pinsContainerRef.current || !bucketsContainerRef.current) return;
-        
+
         const pinsContainer = pinsContainerRef.current;
         const bucketsContainer = bucketsContainerRef.current;
-        
+
         pinsContainer.innerHTML = '';
         bucketsContainer.innerHTML = '';
 
@@ -115,7 +115,7 @@ export default function PlinkoScreen() {
             if (c >= 1 && c < 2) colorClass = 'pb-c-1';
             else if (c >= 2 && c <= 5) colorClass = 'pb-c-2';
             else if (c > 5) colorClass = 'pb-c-3';
-            
+
             b.className = `plinko-bucket ${colorClass}`;
             b.textContent = c.toString();
             bucketsContainer.appendChild(b);
@@ -130,22 +130,23 @@ export default function PlinkoScreen() {
         const width = pinsContainer.clientWidth;
         const height = pinsContainer.clientHeight;
         const rows = pinsCount;
-        
+
         const pinSpacingX = width / (rows + 2);
         const pinSpacingY = height / (rows + 0.8);
         const ballRadius = 5;
 
         const ballEl = document.createElement('div');
         ballEl.className = 'plinko-ball';
+        ballEl.style.opacity = '1';
         ballEl.style.width = `${ballRadius * 2}px`;
         ballEl.style.height = `${ballRadius * 2}px`;
         pinsContainer.appendChild(ballEl);
 
         const points: Point[] = [];
         let currentX = width / 2;
-        let currentY = pinSpacingY; 
+        let currentY = pinSpacingY;
         const yHitOffset = 6;
-        
+
         points.push({ x: currentX, y: -20 });
         points.push({ x: currentX, y: currentY - yHitOffset });
 
@@ -153,9 +154,9 @@ export default function PlinkoScreen() {
             let dir = path[i];
             currentX += (dir === 0) ? -(pinSpacingX / 2) : (pinSpacingX / 2);
             currentY += pinSpacingY;
-            
+
             if (i === path.length - 1) {
-                points.push({ x: currentX, y: height - ballRadius + 2 }); 
+                points.push({ x: currentX, y: height - ballRadius + 2 });
             } else {
                 let noiseX = (Math.random() - 0.5) * 4;
                 points.push({ x: currentX + noiseX, y: currentY - yHitOffset });
@@ -170,7 +171,7 @@ export default function PlinkoScreen() {
         function animate(time: number) {
             let dt = time - lastTime;
             lastTime = time;
-            
+
             let segmentDuration = baseDuration + (Math.random() * 30 - 15);
             segmentProgress += dt / segmentDuration;
 
@@ -210,9 +211,9 @@ export default function PlinkoScreen() {
 
         function finishDrop() {
             const container = bucketsContainerRef.current;
-            if(container) {
+            if (container) {
                 const buckets = container.children;
-                if(buckets[finalBucketIndex]) {
+                if (buckets[finalBucketIndex]) {
                     buckets[finalBucketIndex].classList.add('active');
                     if ((window as any).Telegram?.WebApp?.HapticFeedback) {
                         (window as any).Telegram.WebApp.HapticFeedback.impactOccurred('medium');

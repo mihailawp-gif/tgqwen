@@ -16,6 +16,9 @@ import DiceScreen from './pages/DiceScreen';
 import DesktopGuard from './components/DesktopGuard';
 import { initUserApi } from './api/api';
 import { retrieveLaunchParams } from '@telegram-apps/sdk-react';
+
+const LottieAny = Lottie as any;
+const LottieComp = LottieAny.default || LottieAny;
 const SmartToast = () => {
   const { toast } = useAppStore();
 
@@ -27,9 +30,9 @@ const SmartToast = () => {
 
   return (
     <div className="toast show" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-      {isError && (
+      {isError && loseAnimation && (
         <div style={{ width: '24px', height: '24px', flexShrink: 0 }}>
-          <Lottie animationData={loseAnimation} loop={false} />
+          <LottieComp animationData={loseAnimation} loop={false} />
         </div>
       )}
       <span style={{ display: 'flex', alignItems: 'center' }}>

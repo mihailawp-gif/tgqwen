@@ -240,6 +240,25 @@ export default function CasesPage() {
                 </div>
 
                 <div className="preview-scrollable" style={{ flex: 1, overflowY: 'auto', paddingBottom: '8px' }}>
+                    {/* Рулетка превью (ПОКАЗЫВАЕМ СОДЕРЖИМОЕ) */}
+                    <div className="preview-roulette-wrapper">
+                        <div className="preview-roulette-track-container">
+                            <div className="preview-roulette-track">
+                                {[...previewItems, ...previewItems, ...previewItems].map((item, i) => (
+                                    <div key={i} className={`preview-roulette-item rarity-${item.gift.rarity || 'common'}`}>
+                                        {item.gift.image_url?.endsWith('.tgs') ? (
+                                            <TgsAnimation url={item.gift.image_url} width={90} height={90} />
+                                        ) : (
+                                            <img src={item.gift.image_url || '/assets/images/star.png'} alt="" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="preview-roulette-fade preview-roulette-fade-left"></div>
+                        <div className="preview-roulette-fade preview-roulette-fade-right"></div>
+                    </div>
+
                     {previewCase.description && (
                         <div className="case-description">{previewCase.description}</div>
                     )}

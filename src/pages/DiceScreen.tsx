@@ -109,7 +109,7 @@ export default function DiceScreen() {
 
             {/* Content */}
             <div className="flex-1 p-4 flex flex-col gap-4">
-                {/* Result Box (Самый верхний) */}
+                {/* Result Box */}
                 <div className="dice-result-box">
                     <div className={`dice-result-number ${resultStatus === 'win' ? 'win' : resultStatus === 'lose' ? 'lose' : ''}`}>
                         {resultNumber}
@@ -123,7 +123,7 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Info row (Множитель и Выигрыш СРАЗУ ПОД РЕЗУЛЬТАТОМ) */}
+                {/* Info row */}
                 <div className="dice-info-row">
                     <div className="dice-info-box">
                         <span>Множитель</span>
@@ -138,7 +138,7 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Action buttons (Больше/Меньше СРАЗУ ПОД ИНФОБЛОКОМ) */}
+                {/* Action buttons */}
                 <div className="dice-actions">
                     <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
                         <div className="dice-btn-title">МЕНЬШЕ</div>
@@ -150,7 +150,7 @@ export default function DiceScreen() {
                     </button>
                 </div>
 
-                {/* Controls (Настройки ставки ОПУЩЕНЫ В САМЫЙ НИЗ) */}
+                {/* Controls */}
                 <div className="mines-controls-panel" style={{ marginBottom: 0 }}>
                     <div className="control-group">
                         <label>Сумма ставки</label>
@@ -180,33 +180,6 @@ export default function DiceScreen() {
                             ))}
                         </div>
                     </div>
-                </div>
-
-                {/* Info row */}
-                <div className="dice-info-row">
-                    <div className="dice-info-box">
-                        <span>Множитель</span>
-                        <div>{multiplier.toFixed(2)}x</div>
-                    </div>
-                    <div className="dice-info-box highlight">
-                        <span>Выигрыш</span>
-                        <div>
-                            <span>{possibleWin}</span>
-                            <img src="/assets/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="dice-actions">
-                    <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
-                        <div className="dice-btn-title">МЕНЬШЕ</div>
-                        <div className="dice-btn-range">0 - <span>{underMax}</span></div>
-                    </button>
-                    <button className="btn-dice btn-dice-over" onClick={() => playDice('over')} disabled={isRolling}>
-                        <div className="dice-btn-title">БОЛЬШЕ</div>
-                        <div className="dice-btn-range"><span>{overMin}</span> - 999999</div>
-                    </button>
                 </div>
             </div>
         </div>

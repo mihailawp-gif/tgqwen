@@ -233,8 +233,8 @@ export default function PlinkoScreen() {
     };
 
     const handlePlay = async () => {
-        if (bet < 1) return showToast('\u274c \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0442\u0430\u0432\u043a\u0443');
-        if (bet > balance) return showToast('\u274c \u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u0437\u0432\u0435\u0437\u0434');
+        if (bet < 1) return showToast('❌ Введите ставку');
+        if (bet > balance) return showToast('❌ Недостаточно звезд');
 
         setBalance(balance - bet);
         setActiveBalls(prev => prev + 1);
@@ -257,22 +257,22 @@ export default function PlinkoScreen() {
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <h2>\u041f\u043b\u0438\u043d\u043a\u043e</h2>
+                <h2>Плинко</h2>
                 <div className="mines-balance-badge">
-                    <img src="/assets/images/star.png" alt="\u2b50" />
+                    <img src="/assets/images/star.png" alt="⭐" />
                     <span>{balance}</span>
                 </div>
             </div>
 
             <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto">
-                <div className="plinko-game-area" style={{ position: 'relative', height: '350px', flexShrink: 0 }}>
-                    <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: '100%', position: 'absolute' }}></div>
-                    <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets"></div>
+                <div className="plinko-game-area" style={{ position: 'relative', height: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '12px' }}>
+                    <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: 'calc(100% - 60px)', position: 'absolute', top: 0 }}></div>
+                    <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets" style={{ position: 'relative', zIndex: 5 }}></div>
                 </div>
 
                 <div className="mines-controls-panel" style={{ opacity: activeBalls > 0 ? 0.5 : 1, pointerEvents: activeBalls > 0 ? 'none' : 'auto' }}>
                     <div className="control-group">
-                        <label>\u0421\u0443\u043c\u043c\u0430 \u0441\u0442\u0430\u0432\u043a\u0438</label>
+                        <label>Сумма ставки</label>
                         <div className="input-with-icon">
                             <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
                             <img src="/assets/images/star.png" alt="star" />
@@ -286,18 +286,18 @@ export default function PlinkoScreen() {
                     </div>
 
                     <div className="control-group">
-                        <label>\u0421\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u044c</label>
+                        <label>Сложность</label>
                         <div className="quick-buttons diff-buttons">
                             {(['low', 'medium', 'high'] as const).map(d => (
                                 <button key={d} className={difficulty === d ? 'active' : ''} onClick={() => setDifficulty(d)}>
-                                    {d === 'low' ? '\u041b\u0435\u0433\u043a\u043e' : d === 'medium' ? '\u0421\u0440\u0435\u0434\u043d\u0435' : '\u0421\u043b\u043e\u0436\u043d\u043e'}
+                                    {d === 'low' ? 'Легко' : d === 'medium' ? 'Средне' : 'Сложно'}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div className="control-group">
-                        <label>\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e \u0440\u044f\u0434\u043e\u0432</label>
+                        <label>Количество рядов</label>
                         <div className="quick-buttons pins-buttons">
                             {[8, 10, 12, 14, 16].map(p => (
                                 <button key={p} className={pinsCount === p ? 'active' : ''} onClick={() => setPinsCount(p)}>
@@ -311,7 +311,7 @@ export default function PlinkoScreen() {
 
             <div className="open-case-footer">
                 <button className="btn-open-case w-full" onClick={handlePlay}>
-                    {activeBalls > 0 ? `\u0428\u0430\u0440\u0438\u043a\u043e\u0432 \u0432 \u043f\u043e\u043b\u0435\u0442\u0435: ${activeBalls}` : '\u0418\u0413\u0420\u0410\u0422\u042c'}
+                    {activeBalls > 0 ? `Шариков в полете: ${activeBalls}` : 'ИГРАТЬ'}
                 </button>
             </div>
         </div>

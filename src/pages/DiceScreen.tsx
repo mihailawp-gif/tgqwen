@@ -123,22 +123,7 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Info row */}
-                <div className="dice-info-row">
-                    <div className="dice-info-box">
-                        <span>Множитель</span>
-                        <div>{multiplier.toFixed(2)}x</div>
-                    </div>
-                    <div className="dice-info-box highlight">
-                        <span>Выигрыш</span>
-                        <div>
-                            <span>{possibleWin}</span>
-                            <img src="/assets/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Action buttons */}
+                {/* Action buttons (Move UP as requested) */}
                 <div className="dice-actions">
                     <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
                         <div className="dice-btn-title">МЕНЬШЕ</div>
@@ -150,7 +135,7 @@ export default function DiceScreen() {
                     </button>
                 </div>
 
-                {/* Controls */}
+                {/* Controls (Move UP as requested) */}
                 <div className="mines-controls-panel" style={{ marginBottom: 0 }}>
                     <div className="control-group">
                         <label>Сумма ставки</label>
@@ -178,6 +163,21 @@ export default function DiceScreen() {
                             {[10, 33, 50, 80, 95].map(v => (
                                 <button key={v} onClick={() => setDiceChance(v)}>{v}%</button>
                             ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info row (Move DOWN as requested) */}
+                <div className="dice-info-row">
+                    <div className="dice-info-box">
+                        <span>Множитель</span>
+                        <div>{multiplier.toFixed(2)}x</div>
+                    </div>
+                    <div className="dice-info-box highlight">
+                        <span>Выигрыш</span>
+                        <div>
+                            <span>{possibleWin}</span>
+                            <img src="/assets/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
                         </div>
                     </div>
                 </div>

@@ -202,25 +202,52 @@ export default function CasesPage() {
     // Opening animation screen
     if (isOpening) {
         return (
-            <div className="screen active" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0d0d17', justifyContent: 'center' }}>
-                <div className="roulette-wrapper">
-                    <div className="roulette-indicator" />
-                    <div className="roulette-track-container">
-                        <div ref={rouletteTrackRef} className="roulette-track" style={{ display: 'flex', gap: '8px', transition: 'transform 5s cubic-bezier(0.1, 0, 0.1, 1)' }}>
+            <div className="screen active" style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100dvh', 
+                background: 'radial-gradient(circle at center, #1b1b2f 0%, #0d0d17 100%)', 
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <div style={{ position: 'absolute', top: '15%', textAlign: 'center' }}>
+                    <div className="congrats-text" style={{ fontSize: '24px', opacity: 0.8 }}>УДАЧИ!</div>
+                </div>
+
+                <div className="roulette-wrapper" style={{ margin: '40px 0' }}>
+                    <div className="roulette-indicator" style={{ height: '180px' }} />
+                    <div className="roulette-track-container" style={{ height: '180px', background: 'rgba(0,0,0,0.4)', borderTop: '2px solid rgba(255,255,255,0.05)', borderBottom: '2px solid rgba(255,255,255,0.05)' }}>
+                        <div ref={rouletteTrackRef} className="roulette-track" style={{ display: 'flex', gap: '8px', padding: '0 4px', height: '100%', alignItems: 'center', transition: 'transform 5s cubic-bezier(0.1, 0, 0.1, 1)' }}>
                             {rouletteItems.map((item, i) => (
-                                <div key={i} className={`roulette-item rarity-${item.rarity || 'common'}`} style={{ width: '80px', height: '100px', flexShrink: 0, background: 'rgba(255,255,255,0.05)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div key={i} className={`roulette-item rarity-${item.rarity || 'common'}`} style={{ 
+                                    width: '120px', 
+                                    height: '140px', 
+                                    flexShrink: 0, 
+                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', 
+                                    borderRadius: '16px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                                }}>
                                     {item.image_url?.endsWith('.tgs') ? (
-                                        <TgsAnimation url={item.image_url} width={60} height={60} />
+                                        <TgsAnimation url={item.image_url} width={90} height={90} />
                                     ) : (
-                                        <img src={item.image_url || '/assets/images/star.png'} alt="" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                                        <img src={item.image_url || '/assets/images/star.png'} alt="" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
                                     )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
-                <div className="opening-status" style={{ textAlign: 'center', marginTop: '40px', color: '#fff', fontSize: '18px', fontWeight: 800 }}>
+
+                <div className="opening-status" style={{ textAlign: 'center', marginTop: '20px', color: '#fff', fontSize: '20px', fontWeight: 900, textShadow: '0 0 15px rgba(255,255,255,0.3)' }}>
                     ОТКРЫВАЕМ КЕЙС...
+                </div>
+                
+                <div style={{ position: 'absolute', bottom: '15%', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '80%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }}></div>
                 </div>
             </div>
         );
@@ -239,7 +266,7 @@ export default function CasesPage() {
                     <h2>{previewCase.name}</h2>
                 </div>
 
-                <div className="preview-scrollable" style={{ flex: 1, overflowY: 'auto', paddingBottom: '8px' }}>
+                <div className="preview-scrollable" style={{ flex: 1, overflowY: 'auto', paddingBottom: '120px' }}>
                     {/* Рулетка превью (ПОКАЗЫВАЕМ СОДЕРЖИМОЕ) */}
                     <div className="preview-roulette-wrapper">
                         <div className="preview-roulette-track-container">
@@ -286,7 +313,7 @@ export default function CasesPage() {
                     </div>
                 </div>
 
-                <div className="open-case-footer" style={{ flexShrink: 0, position: 'relative', zIndex: 10 }}>
+                <div className="open-case-footer" style={{ flexShrink: 0, position: 'relative', zIndex: 10, paddingBottom: 'calc(100px + var(--safe-bottom))' }}>
                     {!previewCase.is_free && (
                         <div className="case-price-display">
                             <img src="/assets/images/star.png" className="price-icon" alt="star" />

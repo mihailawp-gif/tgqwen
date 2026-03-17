@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { api } from '../api/api';
+import TgsAnimation from '../components/TgsAnimation';
 
 interface InventoryItem {
     opening_id: number;
@@ -98,9 +99,13 @@ export default function InventoryPage() {
                                 <div className={`inv-rarity ${item.gift?.rarity || 'unique'}`} />
                                 <div className="inv-badge-unique">UNIQUE</div>
                                 <div className="inv-img">
-                                    <img src={item.gift?.image_url || '/assets/images/star.png'}
-                                        style={{ width: '60px', height: '60px', objectFit: 'contain' }}
-                                        alt={item.gift?.name} />
+                                    {item.gift?.image_url?.endsWith('.tgs') ? (
+                                        <TgsAnimation url={item.gift.image_url} width={70} height={70} />
+                                    ) : (
+                                        <img src={item.gift?.image_url || '/assets/images/star.png'}
+                                            style={{ width: '70px', height: '70px', objectFit: 'contain' }}
+                                            alt={item.gift?.name} />
+                                    )}
                                 </div>
                                 <div className="inv-name" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <span>{item.gift?.name || 'Приз'}</span>

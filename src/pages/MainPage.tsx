@@ -1,37 +1,8 @@
-import { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useStore';
-import { fetchHistoryApi } from '../api/api';
 import TgsAnimation from '../components/TgsAnimation';
-
-interface HistoryItem {
-    id: number;
-    gift?: {
-        name: string;
-        gift_number?: number;
-        rarity?: string;
-        image_url?: string;
-    };
-    user?: {
-        first_name?: string;
-    };
-}
 
 export default function MainPage() {
     const { setActiveScreen, setActiveTab } = useAppStore();
-    const [history, setHistory] = useState<HistoryItem[]>([]);
-
-    useEffect(() => {
-        loadHistory();
-        const interval = setInterval(loadHistory, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const loadHistory = async () => {
-        const res = await fetchHistoryApi();
-        if (res?.success) {
-            setHistory(res.history || []);
-        }
-    };
 
     return (
         <div id="main-tab" className="tab-content active">
@@ -111,31 +82,6 @@ export default function MainPage() {
                 </div>
             </div>
 
-            {/* Live History */}
-            {history.length > 0 && (
-                <div className="live-history-section">
-                    <div className="live-history-header">
-                        <span>🔴 Последние выигрыши</span>
-                    </div>
-                    <div className="live-history-scroll" id="liveHistoryScroll">
-                        {history.map((item) => (
-                            <div key={item.id} className={`live-history-card rarity-${item.gift?.rarity || 'common'}`}>
-                                {item.gift?.image_url?.endsWith('.tgs') ? (
-                                    <TgsAnimation url={item.gift.image_url} width={48} height={48} />
-                                ) : (
-                                    <img
-                                        src={item.gift?.image_url || '/assets/images/star.png'}
-                                        style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }}
-                                        alt={item.gift?.name || ''}
-                                    />
-                                )}
-                                <div className="live-history-card-name">{item.gift?.name || 'Приз'}</div>
-                                <div className="live-history-card-user">{item.user?.first_name || '...'}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

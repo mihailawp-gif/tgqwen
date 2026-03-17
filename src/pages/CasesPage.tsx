@@ -3,6 +3,18 @@ import { useAppStore, useUserStore } from '../store/useStore';
 import { fetchCasesApi, fetchCaseItemsApi, openCaseApi, fetchHistoryApi } from '../api/api';
 import TgsAnimation from '../components/TgsAnimation';
 
+interface HistoryItem {
+    id: number;
+    gift?: {
+        name: string;
+        rarity?: string;
+        image_url?: string;
+    };
+    user?: {
+        first_name?: string;
+    };
+}
+
 interface CaseItem {
     id: number;
     name: string;
@@ -25,17 +37,7 @@ interface CaseGift {
     drop_chance: number;
 }
 
-interface HistoryItem {
-    id: number;
-    gift?: {
-        name: string;
-        rarity?: string;
-        image_url?: string;
-    };
-    user?: {
-        first_name?: string;
-    };
-}
+
 
 export default function CasesPage() {
     const { showToast, setLoaderVisible } = useAppStore();
@@ -81,6 +83,8 @@ export default function CasesPage() {
         const res = await fetchHistoryApi();
         if (res?.success) setHistory(res.history || []);
     };
+
+
 
     const openPreview = async (caseItem: CaseItem) => {
         setPreviewCase(caseItem);
@@ -309,6 +313,7 @@ export default function CasesPage() {
                     </div>
                 </div>
             )}
+
 
             <div className="cases-container">
                 {loading ? (

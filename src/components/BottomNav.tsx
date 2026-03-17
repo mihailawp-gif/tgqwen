@@ -9,10 +9,6 @@ export default function BottomNav() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 12h.01M8 12h.01M6 12v.01"></path></svg>
                 <span className="nav-label">Играть</span>
             </button>
-            <button className={`nav-item ${activeTab === 'cases' ? 'active' : ''}`} onClick={() => setActiveTab('cases')}>
-                <img src="/assets/images/tab-cases.png" alt="" style={{ width: '24px', height: '24px' }} />
-                <span className="nav-label">Кейсы</span>
-            </button>
             <button className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
                 <img src="/assets/images/tab-inventory.png" alt="" style={{ width: '24px', height: '24px' }} />
                 <span className="nav-label">Инвентарь</span>

@@ -350,34 +350,22 @@ async def topup_menu(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("pay_"))
 async def process_payment(callback: CallbackQuery):
-    """Обработка платежа — создаём Payment запись в БД, payload = pay_{id}"""
-    import uuid
+    """Обработка платежа"""
     amount = int(callback.data.split("_")[1])
-    if amount not in [50, 100, 250, 500]:
-        await callback.answer("❌ Недопустимая сумма", show_alert=True)
-        return
-
-    async with async_session() as session:
-        user = (await session.execute(select(User).where(User.telegram_id == callback.from_user.id))).scalar_one_or_none()
-        if not user:
-            await callback.answer("❌ Пользователь не найден", show_alert=True)
-            return
-        # Создаём pending-запись чтобы зафиксировать сумму на стороне сервера
-        payment = Payment(user_id=user.id, amount=amount, bonus_amount=0, status="pending")
-        session.add(payment)
-        await session.commit()
-        await session.refresh(payment)
-
+    
+    # Создаем инвойс
     prices = [LabeledPrice(label=f"{amount} звезд", amount=amount)]
+    
     await bot.send_invoice(
         chat_id=callback.from_user.id,
         title=f"Пополнение баланса на {amount} звезд",
         description=f"Покупка {amount} звезд для открытия кейсов",
-        payload=f"pay_{payment.id}",  # ID из БД — нельзя подменить сумму
-        provider_token="",
-        currency="XTR",
+        payload=f"stars_{amount}",
+        provider_token="",  # Для Telegram Stars не нужен
+        currency="XTR",  # Telegram Stars
         prices=prices
     )
+    
     await callback.answer("💳 Счет отправлен!")
 
 
@@ -389,128 +377,56 @@ async def process_pre_checkout(pre_checkout_query: PreCheckoutQuery):
 
 @router.message(F.successful_payment)
 async def process_successful_payment(message: Message):
-    """
-    Обработка успешного платежа.
-
-    БЕЗОПАСНОСТЬ:
-    1. Сумма берётся из БД (payment.amount), НЕ из message.total_amount
-    2. Проверяем что payment.user_id == user.id (нельзя чужой payload)
-    3. Проверяем payment.status == 'pending' — защита от двойного начисления
-    4. charge_id сохраняется для audit trail
-    """
+    """Обработка успешного платежа (с учетом промокодов)"""
     payload = message.successful_payment.invoice_payload
-    tg_amount = message.successful_payment.total_amount  # сумма от Telegram (для лога)
-    charge_id = message.successful_payment.telegram_payment_charge_id
-
-    # Парсим payment_id из payload
-    payment_id = None
-    if payload.startswith('pay_'):
-        try:
-            payment_id = int(payload.split('_')[1])
-        except (ValueError, IndexError):
-            pass
-
-    if payment_id is None:
-        # Неизвестный payload — логируем и ничего не начисляем
-        print(f"[PAYMENT] ❌ Unknown payload: {payload!r} from {message.from_user.id}")
-        await message.answer("❌ Ошибка обработки платежа. Обратитесь в поддержку.")
-        return
-
+    # payload выглядит как "pay_123"
+    payment_id = int(payload.split('_')[1]) if payload.startswith('pay_') else None
+    amount = message.successful_payment.total_amount
+    
     async with async_session() as session:
-        user = (await session.execute(select(User).where(User.telegram_id == message.from_user.id))).scalar_one_or_none()
-        if not user:
-            print(f"[PAYMENT] ❌ User not found: {message.from_user.id}")
-            return
-
-        payment = await session.get(Payment, payment_id)
-
-        # Критические проверки
-        if not payment:
-            print(f"[PAYMENT] ❌ Payment {payment_id} not found, user {user.telegram_id}")
-            await message.answer("❌ Платёж не найден. Обратитесь в поддержку.")
-            return
-
-        if payment.user_id != user.id:
-            # Попытка использовать чужой payment_id
-            print(f"[PAYMENT] 🚨 FRAUD: payment {payment_id} belongs to user {payment.user_id}, but claimed by {user.id} (tg: {user.telegram_id})")
-            await message.answer("❌ Ошибка верификации платежа.")
-            return
-
-        if payment.status != "pending":
-            # Повторный вызов — идемпотентность
-            print(f"[PAYMENT] ⚠️ Payment {payment_id} already processed (status: {payment.status})")
-            await message.answer("ℹ️ Этот платёж уже был обработан.")
-            return
-
-        # Сумма берётся из БД, а не из Telegram сообщения
-        amount = payment.amount
-        if amount != tg_amount:
-            # Расхождение суммы — логируем, но доверяем БД
-            print(f"[PAYMENT] ⚠️ Amount mismatch: DB={amount}, TG={tg_amount}, payment_id={payment_id}")
-
-        bonus = payment.bonus_amount or 0
-
-        # Помечаем как completed
-        payment.status = "completed"
-        payment.telegram_payment_id = charge_id
-
-        # Фиксируем использование промокода (только если ещё не зафиксировано)
-        if payment.promo_id:
-            promo = await session.get(PromoCode, payment.promo_id)
-            if promo:
-                # Проверяем что usage ещё нет — защита от дублей
-                existing_usage = (await session.execute(
-                    select(PromoCodeUsage).where(
-                        PromoCodeUsage.user_id == user.id,
-                        PromoCodeUsage.promo_id == promo.id
-                    )
-                )).scalar_one_or_none()
-                if not existing_usage:
+        result = await session.execute(select(User).where(User.telegram_id == message.from_user.id))
+        user = result.scalar_one()
+        
+        # Находим наш подготовленный платеж
+        payment = await session.get(Payment, payment_id) if payment_id else None
+        
+        bonus = 0
+        if payment:
+            payment.status = "completed"
+            payment.telegram_payment_id = message.successful_payment.telegram_payment_charge_id
+            bonus = payment.bonus_amount
+            
+            # Фиксируем использование промокода
+            if payment.promo_id:
+                promo = await session.get(PromoCode, payment.promo_id)
+                if promo:
                     promo.uses_count += 1
                     session.add(PromoCodeUsage(user_id=user.id, promo_id=promo.id))
-
-        # Начисляем: сумма из БД + бонус из БД
+        
+        # Начисляем основу + бонус от промокода
         total_add = amount + bonus
         user.balance += total_add
-
-        # Реферальная система: начисляем referrer только через ReferralEarning
-        referral_bonus = 0
+        
+        # Реферальная система
         if user.referrer_id:
             referrer = await session.get(User, user.referrer_id)
             if referrer:
-                referral_bonus = int(amount * 0.05)
-                if referral_bonus > 0:
-                    # НЕ трогаем referrer.balance напрямую — только через earning
-                    session.add(ReferralEarning(
-                        referrer_id=referrer.id,
-                        referred_user_id=user.id,
-                        amount=referral_bonus,
-                        source='deposit_bonus'
-                    ))
-
+                bonus_stars = int(amount * 0.05) # 5% от чистого депа (без учета промо-бонуса)
+                if bonus_stars > 0:
+                    referrer.balance += bonus_stars
+                    session.add(ReferralEarning(referrer_id=referrer.id, referred_user_id=user.id, amount=bonus_stars, source='deposit_bonus'))
+                    try:
+                        await bot.send_message(chat_id=referrer.telegram_id, text=f"🎁 <b> Вы получили реферальную награду!</b>\nВам начислено: <b>{bonus_stars} ⭐</b>", parse_mode="HTML")
+                    except Exception: pass 
+                    
         await session.commit()
 
-        print(f"[PAYMENT] ✅ payment_id={payment_id} user={user.telegram_id} amount={amount} bonus={bonus} charge={charge_id}")
-
-    # Уведомления
+    # Уведомление юзеру
     text = f"✅ Платеж успешно обработан!\n💰 Начислено: {amount} ⭐"
     if bonus > 0:
         text += f"\n🎁 Бонус по промокоду: +{bonus} ⭐"
     text += f"\n💎 Новый баланс: {user.balance} ⭐"
     await message.answer(text)
-
-    # Уведомляем реферера если есть бонус
-    if referral_bonus > 0 and user.referrer_id:
-        try:
-            async with async_session() as s2:
-                referrer = await s2.get(User, user.referrer_id)
-                if referrer:
-                    await bot.send_message(
-                        chat_id=referrer.telegram_id,
-                        text=f"🎁 <b>Реферальная награда!</b>\nВаш реферал пополнил баланс.\n+{referral_bonus} ⭐ добавлено в ваши реферальные доходы.",
-                        parse_mode="HTML"
-                    )
-        except Exception: pass
 
 
 @router.callback_query(F.data == "stats")

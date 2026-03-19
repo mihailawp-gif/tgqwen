@@ -256,7 +256,7 @@ export default function CasesPage() {
     // Preview screen
     if (showPreview && previewCase) {
         return (
-            <div id="opening-screen" className="screen active" style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
+            <div id="opening-screen" className="screen active" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
                 <div className="preview-header">
                     <button className="btn-back" onClick={() => { setShowPreview(false); setCasePreviewOpen(false); }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -266,7 +266,7 @@ export default function CasesPage() {
                     <h2>{previewCase.name}</h2>
                 </div>
 
-                <div className="preview-scrollable" style={{ flex: 1, overflowY: 'auto', paddingBottom: '120px' }}>
+                <div className="preview-scrollable" style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px' }}>
                     {/* Рулетка превью (ПОКАЗЫВАЕМ СОДЕРЖИМОЕ) */}
                     <div className="preview-roulette-wrapper">
                         <div className="preview-roulette-track-container">

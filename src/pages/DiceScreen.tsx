@@ -168,7 +168,7 @@ export default function DiceScreen() {
                         </div>
                         <div className="dice-info-box">
                             <span>Выигрыш</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div>
                                 <span>{possibleWin}</span>
                                 <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
                             </div>

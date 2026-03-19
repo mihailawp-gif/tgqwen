@@ -245,9 +245,7 @@ export default function PlinkoScreen() {
             ballEl.remove();
             setBalance(finalBalance);
             setActiveBalls(prev => Math.max(0, prev - 1));
-            if (multiplier >= 2) {
-                showToast(`🎉 x${multiplier}! +${Math.floor(bet * multiplier)} ⭐`);
-            }
+
         }
 
         requestAnimationFrame(animate);

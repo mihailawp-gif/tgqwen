@@ -225,8 +225,7 @@ export default function PlinkoScreen() {
                 y = p1.y + (p2.y - p1.y) * (t * t);
             }
 
-            ballEl.style.left = `${x - ballRadius}px`;
-            ballEl.style.top = `${y - ballRadius}px`;
+            ballEl.style.transform = `translate(${x - ballRadius}px, ${y - ballRadius}px)`;
             requestAnimationFrame(animate);
         }
 

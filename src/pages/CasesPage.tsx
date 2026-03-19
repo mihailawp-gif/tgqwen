@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { fetchCasesApi, fetchCaseItemsApi, openCaseApi, fetchHistoryApi } from '../api/api';
 import TgsAnimation from '../components/TgsAnimation';
@@ -28,6 +28,27 @@ const ITEM_GAP = 6;
 const ITEM_STEP = ITEM_W + ITEM_GAP;
 // Won item is placed at index 46 — enough runway after the track resets
 const TARGET_IDX = 46;
+
+// Memoized roulette cell — re-renders only when `item` reference changes.
+// This prevents all 60 cells from re-rendering when animPhase changes.
+const RouletteCell = memo(function RouletteCell({ item, itemW }: { item: any; itemW: number }) {
+    return (
+        <div style={{
+            width: `${itemW}px`, height: '132px', flexShrink: 0,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
+            borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid rgba(255,255,255,0.08)',
+            contain: 'layout style paint',
+        }}>
+            {item?.image_url?.endsWith('.tgs') ? (
+                <TgsAnimation url={item.image_url} width={88} height={88} />
+            ) : (
+                <img src={item?.image_url || '/assets/images/star.png'} alt=""
+                    style={{ width: '88px', height: '88px', objectFit: 'contain' }} />
+            )}
+        </div>
+    );
+});
 
 export default function CasesPage() {
     const { showToast, setLoaderVisible, setCasePreviewOpen } = useAppStore();
@@ -390,19 +411,7 @@ export default function CasesPage() {
                             }}
                         >
                             {rouletteItems.map((item, i) => (
-                                <div key={i} style={{
-                                    width: `${ITEM_W}px`, height: '132px', flexShrink: 0,
-                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
-                                    borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '1px solid rgba(255,255,255,0.08)',
-                                }}>
-                                    {item?.image_url?.endsWith('.tgs') ? (
-                                        <TgsAnimation url={item.image_url} width={88} height={88} />
-                                    ) : (
-                                        <img src={item?.image_url || '/assets/images/star.png'} alt=""
-                                            style={{ width: '88px', height: '88px', objectFit: 'contain' }} />
-                                    )}
-                                </div>
+                                <RouletteCell key={i} item={item} itemW={ITEM_W} />
                             ))}
                         </div>
                         <div style={{

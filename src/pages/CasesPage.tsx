@@ -128,13 +128,17 @@ export default function CasesPage() {
         setBalance(res.balance);
         setResultData(res);
 
-        // Slot the real won gift into TARGET_IDX.
-        // All patterns stop the VISUAL center of the roulette exactly on this slot
-        // (with a tiny sub-item random jitter for "center", ±few px).
-        // For undershoot / overshoot we just adjust the jitter, NOT which index is centered.
-        const updatedList = [...rouletteItems];
-        updatedList[TARGET_IDX] = res.gift;
-        setRouletteItems(updatedList);
+        // Directly mutate the DOM cell at TARGET_IDX to show the won gift BEFORE animation starts.
+        // This is instant and avoids React re-render timing race conditions.
+        const track = rouletteTrackRef.current;
+        if (track && track.children[TARGET_IDX]) {
+            const cell = track.children[TARGET_IDX] as HTMLElement;
+            cell.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = res.gift.image_url || '/assets/images/star.png';
+            img.style.cssText = 'width:88px;height:88px;object-fit:contain;';
+            cell.appendChild(img);
+        }
 
         // PHASE 2 — spinning (roulette already in DOM, just add the transition)
         setAnimPhase('spinning');
@@ -169,7 +173,11 @@ export default function CasesPage() {
         // Left edge of cell i  = ITEM_GAP + i * ITEM_STEP
         // Center of cell i     = ITEM_GAP + i * ITEM_STEP + ITEM_W / 2
         // We want that to equal screenCenter, so offset = center_of_cell - screenCenter
-        const screenCenter = window.innerWidth / 2;
+        // Use the actual container width, not window.innerWidth.
+        // On PC Telegram the window is wider than the app container (max-width: 480px).
+        const container = track.parentElement;
+        const containerWidth = container ? container.clientWidth : track.getBoundingClientRect().width;
+        const screenCenter = containerWidth / 2;
         const cellCenter = ITEM_GAP + TARGET_IDX * ITEM_STEP + ITEM_W / 2;
         const base = cellCenter - screenCenter;
 

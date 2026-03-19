@@ -162,9 +162,14 @@ export default function CasesPage() {
         const track = rouletteTrackRef.current;
         if (!track) return;
 
-        // Base offset: scroll so TARGET_IDX is perfectly centered in viewport
+        // Base offset: scroll so TARGET_IDX is perfectly centered in viewport.
+        // Track starts with padding: ITEM_GAP px on the left.
+        // Left edge of cell i  = ITEM_GAP + i * ITEM_STEP
+        // Center of cell i     = ITEM_GAP + i * ITEM_STEP + ITEM_W / 2
+        // We want that to equal screenCenter, so offset = center_of_cell - screenCenter
         const screenCenter = window.innerWidth / 2;
-        const base = TARGET_IDX * ITEM_STEP + ITEM_GAP - screenCenter + ITEM_W / 2;
+        const cellCenter = ITEM_GAP + TARGET_IDX * ITEM_STEP + ITEM_W / 2;
+        const base = cellCenter - screenCenter;
 
         // Pattern jitters — all land on the SAME item (TARGET_IDX),
         // just with slightly different pixel precision for drama.
@@ -320,6 +325,7 @@ export default function CasesPage() {
                     ref={rouletteWrapperRef}
                     style={{
                         position: 'relative',
+                        flexShrink: 0,
                         zIndex: isActive ? 20 : 1,
                         transform: `translateY(${targetTranslateY})`,
                         transition: isActive ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none',
@@ -412,18 +418,20 @@ export default function CasesPage() {
                         }} />
                     </div>
 
-                    {/* "Spinning" label shown only when spinning */}
-                    {animPhase === 'spinning' && (
-                        <div style={{
-                            textAlign: 'center', paddingTop: '14px',
-                            color: 'rgba(255,255,255,0.55)', fontSize: '13px',
-                            fontWeight: 700, fontFamily: "'Exo 2', sans-serif",
-                            letterSpacing: '2px', textTransform: 'uppercase',
-                        }}>
-                            ОТКРЫВАЕМ...
-                        </div>
-                    )}
+                    {/* "Spinning" label shown only when spinning — outside wrapper to not affect height */}
                 </div>
+                {animPhase === 'spinning' && (
+                    <div style={{
+                        textAlign: 'center', padding: '12px 0',
+                        color: 'rgba(255,255,255,0.5)', fontSize: '13px',
+                        fontWeight: 700, fontFamily: "'Exo 2', sans-serif",
+                        letterSpacing: '2px', textTransform: 'uppercase',
+                        position: 'relative', zIndex: 20,
+                        flexShrink: 0,
+                    }}>
+                        ОТКРЫВАЕМ...
+                    </div>
+                )}
 
                 {/* ── SCROLLABLE CONTENT ── */}
                 <div className="preview-scrollable" style={{

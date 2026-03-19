@@ -173,15 +173,16 @@ export default function CasesPage() {
         const cellCenter = ITEM_GAP + TARGET_IDX * ITEM_STEP + ITEM_W / 2;
         const base = cellCenter - screenCenter;
 
-        // Pattern jitters — all land on the SAME item (TARGET_IDX),
-        // just with slightly different pixel precision for drama.
-        // This way the visual "winner" is always exactly res.gift.
+        // ALL patterns center exactly on TARGET_IDX.
+        // Drama comes purely from the easing curve, NOT from pixel offset to a different cell.
+        // Max jitter is ±(ITEM_W/2 - 4)px so the item stays visibly under the indicator.
+        const halfItem = ITEM_W / 2 - 4; // 56px — won't reach neighbour cell edge
         const jitters: Record<SpinPattern, number> = {
-            center:    Math.random() * 6 - 3,       // ±3 px  — perfectly centered
-            undershoot:-(ITEM_W * 0.42),             // stop ~half item before center
-            overshoot:  (ITEM_W * 0.44),             // stop ~half item after center
-            snap:       Math.random() * 4 - 2,       // quick snap, near-center
-            edge:       -(ITEM_W * 0.3),
+            center:     Math.random() * 8 - 4,          // ±4px  — dead center
+            undershoot: -(halfItem * 0.85),              // -52px — indicator near left edge of item
+            overshoot:   (halfItem * 0.85),              // +52px — indicator near right edge of item
+            snap:        Math.random() * 6 - 3,          // ±3px  — snappy center
+            edge:       -(halfItem * 0.6),               // -34px — slightly left
         };
 
         const eases: Record<SpinPattern, string> = {

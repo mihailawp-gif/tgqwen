@@ -54,18 +54,33 @@ export default function PlinkoScreen() {
 
     const pinsContainerRef = useRef<HTMLDivElement>(null);
     const bucketsContainerRef = useRef<HTMLDivElement>(null);
+    const observerRef = useRef<ResizeObserver | null>(null);
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     useEffect(() => {
-        // Small delay to ensure DOM is ready on first mount
-        const timer = setTimeout(() => {
-            renderPlinkoBoard();
-        }, 50);
         window.addEventListener('resize', renderPlinkoBoard);
+
+        // Use ResizeObserver to trigger render as soon as the container has a real size
+        if (pinsContainerRef.current) {
+            observerRef.current = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.contentRect.width > 0) {
+                        renderPlinkoBoard();
+                    }
+                }
+            });
+            observerRef.current.observe(pinsContainerRef.current);
+        }
+
+        // Also try immediately and with a fallback timeout
+        renderPlinkoBoard();
+        const timer = setTimeout(renderPlinkoBoard, 100);
+
         return () => {
             clearTimeout(timer);
             window.removeEventListener('resize', renderPlinkoBoard);
+            observerRef.current?.disconnect();
         };
     }, [pinsCount, difficulty]);
 

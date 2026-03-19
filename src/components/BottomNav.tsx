@@ -1,7 +1,9 @@
 import { useAppStore } from '../store/useStore';
 
 export default function BottomNav() {
-    const { activeTab, setActiveTab } = useAppStore();
+    const { activeTab, setActiveTab, casePreviewOpen } = useAppStore();
+
+    if (casePreviewOpen) return null;
 
     return (
         <div className="bottom-nav">

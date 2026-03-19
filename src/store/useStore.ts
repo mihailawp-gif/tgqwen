@@ -15,18 +15,20 @@ interface UserState {
 }
 
 interface AppState {
-  activeScreen: string; // 'main-screen', 'opening-screen', 'crash-screen', etc.
+  activeScreen: string;
   activeTab: 'main' | 'cases' | 'inventory' | 'profile';
   loaderVisible: boolean;
   toast: { message: string, visible: boolean } | null;
   desktopGuardVisible: boolean;
   topUpOpen: boolean;
+  casePreviewOpen: boolean;
   setActiveScreen: (screen: string) => void;
   setActiveTab: (tab: 'main' | 'cases' | 'inventory' | 'profile') => void;
   setLoaderVisible: (v: boolean) => void;
   showToast: (message: string) => void;
   setDesktopGuardVisible: (visible: boolean) => void;
   setTopUpOpen: (open: boolean) => void;
+  setCasePreviewOpen: (open: boolean) => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -50,6 +52,7 @@ export const useAppStore = create<AppState>((set) => ({
   toast: null,
   desktopGuardVisible: true,
   topUpOpen: false,
+  casePreviewOpen: false,
   setActiveScreen: (activeScreen) => set({ activeScreen }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setLoaderVisible: (loaderVisible) => set({ loaderVisible }),
@@ -61,4 +64,5 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setDesktopGuardVisible: (desktopGuardVisible) => set({ desktopGuardVisible }),
   setTopUpOpen: (topUpOpen) => set({ topUpOpen }),
+  setCasePreviewOpen: (casePreviewOpen) => set({ casePreviewOpen }),
 }));

@@ -40,7 +40,7 @@ interface CaseGift {
 
 
 export default function CasesPage() {
-    const { showToast, setLoaderVisible } = useAppStore();
+    const { showToast, setLoaderVisible, setCasePreviewOpen } = useAppStore();
     const { balance, setBalance } = useUserStore();
     const [showConfirm, setShowConfirm] = useState(false);
     const [cases, setCases] = useState<CaseItem[]>([]);
@@ -93,7 +93,7 @@ export default function CasesPage() {
         setLoaderVisible(false);
         if (res.success) {
             setPreviewItems(res.items || []);
-            setShowPreview(true);
+            setShowPreview(true); setCasePreviewOpen(true);
         }
     };
 
@@ -151,7 +151,7 @@ export default function CasesPage() {
             setBalance(res.new_balance);
             showToast(`Продано за ${resultData.gift?.value || 0} ⭐`);
             setShowResult(false);
-            setShowPreview(false);
+            setShowPreview(false); setCasePreviewOpen(false);
         } else {
             showToast('❌ ' + (res.error || 'Ошибка продажи'));
         }
@@ -191,7 +191,7 @@ export default function CasesPage() {
                             Продать за <img src="/assets/images/star.png" className="btn-sell-star-icon" alt="star" /> {resultData.gift?.value || 0}
                         </button>
                     )}
-                    <button className="btn-action btn-continue" onClick={() => { setShowResult(false); setShowPreview(false); }}>
+                    <button className="btn-action btn-continue" onClick={() => { setShowResult(false); setShowPreview(false); setCasePreviewOpen(false); }}>
                         Продолжить
                     </button>
                 </div>
@@ -258,7 +258,7 @@ export default function CasesPage() {
         return (
             <div id="opening-screen" className="screen active" style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
                 <div className="preview-header">
-                    <button className="btn-back" onClick={() => setShowPreview(false)}>
+                    <button className="btn-back" onClick={() => { setShowPreview(false); setCasePreviewOpen(false); }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>

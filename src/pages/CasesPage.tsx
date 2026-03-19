@@ -52,6 +52,7 @@ export default function CasesPage() {
     // remembers the pixel offset of the roulette wrapper from viewport top (for the "fly to center" trick)
     const rouletteWrapperRef  = useRef<HTMLDivElement>(null);
     const savedTopRef         = useRef<number>(0);
+    const spinPatternRef      = useRef<SpinPattern>('center');
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -107,9 +108,10 @@ export default function CasesPage() {
             savedTopRef.current = rect.top;
         }
 
-        // Pick pattern
-        const patterns: SpinPattern[] = ['center', 'center', 'center', 'undershoot', 'overshoot', 'snap'];
+        // Pick pattern — all 5 equally likely
+        const patterns: SpinPattern[] = ['center', 'undershoot', 'overshoot', 'snap', 'edge'];
         const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+        spinPatternRef.current = pattern;
 
         // PHASE 1 — dim, fire API
         setAnimPhase('dimming');
@@ -284,12 +286,14 @@ export default function CasesPage() {
     if (showPreview && previewCase) {
         const isActive = animPhase === 'dimming' || animPhase === 'spinning' || animPhase === 'done';
 
-        // How far the roulette wrapper needs to translate to reach vertical center
+        // Translate roulette to viewport center when active
         const vh = window.innerHeight;
-        const rouletteH = 152; // height of the spinning strip
+        const rouletteH = 152;
         const targetTranslateY = isActive
             ? `calc(${vh / 2 - savedTopRef.current - rouletteH / 2}px)`
             : '0px';
+
+
 
         return (
             <div
@@ -302,6 +306,7 @@ export default function CasesPage() {
                     transition: 'opacity 0.45s',
                     opacity: isActive ? 0 : 1,
                     pointerEvents: isActive ? 'none' : 'auto',
+                    flexShrink: 0,
                 }}>
                     <button className="btn-back" onClick={() => { setShowPreview(false); setCasePreviewOpen(false); }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -320,7 +325,7 @@ export default function CasesPage() {
                     pointerEvents: isActive ? 'auto' : 'none',
                 }} />
 
-                {/* ── ROULETTE WRAPPER — always in the document, translates to center ── */}
+                {/* ── ROULETTE WRAPPER ── */}
                 <div
                     ref={rouletteWrapperRef}
                     style={{
@@ -332,7 +337,7 @@ export default function CasesPage() {
                         willChange: 'transform',
                     }}
                 >
-                    {/* Gold indicator lines — only visible while spinning */}
+                    {/* Gold indicator — only while active */}
                     {isActive && (<>
                         <div style={{
                             position: 'absolute', top: 0, bottom: 0,
@@ -356,7 +361,7 @@ export default function CasesPage() {
                         }} />
                     </>)}
 
-                    {/* The one shared roulette track — pre-loaded images, no re-mount */}
+                    {/* Roulette track */}
                     <div style={{
                         overflow: 'hidden',
                         height: isActive ? '152px' : '148px',
@@ -369,78 +374,94 @@ export default function CasesPage() {
                         <div
                             ref={rouletteTrackRef}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                height: '100%',
-                                gap: `${ITEM_GAP}px`,
-                                padding: `0 ${ITEM_GAP}px`,
+                                display: 'flex', alignItems: 'center', height: '100%',
+                                gap: `${ITEM_GAP}px`, padding: `0 ${ITEM_GAP}px`,
                                 willChange: 'transform',
                             }}
                         >
                             {rouletteItems.map((item, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        width: `${ITEM_W}px`,
-                                        height: '132px',
-                                        flexShrink: 0,
-                                        background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
-                                        borderRadius: '14px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        border: '1px solid rgba(255,255,255,0.08)',
-                                    }}
-                                >
+                                <div key={i} style={{
+                                    width: `${ITEM_W}px`, height: '132px', flexShrink: 0,
+                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
+                                    borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                }}>
                                     {item?.image_url?.endsWith('.tgs') ? (
                                         <TgsAnimation url={item.image_url} width={88} height={88} />
                                     ) : (
-                                        <img
-                                            src={item?.image_url || '/assets/images/star.png'}
-                                            alt=""
-                                            style={{ width: '88px', height: '88px', objectFit: 'contain' }}
-                                        />
+                                        <img src={item?.image_url || '/assets/images/star.png'} alt=""
+                                            style={{ width: '88px', height: '88px', objectFit: 'contain' }} />
                                     )}
                                 </div>
                             ))}
                         </div>
-
-                        {/* Fade edges — always shown */}
                         <div style={{
-                            position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px',
+                            position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
                             background: `linear-gradient(to right, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
-                            zIndex: 3, pointerEvents: 'none', transition: 'background 0.4s',
+                            transition: 'background 0.4s',
                         }} />
                         <div style={{
-                            position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px',
+                            position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
                             background: `linear-gradient(to left, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
-                            zIndex: 3, pointerEvents: 'none', transition: 'background 0.4s',
+                            transition: 'background 0.4s',
                         }} />
                     </div>
-
-                    {/* "Spinning" label shown only when spinning — outside wrapper to not affect height */}
                 </div>
-                {animPhase === 'spinning' && (
-                    <div style={{
-                        textAlign: 'center', padding: '12px 0',
-                        color: 'rgba(255,255,255,0.5)', fontSize: '13px',
-                        fontWeight: 700, fontFamily: "'Exo 2', sans-serif",
-                        letterSpacing: '2px', textTransform: 'uppercase',
-                        position: 'relative', zIndex: 20,
-                        flexShrink: 0,
-                    }}>
-                        ОТКРЫВАЕМ...
-                    </div>
-                )}
 
-                {/* ── SCROLLABLE CONTENT ── */}
+                {/* ── STATUS LABEL — right under roulette, always takes space ── */}
+                <div style={{
+                    flexShrink: 0,
+                    textAlign: 'center',
+                    padding: '10px 16px',
+                    minHeight: '38px',
+                    position: 'relative',
+                    zIndex: isActive ? 20 : 1,
+                    transition: 'opacity 0.3s',
+                }}>
+                    {animPhase === 'spinning' && (
+                        <span style={{
+                            color: 'rgba(255,255,255,0.55)', fontSize: '13px',
+                            fontWeight: 700, fontFamily: "'Exo 2', sans-serif",
+                            letterSpacing: '2px', textTransform: 'uppercase',
+                        }}>
+                            ОТКРЫВАЕМ...
+                        </span>
+                    )}
+                </div>
+
+                {/* ── OPEN BUTTON — right under roulette+label ── */}
+                <div style={{
+                    flexShrink: 0,
+                    padding: '0 16px',
+                    position: 'relative',
+                    zIndex: isActive ? 20 : 1,
+                    opacity: isActive ? 0 : 1,
+                    transition: 'opacity 0.4s',
+                    pointerEvents: isActive ? 'none' : 'auto',
+                }}>
+                    <button
+                        className={`btn-open-case ${previewCase.is_free ? 'free' : ''}`}
+                        onClick={handleOpenCase}
+                        disabled={isActive}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                        {previewCase.is_free
+                            ? 'Открыть бесплатно'
+                            : <>Открыть за&nbsp;<img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} alt="star" />&nbsp;{previewCase.price}</>
+                        }
+                    </button>
+                </div>
+
+                {/* ── SCROLLABLE CONTENT — items list ── */}
                 <div className="preview-scrollable" style={{
                     flex: 1, overflowY: 'auto', paddingBottom: '16px',
                     opacity: isActive ? 0 : 1,
                     transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
+                    marginTop: '12px',
                 }}>
-                    <div style={{ height: '8px' }} />
                     {previewCase.description && (
                         <div className="case-description">{previewCase.description}</div>
                     )}
@@ -465,33 +486,6 @@ export default function CasesPage() {
                             ))}
                         </div>
                     </div>
-                </div>
-
-                {/* ── FOOTER with price ON the button ── */}
-                <div className="open-case-footer" style={{
-                    flexShrink: 0, position: 'relative', zIndex: 10,
-                    paddingBottom: 'calc(16px + var(--safe-bottom))',
-                    opacity: isActive ? 0 : 1,
-                    transition: 'opacity 0.4s',
-                    pointerEvents: isActive ? 'none' : 'auto',
-                }}>
-                    <button
-                        className={`btn-open-case ${previewCase.is_free ? 'free' : ''}`}
-                        onClick={handleOpenCase}
-                        disabled={isActive}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                        {previewCase.is_free
-                            ? 'Открыть бесплатно'
-                            : <>
-                                Открыть за&nbsp;
-                                <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} alt="star" />
-                                &nbsp;{previewCase.price}
-                              </>
-                        }
-                    </button>
                 </div>
 
                 {showConfirm && (

@@ -20,42 +20,40 @@ interface CaseGift {
     drop_chance: number;
 }
 
-// Animation phases
-type AnimPhase = 'idle' | 'dimming' | 'spinning' | 'result';
-
-// Spin patterns — each returns a final CSS transform for the track
+type AnimPhase = 'idle' | 'dimming' | 'spinning' | 'done';
 type SpinPattern = 'center' | 'undershoot' | 'overshoot' | 'edge' | 'snap';
+
+const ITEM_W   = 120;
+const ITEM_GAP = 6;
+const ITEM_STEP = ITEM_W + ITEM_GAP;
+// Won item is placed at index 46 — enough runway after the track resets
+const TARGET_IDX = 46;
 
 export default function CasesPage() {
     const { showToast, setLoaderVisible, setCasePreviewOpen } = useAppStore();
     const { balance, setBalance } = useUserStore();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [cases, setCases] = useState<CaseItem[]>([]);
+    const [cases, setCases]   = useState<CaseItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState<HistoryItem[]>([]);
 
-    const [previewCase, setPreviewCase] = useState<CaseItem | null>(null);
+    const [previewCase,  setPreviewCase]  = useState<CaseItem | null>(null);
     const [previewItems, setPreviewItems] = useState<CaseGift[]>([]);
-    const [showPreview, setShowPreview] = useState(false);
+    const [showPreview,  setShowPreview]  = useState(false);
 
-    // New animation state
-    const [animPhase, setAnimPhase] = useState<AnimPhase>('idle');
+    const [animPhase,     setAnimPhase]     = useState<AnimPhase>('idle');
+    // Single roulette item list — pre-built from previewItems, won item slotted in
     const [rouletteItems, setRouletteItems] = useState<any[]>([]);
-    const [spinPattern, setSpinPattern] = useState<SpinPattern>('center');
-    const [wonItemIndex, setWonItemIndex] = useState(45);
+    const [showResult,    setShowResult]    = useState(false);
+    const [resultData,    setResultData]    = useState<any>(null);
 
-    const [showResult, setShowResult] = useState(false);
-    const [resultData, setResultData] = useState<any>(null);
+    // ref to the roulette track (always rendered inside preview screen)
+    const rouletteTrackRef    = useRef<HTMLDivElement>(null);
+    // remembers the pixel offset of the roulette wrapper from viewport top (for the "fly to center" trick)
+    const rouletteWrapperRef  = useRef<HTMLDivElement>(null);
+    const savedTopRef         = useRef<number>(0);
 
-    const rouletteTrackRef = useRef<HTMLDivElement>(null);
-    const previewRouletteRef = useRef<HTMLDivElement>(null);
-    const previewWrapperRef = useRef<HTMLDivElement>(null);
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
-
-    // Item dimensions
-    const ITEM_W = 120;
-    const ITEM_GAP = 6;
-    const ITEM_STEP = ITEM_W + ITEM_GAP;
 
     useEffect(() => {
         loadCases();
@@ -70,7 +68,6 @@ export default function CasesPage() {
         if (res.success) setCases(res.cases || []);
         setLoading(false);
     };
-
     const loadHistory = async () => {
         const res = await fetchHistoryApi();
         if (res?.success) setHistory(res.history || []);
@@ -83,137 +80,130 @@ export default function CasesPage() {
         setLoaderVisible(false);
         if (res.success) {
             setPreviewItems(res.items || []);
+            // Pre-build a static roulette track from preview items (no won item yet)
+            const list: any[] = [];
+            const gifts = res.items || [];
+            for (let i = 0; i < 60; i++) {
+                list.push(gifts[Math.floor(Math.random() * gifts.length)].gift);
+            }
+            setRouletteItems(list);
             setShowPreview(true);
             setCasePreviewOpen(true);
             setAnimPhase('idle');
         }
     };
 
-    // Build roulette items list, placing won gift at target index
-    const buildRouletteItems = useCallback((wonGift: any, items: CaseGift[], targetIdx: number) => {
-        const list: any[] = [];
-        for (let i = 0; i < 60; i++) {
-            const r = items[Math.floor(Math.random() * items.length)];
-            list.push(r.gift);
-        }
-        list[targetIdx] = wonGift;
-        return list;
-    }, []);
-
+    // ── Core spin logic ────────────────────────────────────────────────────────
     const handleOpenCase = async () => {
         if (!previewCase) return;
         if (!previewCase.is_free && balance < previewCase.price) {
             return showToast('❌ Недостаточно звезд!');
         }
 
-        // Pick random spin pattern
-        const patterns: SpinPattern[] = ['center', 'center', 'undershoot', 'overshoot', 'edge', 'snap'];
+        // Save the current top position of the roulette wrapper so we can
+        // smoothly translate it to the viewport center without layout jumps.
+        if (rouletteWrapperRef.current) {
+            const rect = rouletteWrapperRef.current.getBoundingClientRect();
+            savedTopRef.current = rect.top;
+        }
+
+        // Pick pattern
+        const patterns: SpinPattern[] = ['center', 'center', 'center', 'undershoot', 'overshoot', 'snap'];
         const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-        setSpinPattern(pattern);
 
-        // Target item position: ~45 out of 60 gives enough runway
-        const TARGET_IDX = 45;
-        setWonItemIndex(TARGET_IDX);
-
-        // PHASE 1: dim everything — start API call simultaneously
+        // PHASE 1 — dim, fire API
         setAnimPhase('dimming');
         const resPromise = openCaseApi(previewCase.id, telegramId);
 
-        // After 600ms dimming, move to spinning
-        await new Promise(r => setTimeout(r, 600));
+        // Wait for dim + API
+        const [res] = await Promise.all([resPromise, new Promise(r => setTimeout(r, 700))]);
 
-        const res = await resPromise;
         if (!res.success) {
             setAnimPhase('idle');
             return showToast('❌ ' + (res.error || 'Ошибка открытия кейса'));
         }
 
         setBalance(res.balance);
-
-        // Build roulette with the real won item
-        const items = buildRouletteItems(res.gift, previewItems, TARGET_IDX);
-        setRouletteItems(items);
         setResultData(res);
+
+        // Slot the real won gift into TARGET_IDX.
+        // All patterns stop the VISUAL center of the roulette exactly on this slot
+        // (with a tiny sub-item random jitter for "center", ±few px).
+        // For undershoot / overshoot we just adjust the jitter, NOT which index is centered.
+        const updatedList = [...rouletteItems];
+        updatedList[TARGET_IDX] = res.gift;
+        setRouletteItems(updatedList);
+
+        // PHASE 2 — spinning (roulette already in DOM, just add the transition)
         setAnimPhase('spinning');
 
-        // Wait a tick for DOM to render, then apply transform
-        await new Promise(r => setTimeout(r, 60));
+        // One RAF to let React flush the list update
+        await new Promise(r => requestAnimationFrame(r));
+        await new Promise(r => requestAnimationFrame(r));
 
-        applySpinTransform(pattern, TARGET_IDX);
+        applySpinTransform(pattern);
 
-        // PATTERN-specific total durations
-        const durations: Record<SpinPattern, number> = {
-            center: 5200,
-            undershoot: 5500,
-            overshoot: 5800,
-            edge: 5000,
-            snap: 4800,
+        const spinMs: Record<SpinPattern, number> = {
+            center:    5200,
+            undershoot:5400,
+            overshoot: 5600,
+            snap:      4600,
+            // unused but needed for type
+            edge:      5000,
         };
 
-        await new Promise(r => setTimeout(r, durations[pattern]));
+        await new Promise(r => setTimeout(r, spinMs[pattern]));
 
-        // PHASE 3: show result
-        setAnimPhase('result');
+        setAnimPhase('done');
         setShowResult(true);
     };
 
-    const getBaseOffset = (targetIdx: number) => {
-        const screenCenter = window.innerWidth / 2;
-        return targetIdx * ITEM_STEP - screenCenter + ITEM_W / 2;
-    };
-
-    const applySpinTransform = (pattern: SpinPattern, targetIdx: number) => {
+    const applySpinTransform = (pattern: SpinPattern) => {
         const track = rouletteTrackRef.current;
         if (!track) return;
 
-        const base = getBaseOffset(targetIdx);
+        // Base offset: scroll so TARGET_IDX is perfectly centered in viewport
+        const screenCenter = window.innerWidth / 2;
+        const base = TARGET_IDX * ITEM_STEP + ITEM_GAP - screenCenter + ITEM_W / 2;
 
-        // Remove transition first to reset
-        track.style.transition = 'none';
-        track.style.transform = 'translateX(0)';
-
-        // Force reflow
-        track.getBoundingClientRect();
-
-        const eases: Record<SpinPattern, string> = {
-            center:    'cubic-bezier(0.08, 0.82, 0.17, 1)',
-            undershoot:'cubic-bezier(0.06, 0.9, 0.2, 1)',
-            overshoot: 'cubic-bezier(0.05, 0.85, 0.15, 1)',
-            edge:      'cubic-bezier(0.1, 0.8, 0.12, 1)',
-            snap:      'cubic-bezier(0.12, 0, 0.08, 1)',
+        // Pattern jitters — all land on the SAME item (TARGET_IDX),
+        // just with slightly different pixel precision for drama.
+        // This way the visual "winner" is always exactly res.gift.
+        const jitters: Record<SpinPattern, number> = {
+            center:    Math.random() * 6 - 3,       // ±3 px  — perfectly centered
+            undershoot:-(ITEM_W * 0.42),             // stop ~half item before center
+            overshoot:  (ITEM_W * 0.44),             // stop ~half item after center
+            snap:       Math.random() * 4 - 2,       // quick snap, near-center
+            edge:       -(ITEM_W * 0.3),
         };
 
-        // Offset tweaks per pattern
-        let finalOffset = base;
-        if (pattern === 'center') {
-            // Land exactly in the center ± tiny random
-            finalOffset = base + (Math.random() * 10 - 5);
-        } else if (pattern === 'undershoot') {
-            // Stop ~half an item short — looks like "almost!"
-            finalOffset = base - ITEM_W * 0.55;
-        } else if (pattern === 'overshoot') {
-            // Go past center by about half an item
-            finalOffset = base + ITEM_W * 0.52;
-        } else if (pattern === 'edge') {
-            // Stop so item is near the edge of the indicator
-            finalOffset = base - ITEM_W * 0.38;
-        } else if (pattern === 'snap') {
-            // Rush, then snap hard onto center
-            finalOffset = base + (Math.random() * 6 - 3);
-        }
+        const eases: Record<SpinPattern, string> = {
+            center:    'cubic-bezier(0.06, 0.87, 0.13, 1)',
+            undershoot:'cubic-bezier(0.06, 0.92, 0.18, 1)',
+            overshoot: 'cubic-bezier(0.06, 0.90, 0.16, 1)',
+            snap:      'cubic-bezier(0.14, 0.02, 0.06, 1)',
+            edge:      'cubic-bezier(0.08, 0.88, 0.15, 1)',
+        };
 
         const durations: Record<SpinPattern, string> = {
             center:    '5s',
             undershoot:'5.2s',
-            overshoot: '5.5s',
+            overshoot: '5.4s',
+            snap:      '4.4s',
             edge:      '4.8s',
-            snap:      '4.5s',
         };
 
+        // Reset without transition
+        track.style.transition = 'none';
+        track.style.transform  = 'translateX(0)';
+        track.getBoundingClientRect(); // force reflow
+
+        // Apply spin
         track.style.transition = `transform ${durations[pattern]} ${eases[pattern]}`;
-        track.style.transform = `translateX(-${finalOffset}px)`;
+        track.style.transform  = `translateX(-${base + jitters[pattern]}px)`;
     };
 
+    // ── Sell / close ──────────────────────────────────────────────────────────
     const sellResult = async () => {
         if (!resultData) return;
         setLoaderVisible(true);
@@ -224,23 +214,25 @@ export default function CasesPage() {
         if (res.success) {
             setBalance(res.new_balance);
             showToast(`Продано за ${resultData.gift?.value || 0} ⭐`);
-            setShowResult(false);
-            setShowPreview(false);
-            setCasePreviewOpen(false);
-            setAnimPhase('idle');
+            closeAll();
         } else {
             showToast('❌ ' + (res.error || 'Ошибка продажи'));
         }
     };
 
-    const closeResult = () => {
+    const closeAll = useCallback(() => {
         setShowResult(false);
         setShowPreview(false);
         setCasePreviewOpen(false);
         setAnimPhase('idle');
-    };
+        // Reset track position for next open
+        if (rouletteTrackRef.current) {
+            rouletteTrackRef.current.style.transition = 'none';
+            rouletteTrackRef.current.style.transform  = 'translateX(0)';
+        }
+    }, [setCasePreviewOpen]);
 
-    // ── RESULT SCREEN ──────────────────────────────────────────────────────────
+    // ── RESULT SCREEN ─────────────────────────────────────────────────────────
     if (showResult && resultData) {
         return (
             <div className="result-container">
@@ -277,19 +269,22 @@ export default function CasesPage() {
                             Продать за <img src="/assets/images/star.png" className="btn-sell-star-icon" alt="star" /> {resultData.gift?.value || 0}
                         </button>
                     )}
-                    <button className="btn-action btn-continue" onClick={closeResult}>
-                        Продолжить
-                    </button>
+                    <button className="btn-action btn-continue" onClick={closeAll}>Продолжить</button>
                 </div>
             </div>
         );
     }
 
-    // ── PREVIEW SCREEN ─────────────────────────────────────────────────────────
+    // ── PREVIEW SCREEN ────────────────────────────────────────────────────────
     if (showPreview && previewCase) {
-        const isDimming  = animPhase === 'dimming';
-        const isSpinning = animPhase === 'spinning';
-        const isActive   = isDimming || isSpinning;
+        const isActive = animPhase === 'dimming' || animPhase === 'spinning' || animPhase === 'done';
+
+        // How far the roulette wrapper needs to translate to reach vertical center
+        const vh = window.innerHeight;
+        const rouletteH = 152; // height of the spinning strip
+        const targetTranslateY = isActive
+            ? `calc(${vh / 2 - savedTopRef.current - rouletteH / 2}px)`
+            : '0px';
 
         return (
             <div
@@ -299,7 +294,7 @@ export default function CasesPage() {
             >
                 {/* ── HEADER ── */}
                 <div className="preview-header" style={{
-                    transition: 'opacity 0.5s',
+                    transition: 'opacity 0.45s',
                     opacity: isActive ? 0 : 1,
                     pointerEvents: isActive ? 'none' : 'auto',
                 }}>
@@ -311,168 +306,136 @@ export default function CasesPage() {
                     <h2>{previewCase.name}</h2>
                 </div>
 
-                {/* ── FULL-SCREEN DIM OVERLAY when spinning ── */}
+                {/* ── DIM OVERLAY ── */}
                 <div style={{
                     position: 'absolute', inset: 0, zIndex: 10,
-                    background: 'rgba(5,5,12,0.88)',
+                    background: 'rgba(5,5,14,0.92)',
                     opacity: isActive ? 1 : 0,
-                    transition: 'opacity 0.5s ease',
+                    transition: 'opacity 0.45s ease',
                     pointerEvents: isActive ? 'auto' : 'none',
                 }} />
 
-                {/* ── ROULETTE (always mounted, animates to center when active) ── */}
+                {/* ── ROULETTE WRAPPER — always in the document, translates to center ── */}
                 <div
-                    ref={previewWrapperRef}
+                    ref={rouletteWrapperRef}
                     style={{
-                        position: isActive ? 'absolute' : 'relative',
-                        top: isActive ? '50%' : undefined,
-                        left: isActive ? 0 : undefined,
-                        right: isActive ? 0 : undefined,
-                        transform: isActive ? 'translateY(-50%)' : 'none',
+                        position: 'relative',
                         zIndex: isActive ? 20 : 1,
-                        transition: 'top 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1)',
-                        width: '100%',
+                        transform: `translateY(${targetTranslateY})`,
+                        transition: isActive ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none',
+                        willChange: 'transform',
                     }}
                 >
-                    {/* Preview static roulette (shown when idle/dimming) */}
-                    {!isSpinning && (
-                        <div className="preview-roulette-wrapper" ref={previewRouletteRef}>
-                            <div className="preview-roulette-track-container">
-                                <div className="preview-roulette-track">
-                                    {[...previewItems, ...previewItems, ...previewItems].map((item, i) => (
-                                        <div key={i} className={`preview-roulette-item rarity-${item.gift.rarity || 'common'}`}>
-                                            {item.gift.image_url?.endsWith('.tgs') ? (
-                                                <TgsAnimation url={item.gift.image_url} width={90} height={90} />
-                                            ) : (
-                                                <img src={item.gift.image_url || '/assets/images/star.png'} alt=""
-                                                    style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="preview-roulette-fade preview-roulette-fade-left" />
-                            <div className="preview-roulette-fade preview-roulette-fade-right" />
-                        </div>
-                    )}
+                    {/* Gold indicator lines — only visible while spinning */}
+                    {isActive && (<>
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0,
+                            left: '50%', transform: 'translateX(-50%)',
+                            width: '3px',
+                            background: 'linear-gradient(to bottom, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%)',
+                            boxShadow: '0 0 10px var(--gold)',
+                            zIndex: 6, pointerEvents: 'none',
+                        }} />
+                        <div style={{
+                            position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+                            borderTop: '9px solid var(--gold)', zIndex: 7,
+                        }} />
+                        <div style={{
+                            position: 'absolute', bottom: '-1px', left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+                            borderBottom: '9px solid var(--gold)', zIndex: 7,
+                        }} />
+                    </>)}
 
-                    {/* Spinning roulette (shown when spinning) */}
-                    {isSpinning && (
-                        <div style={{ position: 'relative', width: '100%' }}>
-                            {/* Gold indicator */}
-                            <div style={{
-                                position: 'absolute', top: 0, bottom: 0,
-                                left: '50%', transform: 'translateX(-50%)',
-                                width: '3px',
-                                background: 'var(--gold)',
-                                boxShadow: '0 0 12px var(--gold)',
-                                zIndex: 6, pointerEvents: 'none',
-                            }} />
-                            {/* Top arrow */}
-                            <div style={{
-                                position: 'absolute', top: 0, left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: 0, height: 0,
-                                borderLeft: '7px solid transparent',
-                                borderRight: '7px solid transparent',
-                                borderTop: '9px solid var(--gold)',
-                                zIndex: 7, pointerEvents: 'none',
-                            }} />
-                            {/* Bottom arrow */}
-                            <div style={{
-                                position: 'absolute', bottom: 0, left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: 0, height: 0,
-                                borderLeft: '7px solid transparent',
-                                borderRight: '7px solid transparent',
-                                borderBottom: '9px solid var(--gold)',
-                                zIndex: 7, pointerEvents: 'none',
-                            }} />
-
-                            <div style={{
-                                overflow: 'hidden', height: '152px',
-                                background: 'rgba(0,0,0,0.5)',
-                                borderTop: '1px solid rgba(255,255,255,0.06)',
-                                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                            }}>
+                    {/* The one shared roulette track — pre-loaded images, no re-mount */}
+                    <div style={{
+                        overflow: 'hidden',
+                        height: isActive ? '152px' : '148px',
+                        background: isActive ? 'rgba(0,0,0,0.55)' : '#0c0d12',
+                        borderTop: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
+                        borderBottom: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
+                        transition: 'height 0.3s, background 0.4s',
+                        position: 'relative',
+                    }}>
+                        <div
+                            ref={rouletteTrackRef}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                height: '100%',
+                                gap: `${ITEM_GAP}px`,
+                                padding: `0 ${ITEM_GAP}px`,
+                                willChange: 'transform',
+                            }}
+                        >
+                            {rouletteItems.map((item, i) => (
                                 <div
-                                    ref={rouletteTrackRef}
+                                    key={i}
                                     style={{
+                                        width: `${ITEM_W}px`,
+                                        height: '132px',
+                                        flexShrink: 0,
+                                        background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
+                                        borderRadius: '14px',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        height: '100%',
-                                        gap: `${ITEM_GAP}px`,
-                                        padding: `0 ${ITEM_GAP}px`,
-                                        willChange: 'transform',
+                                        justifyContent: 'center',
+                                        border: '1px solid rgba(255,255,255,0.08)',
                                     }}
                                 >
-                                    {rouletteItems.map((item, i) => (
-                                        <div
-                                            key={i}
-                                            style={{
-                                                width: `${ITEM_W}px`,
-                                                height: '132px',
-                                                flexShrink: 0,
-                                                background: i === wonItemIndex
-                                                    ? 'linear-gradient(180deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)'
-                                                    : 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-                                                borderRadius: '14px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                border: `1px solid ${i === wonItemIndex ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                                                boxShadow: i === wonItemIndex ? '0 0 16px rgba(245,158,11,0.25)' : 'none',
-                                            }}
-                                        >
-                                            {item.image_url?.endsWith('.tgs') ? (
-                                                <TgsAnimation url={item.image_url} width={86} height={86} />
-                                            ) : (
-                                                <img src={item.image_url || '/assets/images/star.png'} alt=""
-                                                    style={{ width: '86px', height: '86px', objectFit: 'contain' }} />
-                                            )}
-                                        </div>
-                                    ))}
+                                    {item?.image_url?.endsWith('.tgs') ? (
+                                        <TgsAnimation url={item.image_url} width={88} height={88} />
+                                    ) : (
+                                        <img
+                                            src={item?.image_url || '/assets/images/star.png'}
+                                            alt=""
+                                            style={{ width: '88px', height: '88px', objectFit: 'contain' }}
+                                        />
+                                    )}
                                 </div>
-                            </div>
+                            ))}
+                        </div>
 
-                            {/* Fade edges */}
-                            <div style={{
-                                position: 'absolute', top: 0, bottom: 0, left: 0, width: '80px', zIndex: 2, pointerEvents: 'none',
-                                background: 'linear-gradient(to right, rgba(5,5,12,0.9), transparent)',
-                            }} />
-                            <div style={{
-                                position: 'absolute', top: 0, bottom: 0, right: 0, width: '80px', zIndex: 2, pointerEvents: 'none',
-                                background: 'linear-gradient(to left, rgba(5,5,12,0.9), transparent)',
-                            }} />
+                        {/* Fade edges — always shown */}
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px',
+                            background: `linear-gradient(to right, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            zIndex: 3, pointerEvents: 'none', transition: 'background 0.4s',
+                        }} />
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px',
+                            background: `linear-gradient(to left, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            zIndex: 3, pointerEvents: 'none', transition: 'background 0.4s',
+                        }} />
+                    </div>
 
-                            {/* Spinning label */}
-                            <div style={{
-                                textAlign: 'center', marginTop: '20px',
-                                color: '#fff', fontSize: '16px', fontWeight: 900,
-                                fontFamily: "'Exo 2', sans-serif",
-                                letterSpacing: '2px', textTransform: 'uppercase',
-                                opacity: 0.7,
-                            }}>
-                                {spinPattern === 'snap' ? 'БЫСТРОЕ ОТКРЫТИЕ!' : 'ОТКРЫВАЕМ...'}
-                            </div>
+                    {/* "Spinning" label shown only when spinning */}
+                    {animPhase === 'spinning' && (
+                        <div style={{
+                            textAlign: 'center', paddingTop: '14px',
+                            color: 'rgba(255,255,255,0.55)', fontSize: '13px',
+                            fontWeight: 700, fontFamily: "'Exo 2', sans-serif",
+                            letterSpacing: '2px', textTransform: 'uppercase',
+                        }}>
+                            ОТКРЫВАЕМ...
                         </div>
                     )}
                 </div>
 
-                {/* ── SCROLLABLE CONTENT (dims and disappears) ── */}
+                {/* ── SCROLLABLE CONTENT ── */}
                 <div className="preview-scrollable" style={{
                     flex: 1, overflowY: 'auto', paddingBottom: '16px',
-                    transition: 'opacity 0.4s',
                     opacity: isActive ? 0 : 1,
+                    transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
                 }}>
-                    {/* spacer since roulette is in separate container */}
                     <div style={{ height: '8px' }} />
-
                     {previewCase.description && (
                         <div className="case-description">{previewCase.description}</div>
                     )}
-
                     <div className="items-preview-section">
                         <h3>Содержимое кейса</h3>
                         <div className="preview-tiles-grid">
@@ -496,20 +459,14 @@ export default function CasesPage() {
                     </div>
                 </div>
 
-                {/* ── FOOTER ── */}
+                {/* ── FOOTER with price ON the button ── */}
                 <div className="open-case-footer" style={{
                     flexShrink: 0, position: 'relative', zIndex: 10,
                     paddingBottom: 'calc(16px + var(--safe-bottom))',
-                    transition: 'opacity 0.4s',
                     opacity: isActive ? 0 : 1,
+                    transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
                 }}>
-                    {!previewCase.is_free && (
-                        <div className="case-price-display">
-                            <img src="/assets/images/star.png" className="price-icon" alt="star" />
-                            <span>{previewCase.price}</span>
-                        </div>
-                    )}
                     <button
                         className={`btn-open-case ${previewCase.is_free ? 'free' : ''}`}
                         onClick={handleOpenCase}
@@ -518,7 +475,14 @@ export default function CasesPage() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M5 12h14M12 5l7 7-7 7" />
                         </svg>
-                        {previewCase.is_free ? 'Открыть бесплатно' : 'Открыть кейс'}
+                        {previewCase.is_free
+                            ? 'Открыть бесплатно'
+                            : <>
+                                Открыть за&nbsp;
+                                <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} alt="star" />
+                                &nbsp;{previewCase.price}
+                              </>
+                        }
                     </button>
                 </div>
 
@@ -540,7 +504,7 @@ export default function CasesPage() {
         );
     }
 
-    // ── CASES GRID ─────────────────────────────────────────────────────────────
+    // ── CASES GRID ────────────────────────────────────────────────────────────
     return (
         <div className="tab-content active">
             {history.length > 0 && (
@@ -565,12 +529,9 @@ export default function CasesPage() {
                     </div>
                 </div>
             )}
-
             <div className="cases-container">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="loader-spinner" />
-                    </div>
+                    <div className="flex items-center justify-center py-20"><div className="loader-spinner" /></div>
                 ) : cases.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">📦</div>

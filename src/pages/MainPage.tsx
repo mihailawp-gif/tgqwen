@@ -1,8 +1,18 @@
+import { useEffect } from 'react';
 import { useAppStore } from '../store/useStore';
-import TgsAnimation from '../components/TgsAnimation';
+import TgsAnimation, { preloadTgs } from '../components/TgsAnimation';
 
 export default function MainPage() {
     const { setActiveScreen, setActiveTab } = useAppStore();
+
+    // Прогреваем кэш TGS-файлов до рендера — загрузка в фоне
+    useEffect(() => {
+        preloadTgs([
+            '/assets/images/crash.tgs',
+            '/assets/images/dice.tgs',
+            '/assets/images/gift_limited_22.tgs',
+        ]);
+    }, []);
 
     return (
         <div id="main-tab" className="tab-content active">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { fetchCasesApi, fetchCaseItemsApi, openCaseApi, fetchHistoryApi } from '../api/api';
-import TgsAnimation, { preloadTgs } from '../components/TgsAnimation';
+import TgsAnimation from '../components/TgsAnimation';
 
 interface HistoryItem {
     id: number;
@@ -29,9 +29,12 @@ const ITEM_STEP = ITEM_W + ITEM_GAP;
 // Won item is placed at index 46 — enough runway after the track resets
 const TARGET_IDX = 46;
 
-// Memoized roulette cell — re-renders only when `item` reference changes.
-// This prevents all 60 cells from re-rendering when animPhase changes.
-const RouletteCell = memo(function RouletteCell({ item, itemW }: { item: any; itemW: number }) {
+// Memoized roulette cell — re-renders only when `item` or `isSpinning` changes.
+// Во время спина TGS-анимации паузятся — убирает 60 одновременных RAF loop'ов.
+const RouletteCell = memo(function RouletteCell({
+    item, itemW, isSpinning,
+}: { item: any; itemW: number; isSpinning: boolean }) {
+    const isTgs = item?.image_url?.endsWith('.tgs');
     return (
         <div style={{
             width: `${itemW}px`, height: '132px', flexShrink: 0,
@@ -40,58 +43,20 @@ const RouletteCell = memo(function RouletteCell({ item, itemW }: { item: any; it
             border: '1px solid rgba(255,255,255,0.08)',
             contain: 'layout style paint',
         }}>
-            {item?.image_url?.endsWith('.tgs') ? (
-                <TgsAnimation url={item.image_url} width={88} height={88} />
+            {isTgs ? (
+                <TgsAnimation
+                    url={item.image_url}
+                    width={88}
+                    height={88}
+                    loop={!isSpinning}
+                    autoplay={!isSpinning}
+                    alwaysPlay={false}
+                    fps={30}
+                />
             ) : (
                 <img src={item?.image_url || '/assets/images/star.png'} alt=""
                     style={{ width: '88px', height: '88px', objectFit: 'contain' }} />
             )}
-        </div>
-    );
-});
-
-// ── Preview roulette: CSS marquee with only N unique cells ─────────────────
-// Instead of 60 Lottie instances, renders only the unique gifts once.
-// CSS animation loops them infinitely — zero JS per frame.
-const PreviewMarquee = memo(function PreviewMarquee({ items }: { items: CaseGift[] }) {
-    if (!items.length) return null;
-    // Duplicate once so the loop looks seamless
-    const cells = [...items, ...items];
-    const singleW = 120 + 6; // ITEM_W + ITEM_GAP
-    const totalW = items.length * singleW;
-
-    return (
-        <div style={{ overflow: 'hidden', height: '148px', background: '#0c0d12', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-            <div style={{
-                display: 'flex', alignItems: 'center', height: '100%',
-                width: `${totalW * 2}px`,
-                animation: `marqueeScroll ${items.length * 1.4}s linear infinite`,
-                willChange: 'transform',
-            }}>
-                {cells.map((item, i) => (
-                    <div key={i} style={{
-                        width: '120px', height: '132px', flexShrink: 0, marginRight: '6px',
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.02) 100%)',
-                        borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        contain: 'layout style paint',
-                    }}>
-                        {item.gift.image_url?.endsWith('.tgs') ? (
-                            <TgsAnimation url={item.gift.image_url} width={88} height={88} />
-                        ) : (
-                            <img src={item.gift.image_url || '/assets/images/star.png'} alt=""
-                                style={{ width: '88px', height: '88px', objectFit: 'contain' }} />
-                        )}
-                    </div>
-                ))}
-            </div>
-            {/* Fade edges */}
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '60px', background: 'linear-gradient(to right, #0c0d12, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: '60px', background: 'linear-gradient(to left, #0c0d12, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-            {/* Center indicator */}
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '3px', background: 'var(--gold)', boxShadow: '0 0 10px var(--gold)', zIndex: 3, pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '9px solid var(--gold)', zIndex: 4 }} />
-            <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderBottom: '9px solid var(--gold)', zIndex: 4 }} />
         </div>
     );
 });
@@ -147,14 +112,12 @@ export default function CasesPage() {
         const res = await fetchCaseItemsApi(caseItem.id);
         setLoaderVisible(false);
         if (res.success) {
-            const items = res.items || [];
-            setPreviewItems(items);
-            // Preload all TGS files in background immediately
-            preloadTgs(items.map((it: any) => it.gift.image_url));
+            setPreviewItems(res.items || []);
             // Pre-build a static roulette track from preview items (no won item yet)
             const list: any[] = [];
+            const gifts = res.items || [];
             for (let i = 0; i < 60; i++) {
-                list.push(items[Math.floor(Math.random() * items.length)].gift);
+                list.push(gifts[Math.floor(Math.random() * gifts.length)].gift);
             }
             setRouletteItems(list);
             setShowPreview(true);
@@ -327,7 +290,7 @@ export default function CasesPage() {
                     <div className="item-glow-effect" />
                     <div className="won-item-card">
                         {resultData.gift?.image_url?.endsWith('.tgs') ? (
-                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} />
+                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} alwaysPlay fps={60} />
                         ) : (
                             <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name}
                                 style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
@@ -416,25 +379,63 @@ export default function CasesPage() {
                         willChange: 'transform',
                     }}
                 >
-                    {/* When idle: CSS marquee (no JS, only unique items rendered) */}
-                    {!isActive && <PreviewMarquee items={previewItems} />}
-
-                    {/* When spinning: full roulette track with 60 pre-built cells */}
+                    {/* Gold indicator — only while active */}
                     {isActive && (<>
-                        {/* Gold indicator */}
-                        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '3px', background: 'linear-gradient(to bottom, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%)', boxShadow: '0 0 10px var(--gold)', zIndex: 6, pointerEvents: 'none' }} />
-                        <div style={{ position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '9px solid var(--gold)', zIndex: 7 }} />
-                        <div style={{ position: 'absolute', bottom: '-1px', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderBottom: '9px solid var(--gold)', zIndex: 7 }} />
-                        <div style={{ overflow: 'hidden', height: '152px', background: 'rgba(0,0,0,0.55)', borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: '1px solid rgba(255,255,255,0.07)', position: 'relative' }}>
-                            <div ref={rouletteTrackRef} style={{ display: 'flex', alignItems: 'center', height: '100%', gap: `${ITEM_GAP}px`, padding: `0 ${ITEM_GAP}px`, willChange: 'transform' }}>
-                                {rouletteItems.map((item, i) => (
-                                    <RouletteCell key={i} item={item} itemW={ITEM_W} />
-                                ))}
-                            </div>
-                            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px', zIndex: 3, pointerEvents: 'none', background: 'linear-gradient(to right, rgba(5,5,14,0.9), transparent)' }} />
-                            <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px', zIndex: 3, pointerEvents: 'none', background: 'linear-gradient(to left, rgba(5,5,14,0.9), transparent)' }} />
-                        </div>
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0,
+                            left: '50%', transform: 'translateX(-50%)',
+                            width: '3px',
+                            background: 'linear-gradient(to bottom, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%)',
+                            boxShadow: '0 0 10px var(--gold)',
+                            zIndex: 6, pointerEvents: 'none',
+                        }} />
+                        <div style={{
+                            position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+                            borderTop: '9px solid var(--gold)', zIndex: 7,
+                        }} />
+                        <div style={{
+                            position: 'absolute', bottom: '-1px', left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+                            borderBottom: '9px solid var(--gold)', zIndex: 7,
+                        }} />
                     </>)}
+
+                    {/* Roulette track */}
+                    <div style={{
+                        overflow: 'hidden',
+                        height: isActive ? '152px' : '148px',
+                        background: isActive ? 'rgba(0,0,0,0.55)' : '#0c0d12',
+                        borderTop: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
+                        borderBottom: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
+                        transition: 'height 0.3s, background 0.4s',
+                        position: 'relative',
+                    }}>
+                        <div
+                            ref={rouletteTrackRef}
+                            style={{
+                                display: 'flex', alignItems: 'center', height: '100%',
+                                gap: `${ITEM_GAP}px`, padding: `0 ${ITEM_GAP}px`,
+                                willChange: 'transform',
+                            }}
+                        >
+                            {rouletteItems.map((item, i) => (
+                                <RouletteCell key={i} item={item} itemW={ITEM_W} isSpinning={animPhase === 'spinning'} />
+                            ))}
+                        </div>
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
+                            background: `linear-gradient(to right, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            transition: 'background 0.4s',
+                        }} />
+                        <div style={{
+                            position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
+                            background: `linear-gradient(to left, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            transition: 'background 0.4s',
+                        }} />
+                    </div>
                 </div>
 
                 {/* ── STATUS LABEL — right under roulette, always takes space ── */}
@@ -501,7 +502,7 @@ export default function CasesPage() {
                                 <div key={i} className={`preview-tile rarity-${item.gift.rarity || 'common'}`}>
                                     <div className="preview-tile-tgs">
                                         {item.gift.image_url?.endsWith('.tgs') ? (
-                                            <TgsAnimation url={item.gift.image_url} width={80} height={80} lazyPlay />
+                                            <TgsAnimation url={item.gift.image_url} width={80} height={80} />
                                         ) : (
                                             <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name}
                                                 style={{ width: '80px', height: '80px', objectFit: 'contain' }} />

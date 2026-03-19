@@ -1,30 +1,35 @@
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo, useCallback } from 'react';
 import Lottie from 'lottie-react';
 import { gunzipSync } from 'fflate';
 
-// ── Global cache ──────────────────────────────────────────────────────────────
-const tgsCache = new Map<string, any>();
-const tgsInflight = new Map<string, Promise<any>>();
+// ── Global cache: url → parsed animation data ──────────────────────────────
+// Shared across all TgsAnimation instances: each .tgs file is fetched and
+// decompressed exactly once per session.
+const tgsCache = new Map<string, object>();
+const tgsLoading = new Map<string, Promise<object>>();
 
-async function loadTgsData(url: string): Promise<any> {
-    if (tgsCache.has(url)) return tgsCache.get(url);
-    if (tgsInflight.has(url)) return tgsInflight.get(url)!;
-    const p = fetch(url)
-        .then(r => { if (!r.ok) throw new Error(r.statusText); return r.arrayBuffer(); })
-        .then(buf => {
-            const data = JSON.parse(new TextDecoder().decode(gunzipSync(new Uint8Array(buf))));
-            tgsCache.set(url, data);
-            tgsInflight.delete(url);
-            return data;
-        })
-        .catch(e => { tgsInflight.delete(url); throw e; });
-    tgsInflight.set(url, p);
-    return p;
+async function loadTgsData(url: string): Promise<object> {
+    if (tgsCache.has(url)) return tgsCache.get(url)!;
+    if (tgsLoading.has(url)) return tgsLoading.get(url)!;
+
+    const promise = (async () => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch TGS: ${response.statusText}`);
+        const buffer = await response.arrayBuffer();
+        const decompressed = gunzipSync(new Uint8Array(buffer));
+        const data = JSON.parse(new TextDecoder().decode(decompressed));
+        tgsCache.set(url, data);
+        tgsLoading.delete(url);
+        return data;
+    })();
+
+    tgsLoading.set(url, promise);
+    return promise;
 }
 
-// Preload a list of URLs in background without blocking render
+// ── Preload helper — вызови из родителя чтобы прогреть кэш заранее ─────────
 export function preloadTgs(urls: string[]) {
-    urls.forEach(url => { if (url?.endsWith('.tgs')) loadTgsData(url).catch(() => {}); });
+    urls.forEach(url => { if (url.endsWith('.tgs')) loadTgsData(url).catch(() => {}); });
 }
 
 interface TgsAnimationProps {
@@ -33,67 +38,161 @@ interface TgsAnimationProps {
     height?: number | string;
     loop?: boolean;
     autoplay?: boolean;
-    // When true, only start playing once visible in viewport
-    lazyPlay?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    /**
+     * Целевой FPS воспроизведения. По умолчанию 30 — достаточно для
+     * плавного восприятия и вдвое снижает нагрузку на CPU/GPU.
+     * Используй 60 только для крупных hero-анимаций.
+     */
+    fps?: 30 | 60;
+    /**
+     * Если true — анимация играет даже когда элемент вне viewport.
+     * По умолчанию false: анимации автоматически паузятся при прокрутке.
+     */
+    alwaysPlay?: boolean;
 }
 
 const TgsAnimation = memo(function TgsAnimation({
-    url, width = '100%', height = '100%',
-    loop = true, autoplay = true, lazyPlay = false,
-    className, style,
+    url,
+    width = '100%',
+    height = '100%',
+    loop = true,
+    autoplay = true,
+    className,
+    style,
+    fps = 30,
+    alwaysPlay = false,
 }: TgsAnimationProps) {
-    const [data, setData] = useState<any>(() => tgsCache.get(url) ?? null);
+    const [animationData, setAnimationData] = useState<object | null>(
+        () => tgsCache.get(url) ?? null
+    );
     const [error, setError] = useState(false);
-    const [visible, setVisible] = useState(!lazyPlay);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const mountedRef = useRef(true);
+    // Видимость в viewport — управляем через IntersectionObserver
+    const [visible, setVisible] = useState(false);
 
-    // Load data
+    const lottieRef    = useRef<any>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const mountedRef   = useRef(true);
+
+    // ── Загрузка данных анимации ───────────────────────────────────────────
     useEffect(() => {
         mountedRef.current = true;
-        if (tgsCache.has(url)) { setData(tgsCache.get(url)); return; }
-        loadTgsData(url)
-            .then(d => { if (mountedRef.current) setData(d); })
-            .catch(() => { if (mountedRef.current) setError(true); });
+        setError(false);
+
+        if (tgsCache.has(url)) {
+            setAnimationData(tgsCache.get(url)!);
+        } else {
+            setAnimationData(null);
+            loadTgsData(url)
+                .then(data => { if (mountedRef.current) setAnimationData(data); })
+                .catch(() => { if (mountedRef.current) setError(true); });
+        }
         return () => { mountedRef.current = false; };
     }, [url]);
 
-    // Intersection observer for lazy play
+    // ── IntersectionObserver: пауза когда анимация вне экрана ─────────────
     useEffect(() => {
-        if (!lazyPlay || !containerRef.current) return;
-        const obs = new IntersectionObserver(
-            ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
-            { rootMargin: '100px' }
+        if (alwaysPlay) {
+            setVisible(true);
+            return;
+        }
+        const el = containerRef.current;
+        if (!el) return;
+
+        // rootMargin '60px' — начинаем загружать чуть раньше чем элемент
+        // въедет в экран, убирая задержку появления анимации.
+        const observer = new IntersectionObserver(
+            ([entry]) => setVisible(entry.isIntersecting),
+            { rootMargin: '60px', threshold: 0 }
         );
-        obs.observe(containerRef.current);
-        return () => obs.disconnect();
-    }, [lazyPlay]);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [alwaysPlay]);
+
+    // ── Управление play/pause по visibility ───────────────────────────────
+    useEffect(() => {
+        const anim = lottieRef.current;
+        if (!anim) return;
+        if (visible && autoplay) {
+            anim.play();
+        } else {
+            anim.pause();
+        }
+    }, [visible, autoplay]);
+
+    // ── Ограничение FPS ────────────────────────────────────────────────────
+    // Большинство TGS-стикеров анимированы на 60fps. Снижаем скорость до
+    // 0.75× — это даёт ~45fps: достаточно плавно, но заметно легче для CPU.
+    // setSubframe(false) выключает интерполяцию между кадрами — анимация
+    // переходит строго по целым кадрам, экономя вычисления на тверинг.
+    const handleDOMLoaded = useCallback(() => {
+        const anim = lottieRef.current;
+        if (!anim) return;
+        if (fps === 30) {
+            anim.setSubframe(false); // без интерполяции — быстрее
+            anim.setSpeed(0.75);     // ~45fps из 60fps источника
+        }
+        if (!autoplay || !visible) {
+            anim.pause();
+        }
+    }, [fps, autoplay, visible]);
 
     const LottieComponent = (Lottie as any).default ?? Lottie;
 
-    const boxStyle: React.CSSProperties = {
-        ...style, width, height,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        willChange: 'transform',
-    };
+    if (error) {
+        return (
+            <div
+                ref={containerRef}
+                className={className}
+                style={{ ...style, width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: '18px' }}
+            >
+                ⚠️
+            </div>
+        );
+    }
 
-    if (error) return <div ref={containerRef} className={className} style={{ ...boxStyle, color: '#555' }}>⚠️</div>;
-    if (!data || !visible) return <div ref={containerRef} className={className} style={boxStyle} />;
+    // Скелетон-заглушка пока грузимся — не даём прыгать layout'у
+    if (!animationData || typeof LottieComponent === 'undefined') {
+        return (
+            <div
+                ref={containerRef}
+                className={className}
+                style={{ ...style, width, height, borderRadius: '8px' }}
+            />
+        );
+    }
 
     return (
-        <div ref={containerRef} className={className} style={boxStyle}>
+        <div
+            ref={containerRef}
+            className={className}
+            style={{
+                ...style,
+                width,
+                height,
+                // Свой compositor layer — анимация не вызывает перерисовку соседей
+                willChange: 'transform',
+                // contain: paint изолирует перерисовку внутри блока
+                contain: 'layout style paint',
+            }}
+        >
             <LottieComponent
-                animationData={data}
+                lottieRef={lottieRef}
+                animationData={animationData}
                 loop={loop}
-                autoplay={autoplay}
+                autoplay={false}        // play/pause контролируем сами через lottieRef
+                onDOMLoaded={handleDOMLoaded}
                 rendererSettings={{
                     preserveAspectRatio: 'xMidYMid meet',
-                    progressiveLoad: true,
+                    progressiveLoad: true,   // парсим анимацию постепенно
                     hideOnTransparent: true,
+                    // Для максимальной производительности можно включить canvas:
+                    // renderer: 'canvas',
+                    // Canvas ~2-3× быстрее SVG на мобиле, но края могут быть
+                    // чуть менее чёткими. Раскомментируй если SVG всё ещё лагает.
                 }}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '100%', height: '100%', display: 'block' }}
             />
         </div>
     );

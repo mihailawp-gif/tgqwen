@@ -128,24 +128,25 @@ export default function CasesPage() {
         setBalance(res.balance);
         setResultData(res);
 
-        // Directly mutate the DOM cell at TARGET_IDX to show the won gift BEFORE animation starts.
-        // This is instant and avoids React re-render timing race conditions.
-        const track = rouletteTrackRef.current;
-        if (track && track.children[TARGET_IDX]) {
-            const cell = track.children[TARGET_IDX] as HTMLElement;
-            cell.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = res.gift.image_url || '/assets/images/star.png';
-            img.style.cssText = 'width:88px;height:88px;object-fit:contain;';
-            cell.appendChild(img);
-        }
+        // Update the roulette list with the won gift at TARGET_IDX
+        // Use a new array built fresh so React always sees a change
+        setRouletteItems(prev => {
+            const next = [...prev];
+            next[TARGET_IDX] = res.gift;
+            return next;
+        });
 
-        // PHASE 2 — spinning (roulette already in DOM, just add the transition)
+        // Wait for React to flush the state update before starting animation
+        await new Promise<void>(resolve => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+
+        // PHASE 2 — spinning
         setAnimPhase('spinning');
 
-        // One RAF to let React flush the list update
-        await new Promise(r => requestAnimationFrame(r));
-        await new Promise(r => requestAnimationFrame(r));
+        // Extra delay to ensure React has flushed setRouletteItems AND setAnimPhase
+        // before we read the DOM for applySpinTransform
+        await new Promise(r => setTimeout(r, 80));
 
         applySpinTransform(pattern);
 

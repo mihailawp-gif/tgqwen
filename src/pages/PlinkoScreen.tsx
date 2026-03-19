@@ -58,9 +58,15 @@ export default function PlinkoScreen() {
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     useEffect(() => {
-        renderPlinkoBoard();
+        // Small delay to ensure DOM is ready on first mount
+        const timer = setTimeout(() => {
+            renderPlinkoBoard();
+        }, 50);
         window.addEventListener('resize', renderPlinkoBoard);
-        return () => window.removeEventListener('resize', renderPlinkoBoard);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', renderPlinkoBoard);
+        };
     }, [pinsCount, difficulty]);
 
     const renderPlinkoBoard = () => {

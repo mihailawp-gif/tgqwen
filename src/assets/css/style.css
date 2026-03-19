@@ -322,7 +322,7 @@ body {
     background: rgba(18, 20, 28, 0.85); 
     backdrop-filter: blur(20px); 
     border-top: 1px solid var(--border); 
-    padding: 16px 20px calc(90px + var(--safe-bottom)); 
+    padding: 16px 20px calc(16px + var(--safe-bottom)); 
     display: flex; 
     flex-direction: column; 
     gap: 12px; 
@@ -1119,8 +1119,7 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
     gap: 4px;
 }
 .dice-info-box span { font-size: 11px; color: var(--txt3); font-weight: 600; text-transform: uppercase; }
-.dice-info-box div { font-family: 'Exo 2', sans-serif; font-size: 18px; font-weight: 800; color: var(--txt); }
-.dice-info-box.highlight { border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.05); }
+.dice-info-box div { font-family: 'Exo 2', sans-serif; font-size: 22px; font-weight: 900; color: var(--txt); display: flex; align-items: center; gap: 4px; }
 
 .dice-actions { display: flex; gap: 12px; }
 .btn-dice {
@@ -1212,4 +1211,4 @@ input:checked + .slider:before { transform: translateX(18px); background-color: 
 .rarity-rare { border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.05) !important; }
 .rarity-epic { border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.05) !important; }
 .rarity-legendary { border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.05) !important; }
-.rarity-unique { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05) !important; }
+.rarity-unique { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05) !important; }

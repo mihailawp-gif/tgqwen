@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
-import { createInvoiceApi } from '../api/api';
+import { createInvoiceApi, activatePromoApi } from '../api/api';
 
 interface TopUpModalProps {
     open: boolean;
@@ -13,6 +13,7 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
     const { showToast, setLoaderVisible } = useAppStore();
     const { setBalance } = useUserStore();
     const [customAmount, setCustomAmount] = useState(100);
+    const [promoCode, setPromoCode] = useState('');
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -42,6 +43,24 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
         setLoaderVisible(false);
     };
 
+    const activatePromo = async () => {
+        if (!promoCode.trim()) return showToast('❌ Введите промокод');
+        setLoaderVisible(true);
+        try {
+            const res = await activatePromoApi(telegramId, promoCode.trim());
+            if (res.success) {
+                setPromoCode('');
+                if (res.balance !== undefined) setBalance(res.balance);
+                showToast(`🎉 ${res.message}`);
+            } else {
+                showToast('❌ ' + res.error);
+            }
+        } catch (e) {
+            showToast('❌ Ошибка сети');
+        }
+        setLoaderVisible(false);
+    };
+
     if (!open) return null;
 
     return (
@@ -59,8 +78,8 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
                 </div>
 
                 <div className="payment-options">
-                    <div className="payment-header">
-                        <img src="/assets/images/star.png" className="stars-icon-large" alt="star" />
+                    <div className="payment-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <img src="/assets/images/star.png" className="stars-icon-large" alt="star" style={{ display: 'block', margin: '0 auto 12px' }} />
                         <p>Выберите количество звёзд</p>
                     </div>
 
@@ -89,6 +108,24 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
                             <button className="btn-custom-amount" onClick={() => createInvoice(customAmount)}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M12 5v14M5 12h14" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="custom-amount-section" style={{ marginTop: '8px' }}>
+                        <p className="custom-amount-label">Промокод на бонус:</p>
+                        <div className="custom-amount-input">
+                            <input
+                                type="text"
+                                placeholder="Введите промокод"
+                                value={promoCode}
+                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                style={{ textTransform: 'uppercase' }}
+                            />
+                            <button className="btn-custom-amount" onClick={activatePromo}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <path d="M5 12h14M12 5l7 7-7 7" />
                                 </svg>
                             </button>
                         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { startMinesApi, clickMinesApi, collectMinesApi } from '../api/api';
 
@@ -65,6 +65,16 @@ export default function MinesScreen() {
     const [clickedGrid, setClickedGrid] = useState<number[]>([]);
     const [step, setStep] = useState(0);
     const [winAmount, setWinAmount] = useState(0);
+    const multipliersRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll the active step into view
+    useEffect(() => {
+        if (!multipliersRef.current) return;
+        const activeEl = multipliersRef.current.querySelector('.mult-step.active');
+        if (activeEl) {
+            activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }, [step]);
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -202,7 +212,7 @@ export default function MinesScreen() {
                 </div>
 
                 {/* Multipliers Tape */}
-                <div className="mines-multipliers" id="minesMultipliers">
+                <div className="mines-multipliers" id="minesMultipliers" ref={multipliersRef}>
                     {MINES_COEFS_JS[bombs]?.map((coef, index) => (
                         <div key={index} className={`mult-step ${index === step ? 'active' : ''}`}>
                             <div className="mult-step-label">Шаг {index + 1}</div>x{coef}

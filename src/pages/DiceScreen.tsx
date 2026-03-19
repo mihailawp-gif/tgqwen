@@ -123,19 +123,7 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Action buttons (Move UP as requested) */}
-                <div className="dice-actions">
-                    <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
-                        <div className="dice-btn-title">МЕНЬШЕ</div>
-                        <div className="dice-btn-range">0 - <span>{underMax}</span></div>
-                    </button>
-                    <button className="btn-dice btn-dice-over" onClick={() => playDice('over')} disabled={isRolling}>
-                        <div className="dice-btn-title">БОЛЬШЕ</div>
-                        <div className="dice-btn-range"><span>{overMin}</span> - 999999</div>
-                    </button>
-                </div>
-
-                {/* Controls (Move UP as requested) */}
+                {/* Controls */}
                 <div className="mines-controls-panel" style={{ marginBottom: 0 }}>
                     <div className="control-group">
                         <label>Сумма ставки</label>
@@ -167,19 +155,31 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Info row (Move DOWN as requested) */}
+                {/* Info row */}
                 <div className="dice-info-row">
                     <div className="dice-info-box">
                         <span>Множитель</span>
                         <div>{multiplier.toFixed(2)}x</div>
                     </div>
-                    <div className="dice-info-box highlight">
+                    <div className="dice-info-box">
                         <span>Выигрыш</span>
-                        <div>
-                            <span>{possibleWin}</span>
-                            <img src="/assets/images/star.png" style={{ width: '14px', verticalAlign: 'middle', position: 'relative', top: '-2px' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '22px', fontWeight: 900 }}>{possibleWin}</span>
+                            <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
                         </div>
                     </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="dice-actions">
+                    <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
+                        <div className="dice-btn-title">МЕНЬШЕ</div>
+                        <div className="dice-btn-range">0 - <span>{underMax}</span></div>
+                    </button>
+                    <button className="btn-dice btn-dice-over" onClick={() => playDice('over')} disabled={isRolling}>
+                        <div className="dice-btn-title">БОЛЬШЕ</div>
+                        <div className="dice-btn-range"><span>{overMin}</span> - 999999</div>
+                    </button>
                 </div>
             </div>
         </div>

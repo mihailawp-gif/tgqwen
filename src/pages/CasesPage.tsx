@@ -313,7 +313,7 @@ export default function CasesPage() {
                     </div>
                 </div>
 
-                <div className="open-case-footer" style={{ flexShrink: 0, position: 'relative', zIndex: 10, paddingBottom: 'calc(100px + var(--safe-bottom))' }}>
+                <div className="open-case-footer" style={{ flexShrink: 0, position: 'relative', zIndex: 10, paddingBottom: 'calc(16px + var(--safe-bottom))' }}>
                     {!previewCase.is_free && (
                         <div className="case-price-display">
                             <img src="/assets/images/star.png" className="price-icon" alt="star" />

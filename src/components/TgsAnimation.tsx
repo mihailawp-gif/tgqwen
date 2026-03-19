@@ -2,30 +2,29 @@ import React, { useEffect, useState, useRef, memo } from 'react';
 import Lottie from 'lottie-react';
 import { gunzipSync } from 'fflate';
 
-// ── Global cache: url → parsed animation data ──────────────────────────────
-// Shared across all TgsAnimation instances so each .tgs file is fetched
-// and decompressed exactly once per session.
+// ── Global cache ──────────────────────────────────────────────────────────────
 const tgsCache = new Map<string, any>();
-const tgsLoading = new Map<string, Promise<any>>();
+const tgsInflight = new Map<string, Promise<any>>();
 
 async function loadTgsData(url: string): Promise<any> {
     if (tgsCache.has(url)) return tgsCache.get(url);
+    if (tgsInflight.has(url)) return tgsInflight.get(url)!;
+    const p = fetch(url)
+        .then(r => { if (!r.ok) throw new Error(r.statusText); return r.arrayBuffer(); })
+        .then(buf => {
+            const data = JSON.parse(new TextDecoder().decode(gunzipSync(new Uint8Array(buf))));
+            tgsCache.set(url, data);
+            tgsInflight.delete(url);
+            return data;
+        })
+        .catch(e => { tgsInflight.delete(url); throw e; });
+    tgsInflight.set(url, p);
+    return p;
+}
 
-    if (tgsLoading.has(url)) return tgsLoading.get(url);
-
-    const promise = (async () => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch TGS: ${response.statusText}`);
-        const buffer = await response.arrayBuffer();
-        const decompressed = gunzipSync(new Uint8Array(buffer));
-        const data = JSON.parse(new TextDecoder().decode(decompressed));
-        tgsCache.set(url, data);
-        tgsLoading.delete(url);
-        return data;
-    })();
-
-    tgsLoading.set(url, promise);
-    return promise;
+// Preload a list of URLs in background without blocking render
+export function preloadTgs(urls: string[]) {
+    urls.forEach(url => { if (url?.endsWith('.tgs')) loadTgsData(url).catch(() => {}); });
 }
 
 interface TgsAnimationProps {
@@ -34,62 +33,61 @@ interface TgsAnimationProps {
     height?: number | string;
     loop?: boolean;
     autoplay?: boolean;
+    // When true, only start playing once visible in viewport
+    lazyPlay?: boolean;
     className?: string;
     style?: React.CSSProperties;
 }
 
 const TgsAnimation = memo(function TgsAnimation({
-    url,
-    width = '100%',
-    height = '100%',
-    loop = true,
-    autoplay = true,
-    className,
-    style,
+    url, width = '100%', height = '100%',
+    loop = true, autoplay = true, lazyPlay = false,
+    className, style,
 }: TgsAnimationProps) {
-    const [animationData, setAnimationData] = useState<any>(() => tgsCache.get(url) ?? null);
+    const [data, setData] = useState<any>(() => tgsCache.get(url) ?? null);
     const [error, setError] = useState(false);
-    const lottieRef = useRef<any>(null);
+    const [visible, setVisible] = useState(!lazyPlay);
+    const containerRef = useRef<HTMLDivElement>(null);
     const mountedRef = useRef(true);
 
+    // Load data
     useEffect(() => {
         mountedRef.current = true;
-        // Already in cache — nothing to do (state initialised above)
-        if (tgsCache.has(url)) {
-            setAnimationData(tgsCache.get(url));
-            return;
-        }
+        if (tgsCache.has(url)) { setData(tgsCache.get(url)); return; }
         loadTgsData(url)
-            .then(data => { if (mountedRef.current) setAnimationData(data); })
+            .then(d => { if (mountedRef.current) setData(d); })
             .catch(() => { if (mountedRef.current) setError(true); });
         return () => { mountedRef.current = false; };
     }, [url]);
 
+    // Intersection observer for lazy play
+    useEffect(() => {
+        if (!lazyPlay || !containerRef.current) return;
+        const obs = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+            { rootMargin: '100px' }
+        );
+        obs.observe(containerRef.current);
+        return () => obs.disconnect();
+    }, [lazyPlay]);
+
     const LottieComponent = (Lottie as any).default ?? Lottie;
 
-    if (error) {
-        return (
-            <div className={className}
-                style={{ ...style, width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
-                ⚠️
-            </div>
-        );
-    }
+    const boxStyle: React.CSSProperties = {
+        ...style, width, height,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        willChange: 'transform',
+    };
 
-    if (!animationData || typeof LottieComponent === 'undefined') {
-        return <div className={className} style={{ ...style, width, height }} />;
-    }
+    if (error) return <div ref={containerRef} className={className} style={{ ...boxStyle, color: '#555' }}>⚠️</div>;
+    if (!data || !visible) return <div ref={containerRef} className={className} style={boxStyle} />;
 
     return (
-        <div className={className} style={{ ...style, width, height, willChange: 'transform' }}>
+        <div ref={containerRef} className={className} style={boxStyle}>
             <LottieComponent
-                lottieRef={lottieRef}
-                animationData={animationData}
+                animationData={data}
                 loop={loop}
                 autoplay={autoplay}
-                // Cap renderer fps — Lottie default is RAF (unlimited).
-                // rendererSettings doesn't expose fps cap, but we can use
-                // the renderer canvas with image smoothing off for perf.
                 rendererSettings={{
                     preserveAspectRatio: 'xMidYMid meet',
                     progressiveLoad: true,

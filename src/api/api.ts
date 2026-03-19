@@ -164,7 +164,7 @@ export const activatePromoApi = async (userId: string | number, code: string) =>
 // --- Payment API ---
 export const createInvoiceApi = async (userId: string | number, amount: number) => {
     try {
-        return await api.post('/payment/create-invoice', { user_id: userId, amount }) as any;
+        return await api.post('/payment/create-invoice', { user_id: userId, stars: amount }) as any;
     } catch (e) { return e; }
 }
 

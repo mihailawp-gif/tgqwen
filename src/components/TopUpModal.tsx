@@ -22,17 +22,17 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
         setLoaderVisible(true);
         try {
             const res = await createInvoiceApi(telegramId, amount);
-            if (res.success && res.invoice_url) {
+            if (res.success && res.invoice_link) {
                 const tg = (window as any).Telegram?.WebApp;
                 if (tg && tg.openInvoice) {
-                    tg.openInvoice(res.invoice_url, (status: string) => {
+                    tg.openInvoice(res.invoice_link, (status: string) => {
                         if (status === 'paid') {
                             showToast(`✅ Баланс пополнен на ${amount} ⭐`);
                             if (res.new_balance) setBalance(res.new_balance);
                         }
                     });
                 } else {
-                    window.open(res.invoice_url, '_blank');
+                    window.open(res.invoice_link, '_blank');
                 }
             } else {
                 showToast('❌ ' + (res.error || 'Ошибка создания счета'));

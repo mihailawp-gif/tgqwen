@@ -143,7 +143,7 @@ export default function PlinkoScreen() {
         });
     };
 
-    const spawnBall = (path: number[], finalBucketIndex: number, multiplier: number, finalBalance: number) => {
+    const spawnBall = (path: number[], finalBucketIndex: number, ballMultiplier: number, finalBalance: number) => {
         const pinsContainer = pinsContainerRef.current;
         const bucketsContainer = bucketsContainerRef.current;
         if (!pinsContainer || !bucketsContainer) return;
@@ -245,7 +245,9 @@ export default function PlinkoScreen() {
             ballEl.remove();
             setBalance(finalBalance);
             setActiveBalls(prev => Math.max(0, prev - 1));
-
+            if (ballMultiplier >= 2) {
+                showToast(`🎉 x${ballMultiplier}! +${Math.floor(bet * ballMultiplier)} ⭐`);
+            }
         }
 
         requestAnimationFrame(animate);

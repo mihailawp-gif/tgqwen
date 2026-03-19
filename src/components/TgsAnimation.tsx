@@ -13,7 +13,8 @@
  */
 
 import { useEffect, useRef, memo } from 'react';
-import lottie, { AnimationItem } from 'lottie-web';
+import lottie from 'lottie-web';
+import type { AnimationItem } from 'lottie-web';
 import { gunzipSync } from 'fflate';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,7 +130,7 @@ let _idCounter = 0;
 const TgsAnimation = memo(function TgsAnimation({
     url,
     width = 80,
-    height = 80,
+    height: _height = 80,
     loop = true,
     autoplay = true,
     className,

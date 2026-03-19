@@ -51,7 +51,6 @@ const RouletteCell = memo(function RouletteCell({
                     loop={!isSpinning}
                     autoplay={!isSpinning}
                     alwaysPlay={false}
-                    fps={30}
                 />
             ) : (
                 <img src={item?.image_url || '/assets/images/star.png'} alt=""
@@ -290,7 +289,7 @@ export default function CasesPage() {
                     <div className="item-glow-effect" />
                     <div className="won-item-card">
                         {resultData.gift?.image_url?.endsWith('.tgs') ? (
-                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} alwaysPlay fps={60} />
+                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} alwaysPlay />
                         ) : (
                             <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name}
                                 style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />

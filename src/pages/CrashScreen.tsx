@@ -424,7 +424,7 @@ export default function CrashScreen() {
 
             {/* Players */}
             <div className="crash-players-section" id="crashPlayersSection" style={{ padding: players.length ? '12px 16px' : '0' }}>
-                <div className="crash-total-bets">Всего ставок: {totalBets} ⭐</div>
+                <div className="crash-total-bets"> <img src="/assets/images/star.png" style={{ width: '14px', marginRight: '5px' }} />Всего ставок: {totalBets}</div>
                 <div className="crash-players-list">
                     {sortedPlayers.map((p, i) => (
                         <div key={i} className="crash-player-item">

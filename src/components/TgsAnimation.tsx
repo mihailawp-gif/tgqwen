@@ -1,37 +1,114 @@
-import React, { useEffect, useState, useRef, memo, useCallback } from 'react';
-import Lottie from 'lottie-react';
+/**
+ * TgsAnimation — React-порт tgs-manager.js
+ *
+ * Сохранены все ключевые оптимизации оригинала:
+ *  • DecompressionStream (нативный браузерный gzip) → fflate fallback
+ *  • fetch force-cache + priority:high
+ *  • Глобальный кэш промисов — каждый .tgs декомпрессируется ровно раз
+ *  • Render-очередь: батчинг по 3 анимации за RAF-тик
+ *  • Session-ID: отменяет рендер если компонент размонтирован до загрузки
+ *  • Один глобальный IntersectionObserver (rootMargin 100px) — пауза вне viewport
+ *  • SVG патч: translateZ(0) напрямую на svg-элемент после DOMLoaded
+ *  • Fallback: img /assets/images/star.png при ошибке
+ */
+
+import { useEffect, useRef, memo } from 'react';
+import lottie, { AnimationItem } from 'lottie-web';
 import { gunzipSync } from 'fflate';
 
-// ── Global cache: url → parsed animation data ──────────────────────────────
-// Shared across all TgsAnimation instances: each .tgs file is fetched and
-// decompressed exactly once per session.
-const tgsCache = new Map<string, object>();
-const tgsLoading = new Map<string, Promise<object>>();
+// ─────────────────────────────────────────────────────────────────────────────
+// Глобальный кэш (вне компонента — живёт весь сеанс)
+// ─────────────────────────────────────────────────────────────────────────────
+const _cache = new Map<string, Promise<object>>();
 
-async function loadTgsData(url: string): Promise<object> {
-    if (tgsCache.has(url)) return tgsCache.get(url)!;
-    if (tgsLoading.has(url)) return tgsLoading.get(url)!;
-
-    const promise = (async () => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch TGS: ${response.statusText}`);
-        const buffer = await response.arrayBuffer();
-        const decompressed = gunzipSync(new Uint8Array(buffer));
-        const data = JSON.parse(new TextDecoder().decode(decompressed));
-        tgsCache.set(url, data);
-        tgsLoading.delete(url);
-        return data;
-    })();
-
-    tgsLoading.set(url, promise);
-    return promise;
+// ─────────────────────────────────────────────────────────────────────────────
+// Декомпрессор: DecompressionStream (нативный) → fflate (fallback)
+// ─────────────────────────────────────────────────────────────────────────────
+async function _gunzip(buf: ArrayBuffer): Promise<string> {
+    if (typeof DecompressionStream !== 'undefined') {
+        try {
+            const ds = new DecompressionStream('gzip');
+            const w  = ds.writable.getWriter();
+            const r  = ds.readable.getReader();
+            w.write(new Uint8Array(buf));
+            w.close();
+            const chunks: Uint8Array[] = [];
+            for (;;) {
+                const { done, value } = await r.read();
+                if (done) break;
+                chunks.push(value);
+            }
+            const total  = chunks.reduce((n, c) => n + c.length, 0);
+            const merged = new Uint8Array(total);
+            let offset = 0;
+            for (const c of chunks) { merged.set(c, offset); offset += c.length; }
+            return new TextDecoder().decode(merged);
+        } catch (_) { /* fall through to fflate */ }
+    }
+    // fflate fallback (синхронно, ~1-3ms для типичного TGS)
+    return new TextDecoder().decode(gunzipSync(new Uint8Array(buf)));
 }
 
-// ── Preload helper — вызови из родителя чтобы прогреть кэш заранее ─────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Загрузка + декомпрессия (дедупликация промисов)
+// ─────────────────────────────────────────────────────────────────────────────
+function _load(url: string): Promise<object> {
+    if (!_cache.has(url)) {
+        const p = fetch(url, {
+            cache: 'force-cache',
+            // @ts-ignore — Fetch Priority API (Chrome 101+, Safari 17.2+)
+            priority: 'high',
+        })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+            .then(_gunzip)
+            .then(text => JSON.parse(text))
+            .catch(e => { _cache.delete(url); throw e; });
+        _cache.set(url, p);
+    }
+    return _cache.get(url)!;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render-очередь: батчинг по 3 задачи за RAF-тик (как в tgs-manager.js)
+// Не даём браузеру жевать 60 lottie.loadAnimation() за один кадр
+// ─────────────────────────────────────────────────────────────────────────────
+const _queue: Array<() => void> = [];
+let _queueRunning = false;
+
+async function _processQueue() {
+    if (_queueRunning) return;
+    _queueRunning = true;
+    while (_queue.length > 0) {
+        const batch = _queue.splice(0, 3);
+        batch.forEach(t => t());
+        await new Promise<void>(r => requestAnimationFrame(() => r()));
+    }
+    _queueRunning = false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Один глобальный IntersectionObserver на всё приложение
+// ─────────────────────────────────────────────────────────────────────────────
+const _instances = new Map<string, AnimationItem>();
+
+const _observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        const anim = _instances.get((e.target as HTMLElement).dataset.tgsId!);
+        if (!anim) return;
+        try { e.isIntersecting ? anim.play() : anim.pause(); } catch (_) {}
+    });
+}, { rootMargin: '100px', threshold: 0 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preload — вызывай из родителя чтобы прогреть кэш до маунта
+// ─────────────────────────────────────────────────────────────────────────────
 export function preloadTgs(urls: string[]) {
-    urls.forEach(url => { if (url.endsWith('.tgs')) loadTgsData(url).catch(() => {}); });
+    urls.forEach(url => { if (url.endsWith('.tgs')) _load(url).catch(() => {}); });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Компонент
+// ─────────────────────────────────────────────────────────────────────────────
 interface TgsAnimationProps {
     url: string;
     width?: number | string;
@@ -41,160 +118,131 @@ interface TgsAnimationProps {
     className?: string;
     style?: React.CSSProperties;
     /**
-     * Целевой FPS воспроизведения. По умолчанию 30 — достаточно для
-     * плавного восприятия и вдвое снижает нагрузку на CPU/GPU.
-     * Используй 60 только для крупных hero-анимаций.
-     */
-    fps?: 30 | 60;
-    /**
-     * Если true — анимация играет даже когда элемент вне viewport.
-     * По умолчанию false: анимации автоматически паузятся при прокрутке.
+     * true  — анимация играет всегда (hero-элементы, результат кейса)
+     * false — пауза когда элемент вне viewport (дефолт, для гридов и рулетки)
      */
     alwaysPlay?: boolean;
 }
 
+let _idCounter = 0;
+
 const TgsAnimation = memo(function TgsAnimation({
     url,
-    width = '100%',
-    height = '100%',
+    width = 80,
+    height = 80,
     loop = true,
     autoplay = true,
     className,
     style,
-    fps = 30,
     alwaysPlay = false,
 }: TgsAnimationProps) {
-    const [animationData, setAnimationData] = useState<object | null>(
-        () => tgsCache.get(url) ?? null
-    );
-    const [error, setError] = useState(false);
-    // Видимость в viewport — управляем через IntersectionObserver
-    const [visible, setVisible] = useState(false);
-
-    const lottieRef    = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const mountedRef   = useRef(true);
+    const instanceId   = useRef<string>('tgs_' + (++_idCounter));
+    // sessionRef — инкрементируется при каждом изменении url или размонтировании
+    const sessionRef   = useRef<number>(0);
 
-    // ── Загрузка данных анимации ───────────────────────────────────────────
+    const px = typeof width === 'number' ? width : parseInt(String(width)) || 80;
+
     useEffect(() => {
-        mountedRef.current = true;
-        setError(false);
-
-        if (tgsCache.has(url)) {
-            setAnimationData(tgsCache.get(url)!);
-        } else {
-            setAnimationData(null);
-            loadTgsData(url)
-                .then(data => { if (mountedRef.current) setAnimationData(data); })
-                .catch(() => { if (mountedRef.current) setError(true); });
-        }
-        return () => { mountedRef.current = false; };
-    }, [url]);
-
-    // ── IntersectionObserver: пауза когда анимация вне экрана ─────────────
-    useEffect(() => {
-        if (alwaysPlay) {
-            setVisible(true);
-            return;
-        }
-        const el = containerRef.current;
+        const id  = instanceId.current;
+        const el  = containerRef.current;
         if (!el) return;
 
-        // rootMargin '60px' — начинаем загружать чуть раньше чем элемент
-        // въедет в экран, убирая задержку появления анимации.
-        const observer = new IntersectionObserver(
-            ([entry]) => setVisible(entry.isIntersecting),
-            { rootMargin: '60px', threshold: 0 }
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [alwaysPlay]);
+        const mySession = ++sessionRef.current;
 
-    // ── Управление play/pause по visibility ───────────────────────────────
+        // Убиваем предыдущую анимацию (смена url)
+        const prev = _instances.get(id);
+        if (prev) {
+            try { prev.destroy(); } catch (_) {}
+            _observer.unobserve(el);
+            el.innerHTML = '';
+            _instances.delete(id);
+        }
+
+        if (!url.endsWith('.tgs')) return;
+
+        _load(url)
+            .then(data => {
+                // Компонент размонтирован или url ещё раз сменился → выходим
+                if (mySession !== sessionRef.current || !containerRef.current) return;
+
+                _queue.push(() => {
+                    if (mySession !== sessionRef.current) return;
+                    const target = containerRef.current;
+                    if (!target) return;
+
+                    target.innerHTML = '';
+                    target.dataset.tgsId = id;
+
+                    const anim = lottie.loadAnimation({
+                        container:     target,
+                        renderer:      'svg',
+                        loop,
+                        // play/pause отдаём observer'у; если alwaysPlay — стартуем сразу
+                        autoplay:      autoplay && alwaysPlay,
+                        animationData: data as object,
+                        rendererSettings: { preserveAspectRatio: 'xMidYMid meet' },
+                    });
+
+                    anim.addEventListener('DOMLoaded', () => {
+                        // SVG патч из оригинала: translateZ(0) → свой compositor layer
+                        const svg = target.querySelector('svg');
+                        if (svg) {
+                            svg.setAttribute('width',  String(px));
+                            svg.setAttribute('height', String(px));
+                            svg.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translateZ(0);`;
+                        }
+                        if (!alwaysPlay) {
+                            // Отдаём управление play/pause IntersectionObserver'у
+                            _observer.observe(target);
+                        }
+                    });
+
+                    _instances.set(id, anim);
+                });
+
+                _processQueue();
+            })
+            .catch(() => {
+                if (mySession !== sessionRef.current || !containerRef.current) return;
+                containerRef.current.innerHTML =
+                    `<img src="/assets/images/star.png" style="width:60%;height:60%;margin:20%;opacity:.35;display:block">`;
+            });
+
+        return () => {
+            sessionRef.current++;
+            const anim = _instances.get(id);
+            if (anim) {
+                try { anim.destroy(); } catch (_) {}
+                if (el) _observer.unobserve(el);
+                _instances.delete(id);
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [url, loop, alwaysPlay, px]);
+
+    // Реагируем на изменение autoplay-пропа без перезагрузки анимации
+    // Используется рулеткой: isSpinning → autoplay=false паузит все ячейки
     useEffect(() => {
-        const anim = lottieRef.current;
+        const anim = _instances.get(instanceId.current);
         if (!anim) return;
-        if (visible && autoplay) {
-            anim.play();
-        } else {
-            anim.pause();
-        }
-    }, [visible, autoplay]);
-
-    // ── Ограничение FPS ────────────────────────────────────────────────────
-    // Большинство TGS-стикеров анимированы на 60fps. Снижаем скорость до
-    // 0.75× — это даёт ~45fps: достаточно плавно, но заметно легче для CPU.
-    // setSubframe(false) выключает интерполяцию между кадрами — анимация
-    // переходит строго по целым кадрам, экономя вычисления на тверинг.
-    const handleDOMLoaded = useCallback(() => {
-        const anim = lottieRef.current;
-        if (!anim) return;
-        if (fps === 30) {
-            anim.setSubframe(false); // без интерполяции — быстрее
-            anim.setSpeed(0.75);     // ~45fps из 60fps источника
-        }
-        if (!autoplay || !visible) {
-            anim.pause();
-        }
-    }, [fps, autoplay, visible]);
-
-    const LottieComponent = (Lottie as any).default ?? Lottie;
-
-    if (error) {
-        return (
-            <div
-                ref={containerRef}
-                className={className}
-                style={{ ...style, width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: '18px' }}
-            >
-                ⚠️
-            </div>
-        );
-    }
-
-    // Скелетон-заглушка пока грузимся — не даём прыгать layout'у
-    if (!animationData || typeof LottieComponent === 'undefined') {
-        return (
-            <div
-                ref={containerRef}
-                className={className}
-                style={{ ...style, width, height, borderRadius: '8px' }}
-            />
-        );
-    }
+        try { autoplay ? anim.play() : anim.pause(); } catch (_) {}
+    }, [autoplay]);
 
     return (
         <div
             ref={containerRef}
             className={className}
             style={{
+                width:      px,
+                height:     px,
+                display:    'block',
+                overflow:   'hidden',
+                flexShrink: 0,
+                contain:    'layout style paint',
                 ...style,
-                width,
-                height,
-                // Свой compositor layer — анимация не вызывает перерисовку соседей
-                willChange: 'transform',
-                // contain: paint изолирует перерисовку внутри блока
-                contain: 'layout style paint',
             }}
-        >
-            <LottieComponent
-                lottieRef={lottieRef}
-                animationData={animationData}
-                loop={loop}
-                autoplay={false}        // play/pause контролируем сами через lottieRef
-                onDOMLoaded={handleDOMLoaded}
-                rendererSettings={{
-                    preserveAspectRatio: 'xMidYMid meet',
-                    progressiveLoad: true,   // парсим анимацию постепенно
-                    hideOnTransparent: true,
-                    // Для максимальной производительности можно включить canvas:
-                    // renderer: 'canvas',
-                    // Canvas ~2-3× быстрее SVG на мобиле, но края могут быть
-                    // чуть менее чёткими. Раскомментируй если SVG всё ещё лагает.
-                }}
-                style={{ width: '100%', height: '100%', display: 'block' }}
-            />
-        </div>
+        />
     );
 });
 

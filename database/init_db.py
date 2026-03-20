@@ -37,30 +37,20 @@ GIFTS_CATALOG = [
     (102,  "Toy Bear",             4677),
     (132,  "Retro Car",            4621),  
     (58,   "Neko Helmet",          4129),
-    #(133,  "Ice Eagle",            3954),  
-    (134,  "Signet Ring II",       3753),  
     (53,   "Vintage Cigar",        3729),
-    (135,  "Golden Pacifier",      3643),
     (59,   "Electric Skull",       3623),
     (64,   "Skull Flower",         1174),
     (72,   "Voodoo Doll",          3331),
-    (136,  "Engagement Ring",      2960),  
-    (137,  "Winter Hat",           2663),  
     (63,   "Eternal Rose",         2632),
     (105,  "Ionic Dryer",          1916),
     (52,   "Magic Potion",         1647),
     (104,  "Sky Stilettos",        1582),
     (65,   "Mad Pumpkin",          1534),
     (68,   "Trapped Heart",        1423),
-    (138,  "Vinyl Player",         1403),
-    (139,  "UFC Box",              1385),
     (36,   "Crystal Ball",         1335),
     (96,   "Eternal Candle",       1319),
     (97,   "Sakura Flower",        1195),
-    (140,  "Purple Flower",        1174),
-    (141,  "Joint",                1174),  
     (69,   "Flying Broom",         1145),
-    (142,  "Jingle Bell",          1116),
     (1,    "Victory Medal",        580),
     (10,   "Stellar Rocket",       350),
     (11,   "Jack In The Box",      599),
@@ -95,7 +85,7 @@ GIFTS_CATALOG = [
     (116,  "B-Day Candle",         550),
     (117,  "Ginger Cookie",        649),
     (120,  "Tama Gadget",          570),
-    #(121,  "Goblet",               100),
+    (121,  "Goblet",               100),
     (122,  "Heart",                15),
     (123,  "Diamond",              100),
     (124,  "Ring",                 100),
@@ -242,7 +232,65 @@ CASES_CONFIG = [
             {"key": 22,  "chance": 0.01},  # Plush Pepe 
             
         ]
-    }
+    },
+        {
+        "name": "Приватный кейс",
+        "description": "Проверь свой уровень гойства",
+        "price": 19000,
+        "is_free": False,
+        "image_url": "/assets/images/borov.gif",
+        "items": [
+            {"key": 56,  "chance": 33.0},  # (56,   "Kissed Frog",          6231)   - Частый дроп (минус)
+            {"key": 12,  "chance": 20.0},  # (12,   "Artisan Brick",        9585)   - Частый дроп (минус)
+            {"key": 66,  "chance": 16.0},  # (66,   "Parfume Bottle",       10429)  - Частый дроп (минус)
+            {"key": 128, "chance": 10.0},  # (128,  "Krypton Gem",          11167)  - Средний дроп (минус)
+            {"key": 4,   "chance": 7.0},   # (4,    "Gem Signet",           14906)  - Средний дроп (небольшой минус)
+            {"key": 78,  "chance": 6.0},   # (78,   "Loot Bag",             15000)  - Средний дроп (небольшой минус)
+            {"key": 15,  "chance": 4.0},   # (15,   "Mighty Arm",           19647)  - Окупаемость (в ноль)
+            {"key": 47,  "chance": 2.0},   # (47,   "Heroic Helmet",        28662)  - Редкий дроп (плюс х1.5)
+            {"key": 39,  "chance": 1.0},   # (39,   "Precious Peach",       47259)  - Эпический дроп (плюс х2.5)
+            {"key": 18,  "chance": 0.6},   # (18,   "Durov's Cap",          80043)  - Мифический дроп (плюс х4.2)
+            {"key": 81,  "chance": 0.3},   # (81,   "Heart Locket",         210892) - Легендарный дроп (плюс х11)
+            {"key": 22,  "chance": 0.1},   # Plush Pepe (Цена 1М - Джекпот)         - Джекпот (плюс х52)   - Джекпот (х52)
+            
+        ]
+    },
+    {
+            "name": "Коробка Модника",
+            "description": "Люкс в каждой коробке. Почти.",
+            "price": 2500,
+            "is_free": False,
+            "image_url": "/assets/images/pushkin.png",
+            "items": [
+                {"key": 51,  "chance": 35.0}, # (51,  "Nail Bracelet",   900)  - Частый дроп (минус)
+                {"key": 75,  "chance": 25.0}, # (75,  "Top Hat",         1392) - Частый дроп (минус)
+                {"key": 104, "chance": 16.0}, # (104, "Sky Stilettos",   1582) - Средний дроп (минус)
+                {"key": 105, "chance": 10.0}, # (105, "Ionic Dryer",     1916) - Средний дроп (небольшой минус)
+                {"key": 63,  "chance": 7.0},  # (63,  "Eternal Rose",    2632) - Окупаемость (в ноль)
+                {"key": 53,  "chance": 4.0},  # (53,  "Vintage Cigar",   3729) - Редкий дроп (плюс х1.5)
+                {"key": 103, "chance": 2.0},  # (103, "Red Lips",        4707) - Эпический дроп (плюс х1.8)
+                {"key": 88,  "chance": 0.8},  # (88,  "Swiss Watch",     5654) - Мифический дроп (плюс х2.2)
+                {"key": 77,  "chance": 0.2},  # (77,  "Diamond Ring",    7851) - Легендарный дроп (плюс х3.1)
+            ]
+        },
+        {
+            "name": "Сокровище Элиты",
+            "description": "Только для тех, кто знает толк в роскоши",
+            "price": 16000,
+            "is_free": False,
+            "image_url": "/assets/images/elite.gif",
+            "items": [
+                {"key": 130, "chance": 45.0}, # (130, "Jade Token",      9586) - Частый дроп (минус)
+                {"key": 46,  "chance": 25.0}, # (46,  "Scared Cat",      9775) - Частый дроп (минус)
+                {"key": 129, "chance": 12.0}, # (129, "Victory Hand",    10631)- Средний дроп (минус)
+                {"key": 42,  "chance": 10.0}, # (42,  "Mini Oscar",      11077)- Средний дроп (минус)
+                {"key": 127, "chance": 5.0},  # (127, "Luxury Bag",      18098)- Окупаемость (плюс)
+                {"key": 49,  "chance": 2.0},  # (49,  "Astral Shard",    21195)- Редкий дроп (плюс х1.3)
+                {"key": 47,  "chance": 0.7},  # (47,  "Heroic Helmet",   28662)- Эпический дроп (плюс х1.8)
+                {"key": 39,  "chance": 0.2},  # (39,  "Precious Peach",  47259)- Мифический дроп (плюс х2.9)
+                {"key": 18,  "chance": 0.1},  # (18,  "Durov's Cap",     80043)- Легендарный дроп (плюс х5)
+            ]
+        },
 ]
 
 async def populate_db():

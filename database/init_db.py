@@ -19,7 +19,6 @@ GIFTS_CATALOG = [
     (47,   "Heroic Helmet",        28662),
     (49,   "Astral Shard",         21195),
     (15,   "Mighty Arm",           19647),
-    (127,  "Luxury Bag",           18098), 
     (4,    "Gem Signet",           14906), 
     (128,  "Krypton Gem",          11167), 
     (42,   "Mini Oscar",           11077),
@@ -282,9 +281,9 @@ CASES_CONFIG = [
             "items": [
                 {"key": 130, "chance": 45.0}, # (130, "Jade Token",      9586) - Частый дроп (минус)
                 {"key": 46,  "chance": 25.0}, # (46,  "Scared Cat",      9775) - Частый дроп (минус)
-                {"key": 129, "chance": 12.0}, # (129, "Victory Hand",    10631)- Средний дроп (минус)
+                {"key": 12, "chance": 12.0}, # (12, "Artisan Brick",    9585)- Средний дроп (минус)
                 {"key": 42,  "chance": 10.0}, # (42,  "Mini Oscar",      11077)- Средний дроп (минус)
-                {"key": 127, "chance": 5.0},  # (127, "Luxury Bag",      18098)- Окупаемость (плюс)
+                {"key": 78, "chance": 5.0},  # (78, "Loot Bag",      15000)- Окупаемость (плюс)
                 {"key": 49,  "chance": 2.0},  # (49,  "Astral Shard",    21195)- Редкий дроп (плюс х1.3)
                 {"key": 47,  "chance": 0.7},  # (47,  "Heroic Helmet",   28662)- Эпический дроп (плюс х1.8)
                 {"key": 39,  "chance": 0.2},  # (39,  "Precious Peach",  47259)- Мифический дроп (плюс х2.9)

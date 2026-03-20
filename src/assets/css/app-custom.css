@@ -58,7 +58,7 @@
     font-weight: 700;
     z-index: 10001;
     opacity: 0;
-    transition: all 0.3s ease;
+    /* transition handled by animations.css */
     border: 1px solid var(--border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     pointer-events: none;
@@ -301,11 +301,11 @@
 }
 
 /* Modal */
+/* .modal base styles handled by animations.css */
 .modal {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    display: flex;
     align-items: flex-end;
     justify-content: center;
 }
@@ -338,10 +338,7 @@
     margin: 12px auto;
 }
 
-@keyframes modalSlideUp {
-    from {
-        transform: translateY(100%);
-    }
+/* modalSlideUp replaced by CSS transition in animations.css */
 
     to {
         transform: translateY(0);

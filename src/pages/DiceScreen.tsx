@@ -170,7 +170,7 @@ export default function DiceScreen() {
                             <span>Выигрыш</span>
                             <div>
                                 <span>{possibleWin}</span>
-                                <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
+                                <img src="/assets/images/star.png" style={{ width: '25px', height: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
                             </div>
                         </div>
                     </div>

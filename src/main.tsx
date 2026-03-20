@@ -4,6 +4,7 @@ import App from './App.tsx'
 import './index.css'
 import './assets/css/style.css'
 import './assets/css/app-custom.css'
+import './assets/css/animations.css'
 import { init } from '@telegram-apps/sdk-react';
 
 try {

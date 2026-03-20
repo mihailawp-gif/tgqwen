@@ -130,6 +130,7 @@ GIFTS_CATALOG = [
     (204,  "Stars 500",            500),
     (205,  "Stars 1000",           1000),
     (206,  "Stars 5000",           5000),
+    (207,  "Stars 1",                 1),
 ]
 
 PENDING_GIFTS = [
@@ -227,6 +228,18 @@ CASES_CONFIG = [
             {"key": 56,  "chance": 22.01},  # (56,   "Kissed Frog",          6231),
             {"key": 15,  "chance": 2.0},  # (15,   "Mighty Arm",           19647),
             {"key": 22,  "chance": 0.01},  # Plush Pepe (Цена 1М - Джекпот)
+            
+        ]
+    },
+        {
+        "name": "Фарм",
+        "description": "Да да нет нет да будет свет",
+        "price": 100,
+        "is_free": False,
+        "image_url": "/assets/images/dadanetner.gif",
+        "items": [
+            {"key": 207, "chance": 99.0}, # 1 star
+            {"key": 22,  "chance": 0.01},  # Plush Pepe 
             
         ]
     }

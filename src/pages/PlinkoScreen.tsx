@@ -143,7 +143,7 @@ export default function PlinkoScreen() {
         });
     };
 
-    const spawnBall = (path: number[], finalBucketIndex: number, ballMultiplier: number, finalBalance: number) => {
+    const spawnBall = (path: number[], finalBucketIndex: number, finalBalance: number) => {
         const pinsContainer = pinsContainerRef.current;
         const bucketsContainer = bucketsContainerRef.current;
         if (!pinsContainer || !bucketsContainer) return;
@@ -259,7 +259,7 @@ export default function PlinkoScreen() {
 
         const res = await playPlinkoApi(telegramId, bet, difficulty, pinsCount);
         if (res.success) {
-            spawnBall(res.path, res.bucket, res.multiplier, res.balance);
+            spawnBall(res.path, res.bucket, res.balance);
         } else {
             showToast(res.error);
             setBalance(balance);

@@ -340,11 +340,6 @@
 
 /* modalSlideUp replaced by CSS transition in animations.css */
 
-    to {
-        transform: translateY(0);
-    }
-}
-
 .crash-bet-header {
     display: flex;
     justify-content: space-between;

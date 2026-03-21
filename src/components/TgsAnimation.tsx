@@ -29,17 +29,17 @@ async function _gunzip(buf: ArrayBuffer): Promise<string> {
     if (typeof DecompressionStream !== 'undefined') {
         try {
             const ds = new DecompressionStream('gzip');
-            const w  = ds.writable.getWriter();
-            const r  = ds.readable.getReader();
+            const w = ds.writable.getWriter();
+            const r = ds.readable.getReader();
             w.write(new Uint8Array(buf));
             w.close();
             const chunks: Uint8Array[] = [];
-            for (;;) {
+            for (; ;) {
                 const { done, value } = await r.read();
                 if (done) break;
                 chunks.push(value);
             }
-            const total  = chunks.reduce((n, c) => n + c.length, 0);
+            const total = chunks.reduce((n, c) => n + c.length, 0);
             const merged = new Uint8Array(total);
             let offset = 0;
             for (const c of chunks) { merged.set(c, offset); offset += c.length; }
@@ -96,7 +96,7 @@ const _observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
         const anim = _instances.get((e.target as HTMLElement).dataset.tgsId!);
         if (!anim) return;
-        try { e.isIntersecting ? anim.play() : anim.pause(); } catch (_) {}
+        try { e.isIntersecting ? anim.play() : anim.pause(); } catch (_) { }
     });
 }, { rootMargin: '100px', threshold: 0 });
 
@@ -104,7 +104,7 @@ const _observer = new IntersectionObserver(entries => {
 // Preload — вызывай из родителя чтобы прогреть кэш до маунта
 // ─────────────────────────────────────────────────────────────────────────────
 export function preloadTgs(urls: string[]) {
-    urls.forEach(url => { if (url.endsWith('.tgs')) _load(url).catch(() => {}); });
+    urls.forEach(url => { if (url.endsWith('.tgs')) _load(url).catch(() => { }); });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,15 +138,15 @@ const TgsAnimation = memo(function TgsAnimation({
     alwaysPlay = false,
 }: TgsAnimationProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const instanceId   = useRef<string>('tgs_' + (++_idCounter));
+    const instanceId = useRef<string>('tgs_' + (++_idCounter));
     // sessionRef — инкрементируется при каждом изменении url или размонтировании
-    const sessionRef   = useRef<number>(0);
+    const sessionRef = useRef<number>(0);
 
     const px = typeof width === 'number' ? width : parseInt(String(width)) || 80;
 
     useEffect(() => {
-        const id  = instanceId.current;
-        const el  = containerRef.current;
+        const id = instanceId.current;
+        const el = containerRef.current;
         if (!el) return;
 
         const mySession = ++sessionRef.current;
@@ -154,7 +154,7 @@ const TgsAnimation = memo(function TgsAnimation({
         // Убиваем предыдущую анимацию (смена url)
         const prev = _instances.get(id);
         if (prev) {
-            try { prev.destroy(); } catch (_) {}
+            try { prev.destroy(); } catch (_) { }
             _observer.unobserve(el);
             el.innerHTML = '';
             _instances.delete(id);
@@ -176,20 +176,22 @@ const TgsAnimation = memo(function TgsAnimation({
                     target.dataset.tgsId = id;
 
                     const anim = lottie.loadAnimation({
-                        container:     target,
-                        renderer:      'canvas',
+                        container: target,
+                        renderer: 'svg',
                         loop,
                         // play/pause отдаём observer'у; если alwaysPlay — стартуем сразу
-                        autoplay:      autoplay && alwaysPlay,
+                        autoplay: autoplay && alwaysPlay,
                         animationData: data as object,
                         rendererSettings: { preserveAspectRatio: 'xMidYMid meet' },
                     });
 
                     anim.addEventListener('DOMLoaded', () => {
-                        // Патч для аппаратного ускорения (translateZ выносит слой в GPU)
-                        const canvas = target.querySelector('canvas') || target.querySelector('svg');
-                        if (canvas) {
-                            canvas.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translateZ(0);`;
+                        // Убран патч translateZ(0) для Web/Desktop багов прозрачности
+                        const svg = target.querySelector('svg');
+                        if (svg) {
+                            svg.setAttribute('width', String(px));
+                            svg.setAttribute('height', String(px));
+                            svg.style.cssText = `width:${px}px;height:${px}px;display:block;`;
                         }
                         if (!alwaysPlay) {
                             // Отдаём управление play/pause IntersectionObserver'у
@@ -212,12 +214,12 @@ const TgsAnimation = memo(function TgsAnimation({
             sessionRef.current++;
             const anim = _instances.get(id);
             if (anim) {
-                try { anim.destroy(); } catch (_) {}
+                try { anim.destroy(); } catch (_) { }
                 if (el) _observer.unobserve(el);
                 _instances.delete(id);
             }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, loop, alwaysPlay, px]);
 
     // Реагируем на изменение autoplay-пропа без перезагрузки анимации
@@ -225,7 +227,7 @@ const TgsAnimation = memo(function TgsAnimation({
     useEffect(() => {
         const anim = _instances.get(instanceId.current);
         if (!anim) return;
-        try { autoplay ? anim.play() : anim.pause(); } catch (_) {}
+        try { autoplay ? anim.play() : anim.pause(); } catch (_) { }
     }, [autoplay]);
 
     return (
@@ -233,12 +235,12 @@ const TgsAnimation = memo(function TgsAnimation({
             ref={containerRef}
             className={className}
             style={{
-                width:      px,
-                height:     px,
-                display:    'block',
-                overflow:   'hidden',
+                width: px,
+                height: px,
+                display: 'block',
+                overflow: 'hidden',
                 flexShrink: 0,
-                contain:    'layout style paint',
+                contain: 'layout style paint',
                 ...style,
             }}
         />

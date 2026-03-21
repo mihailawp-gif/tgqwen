@@ -13,6 +13,7 @@ import CrashScreen from './pages/CrashScreen';
 import MinesScreen from './pages/MinesScreen';
 import PlinkoScreen from './pages/PlinkoScreen';
 import DiceScreen from './pages/DiceScreen';
+import UpgradeScreen from './pages/UpgradeScreen';
 import DesktopGuard from './components/DesktopGuard';
 import { initUserApi } from './api/api';
 import { retrieveLaunchParams } from '@telegram-apps/sdk-react';
@@ -156,6 +157,7 @@ function App() {
       <div className={`screen ${activeScreen === 'mines-screen' ? 'active' : ''}`}><MinesScreen /></div>
       <div className={`screen ${activeScreen === 'plinko-screen' ? 'active' : ''}`}><PlinkoScreen /></div>
       <div className={`screen ${activeScreen === 'dice-screen' ? 'active' : ''}`}><DiceScreen /></div>
+      <div className={`screen ${activeScreen === 'upgrade-screen' ? 'active' : ''}`}><UpgradeScreen /></div>
 
       {/* TopUp Modal */}
       <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />

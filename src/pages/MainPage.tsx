@@ -90,6 +90,18 @@ export default function MainPage() {
                         <p>БРОСАЙ ШАРИКИ</p>
                     </div>
                 </div>
+
+                <div className="game-block block-upgrade align-right" onClick={() => setActiveScreen('upgrade-screen')} style={{ background: 'linear-gradient(135deg, #1c2028, #2a2e38)' }}>
+                    <div className="art-left flex items-center justify-center">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        </svg>
+                    </div>
+                    <div className="info">
+                        <h2 style={{ color: '#22c55e' }}>АПГРЕЙД</h2>
+                        <p>УЛУЧШАЙ ПОДАРКИ</p>
+                    </div>
+                </div>
             </div>
 
         </div>

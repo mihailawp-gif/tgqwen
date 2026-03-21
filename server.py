@@ -92,7 +92,7 @@ PLINKO_MULTIPLIERS = {
 
 from database.models import (
     async_session, User, Case, CaseOpening,
-    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage, PlinkoGame
+    Gift, CaseItem, Withdrawal, init_db, ReferralEarning, Payment, MinesGame, CrashBet, DiceGame, PromoCode, PromoCodeUsage, PlinkoGame, UpgradeGame
 )
 
 load_dotenv()
@@ -1105,10 +1105,117 @@ async def plinko_play(request):
             session.add(PlinkoGame(user_id=user.id, bet=bet, difficulty=difficulty,
                                    pins=pins, bucket=bucket, multiplier=multiplier, win_amount=win_amount))
             await session.commit()
-            return web.json_response({'success': True, 'path': directions, 'bucket': bucket,
-                                      'multiplier': multiplier, 'win_amount': win_amount, 'balance': user.balance})
+        return web.json_response({'success': True, 'path': directions, 'bucket': bucket,
+                                  'multiplier': multiplier, 'win_amount': win_amount, 'balance': user.balance})
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# UPGRADE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def get_all_gifts(request):
+    async with async_session() as session:
+        gifts = (await session.execute(select(Gift).where(Gift.value > 0).order_by(Gift.value))).scalars().all()
+        data = [{'id': g.id, 'name': g.name, 'value': g.value, 'image_url': g.image_url, 'gift_number': g.gift_number, 'is_stars': bool(g.gift_number and g.gift_number >= 200)} for g in gifts]
+        return web.json_response({'success': True, 'gifts': data})
+
+async def upgrade_bet(request):
+    user_id = get_verified_user_id(request)
+    if user_id is None: return auth_error()
+    if check_rate(user_id, 'bet'):
+        return web.json_response({'success': False, 'error': 'Слишком много запросов'}, status=429)
+
+    data = await request.json()
+    inventory_item_ids = data.get('inventory_item_ids', [])
+    target_gift_id = data.get('target_gift_id')
+    added_balance = safe_positive_int(data.get('added_balance', 0))
+
+    if not isinstance(inventory_item_ids, list) or not inventory_item_ids or not target_gift_id or len(inventory_item_ids) > 6:
+        return web.json_response({'success': False, 'error': 'Неверные параметры (максимум 6 предметов)'})
+
+    async with get_user_lock(user_id):
+        async with async_session() as session:
+            user = (await session.execute(select(User).where(User.telegram_id == user_id))).scalar_one_or_none()
+            if not user or user.balance < added_balance:
+                return web.json_response({'success': False, 'error': 'Недостаточно звезд на балансе'})
+
+            target_gift = await session.get(Gift, target_gift_id)
+            if not target_gift:
+                return web.json_response({'success': False, 'error': 'Целевой предмет не найден'})
+
+            openings = (await session.execute(
+                select(CaseOpening).where(CaseOpening.id.in_(inventory_item_ids)).options(joinedload(CaseOpening.gift))
+            )).scalars().unique().all()
+            
+            if len(openings) != len(inventory_item_ids):
+                return web.json_response({'success': False, 'error': 'Один или несколько предметов из инвентаря не найдены'})
+
+            inventory_value = 0
+            for opening in openings:
+                if opening.user_id != user.id or opening.is_withdrawn or opening.is_sold:
+                    return web.json_response({'success': False, 'error': 'Один из выбранных предметов уже продан или недоступен'})
+                inventory_value += (opening.gift.value or 0)
+
+            total_inject = inventory_value + added_balance
+            target_value = target_gift.value or 1
+            
+            # Chance with 5% margin, capped at 85%
+            max_chance = 85.0
+            margin = 0.95
+            raw_chance = (total_inject / target_value * 100) * margin
+            chance = min(max_chance, raw_chance)
+
+            # Roll is 0 to 100
+            roll = random.uniform(0, 100)
+            is_successful = roll <= chance
+
+            # Deduct balance and mark as used/sold
+            user.balance -= added_balance
+            for opening in openings:
+                opening.is_sold = True 
+
+            new_opening = None
+            if is_successful:
+                # Give target gift
+                new_opening = CaseOpening(user_id=user.id, case_id=None, gift_id=target_gift.id)
+                is_stars = bool(target_gift.gift_number and target_gift.gift_number >= 200)
+                if is_stars:
+                    user.balance += target_gift.value
+                    new_opening.is_sold = True
+                session.add(new_opening)
+
+            upgrade = UpgradeGame(
+                user_id=user.id,
+                inventory_items=json.dumps(inventory_item_ids),
+                target_gift_id=target_gift.id,
+                added_balance=added_balance,
+                chance=chance,
+                is_successful=is_successful
+            )
+            session.add(upgrade)
+            await session.commit()
+            
+            result_gift_data = None
+            if is_successful:
+                await session.refresh(new_opening)
+                result_gift_data = {
+                    'opening_id': new_opening.id,
+                    'is_stars': bool(target_gift.gift_number and target_gift.gift_number >= 200),
+                    'gift': {
+                        'id': target_gift.id, 'name': target_gift.name, 'value': target_gift.value,
+                        'image_url': target_gift.image_url, 'gift_number': target_gift.gift_number,
+                        'is_stars': bool(target_gift.gift_number and target_gift.gift_number >= 200)
+                    }
+                }
+
+            return web.json_response({
+                'success': True,
+                'is_successful': is_successful,
+                'chance': chance,
+                'roll': roll,
+                'balance': user.balance,
+                'new_item': result_gift_data
+            })
 # ═══════════════════════════════════════════════════════════════════════════════
 # STATIC
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1153,6 +1260,8 @@ async def create_app():
         web.post('/api/dice/play',                        dice_play),
         web.post('/api/promo/activate',                   activate_promo),
         web.post('/api/plinko/play',                      plinko_play),
+        web.get('/api/upgrade/gifts',                     get_all_gifts),
+        web.post('/api/upgrade/bet',                      upgrade_bet),
     ]
     for route in api_routes:
         cors.add(app.router.add_route(route.method, route.path, route.handler))

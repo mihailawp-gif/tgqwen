@@ -200,6 +200,20 @@ class PromoCodeUsage(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     promo_id = Column(Integer, ForeignKey("promo_codes.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class UpgradeGame(Base):
+    __tablename__ = "upgrade_games"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    inventory_items = Column(String(512)) # JSON array of case_openings ids
+    target_gift_id = Column(Integer, ForeignKey("gifts.id"))
+    added_balance = Column(Integer, default=0)
+    chance = Column(Float, nullable=False)
+    is_successful = Column(Boolean, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
     
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./database/cases.db")
 if DATABASE_URL:

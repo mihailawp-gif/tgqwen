@@ -208,3 +208,16 @@ export const checkFreeCaseApi = async (telegramId: string | number) => {
     try { return await api.get(`/user/${telegramId}/free-case-check`) as any; }
     catch (e) { return e; }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Upgrade API
+// ─────────────────────────────────────────────────────────────────────────────
+export const fetchUpgradeGiftsApi = async () => {
+    try { return await api.get('/upgrade/gifts') as any; }
+    catch (e) { return e; }
+};
+
+export const upgradeBetApi = async (inventory_item_ids: number[], target_gift_id: number, added_balance: number) => {
+    try { return await api.post('/upgrade/bet', { inventory_item_ids, target_gift_id, added_balance }) as any; }
+    catch (e) { return e; }
+};

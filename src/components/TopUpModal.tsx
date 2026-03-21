@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { createInvoiceApi, activatePromoApi } from '../api/api';
 
@@ -15,24 +15,6 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
     const [customAmount, setCustomAmount] = useState(100);
     const [promoCode, setPromoCode] = useState('');
 
-    // Анимация закрытия: сначала closing-класс, потом unmount
-    const [mounted, setMounted] = useState(false);
-    const [closing, setClosing] = useState(false);
-
-    useEffect(() => {
-        if (open) {
-            setMounted(true);
-            setClosing(false);
-        } else if (mounted) {
-            setClosing(true);
-            const t = setTimeout(() => {
-                setMounted(false);
-                setClosing(false);
-            }, 300);
-            return () => clearTimeout(t);
-        }
-    }, [open]);
-
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
     const createInvoice = async (amount: number) => {
@@ -42,7 +24,7 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
             const res = await createInvoiceApi(telegramId, amount);
             if (res.success && res.invoice_link) {
                 const tg = (window as any).Telegram?.WebApp;
-                if (tg?.openInvoice) {
+                if (tg && tg.openInvoice) {
                     tg.openInvoice(res.invoice_link, (status: string) => {
                         if (status === 'paid') {
                             showToast(`✅ Баланс пополнен на ${amount} ⭐`);
@@ -55,7 +37,7 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
             } else {
                 showToast('❌ ' + (res.error || 'Ошибка создания счета'));
             }
-        } catch {
+        } catch (e) {
             showToast('❌ Ошибка сети');
         }
         setLoaderVisible(false);
@@ -73,18 +55,16 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
             } else {
                 showToast('❌ ' + res.error);
             }
-        } catch {
+        } catch (e) {
             showToast('❌ Ошибка сети');
         }
         setLoaderVisible(false);
     };
 
-    if (!mounted) return null;
-
-    const isActive = open && !closing;
+    if (!open) return null;
 
     return (
-        <div className={`modal${isActive ? ' active' : ''}${closing ? ' closing' : ''}`}>
+        <div className="modal active">
             <div className="modal-overlay" onClick={onClose} />
             <div className="modal-content topup-modal">
                 <div className="modal-handle" />
@@ -104,13 +84,8 @@ export default function TopUpModal({ open, onClose }: TopUpModalProps) {
                     </div>
 
                     <div className="amounts-grid">
-                        {AMOUNTS.map((amount, i) => (
-                            <button
-                                key={amount}
-                                className="amount-card"
-                                style={{ animationDelay: `${0.04 + i * 0.04}s`, animation: 'cardStaggerIn 0.35s var(--ease-spring) both' }}
-                                onClick={() => createInvoice(amount)}
-                            >
+                        {AMOUNTS.map(amount => (
+                            <button key={amount} className="amount-card" onClick={() => createInvoice(amount)}>
                                 <div className="amount-stars">
                                     <img src="/assets/images/star.png" className="amount-star-icon" alt="star" />
                                     {amount}

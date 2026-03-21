@@ -58,7 +58,7 @@
     font-weight: 700;
     z-index: 10001;
     opacity: 0;
-    /* transition handled by animations.css */
+    transition: all 0.3s ease;
     border: 1px solid var(--border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     pointer-events: none;
@@ -301,11 +301,11 @@
 }
 
 /* Modal */
-/* .modal base styles handled by animations.css */
 .modal {
     position: fixed;
     inset: 0;
     z-index: 9999;
+    display: flex;
     align-items: flex-end;
     justify-content: center;
 }
@@ -338,7 +338,15 @@
     margin: 12px auto;
 }
 
-/* modalSlideUp replaced by CSS transition in animations.css */
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
 
 .crash-bet-header {
     display: flex;

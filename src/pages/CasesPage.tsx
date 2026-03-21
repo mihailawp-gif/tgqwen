@@ -243,12 +243,12 @@ export default function CasesPage() {
 
         // Reset without transition
         track.style.transition = 'none';
-        track.style.transform  = 'translateX(0)';
+        track.style.transform  = 'translate3d(0, 0, 0)';
         track.getBoundingClientRect(); // force reflow
 
         // Apply spin
         track.style.transition = `transform ${durations[pattern]} ${eases[pattern]}`;
-        track.style.transform  = `translateX(-${base + jitters[pattern]}px)`;
+        track.style.transform  = `translate3d(-${base + jitters[pattern]}px, 0, 0)`;
     };
 
     // ── Sell / close ──────────────────────────────────────────────────────────
@@ -276,7 +276,7 @@ export default function CasesPage() {
         // Reset track position for next open
         if (rouletteTrackRef.current) {
             rouletteTrackRef.current.style.transition = 'none';
-            rouletteTrackRef.current.style.transform  = 'translateX(0)';
+            rouletteTrackRef.current.style.transform  = 'translate3d(0, 0, 0)';
         }
     }, [setCasePreviewOpen]);
 

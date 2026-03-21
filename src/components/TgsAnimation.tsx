@@ -177,7 +177,7 @@ const TgsAnimation = memo(function TgsAnimation({
 
                     const anim = lottie.loadAnimation({
                         container:     target,
-                        renderer:      'svg',
+                        renderer:      'canvas',
                         loop,
                         // play/pause отдаём observer'у; если alwaysPlay — стартуем сразу
                         autoplay:      autoplay && alwaysPlay,
@@ -186,12 +186,10 @@ const TgsAnimation = memo(function TgsAnimation({
                     });
 
                     anim.addEventListener('DOMLoaded', () => {
-                        // SVG патч из оригинала: translateZ(0) → свой compositor layer
-                        const svg = target.querySelector('svg');
-                        if (svg) {
-                            svg.setAttribute('width',  String(px));
-                            svg.setAttribute('height', String(px));
-                            svg.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translateZ(0);`;
+                        // Патч для аппаратного ускорения (translateZ выносит слой в GPU)
+                        const canvas = target.querySelector('canvas') || target.querySelector('svg');
+                        if (canvas) {
+                            canvas.style.cssText = `width:${px}px;height:${px}px;display:block;transform:translateZ(0);`;
                         }
                         if (!alwaysPlay) {
                             // Отдаём управление play/pause IntersectionObserver'у

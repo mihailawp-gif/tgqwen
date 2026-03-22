@@ -123,6 +123,7 @@ interface TgsAnimationProps {
      * false — пауза когда элемент вне viewport (дефолт, для гридов и рулетки)
      */
     alwaysPlay?: boolean;
+    hoverPlay?: boolean;
 }
 
 let _idCounter = 0;
@@ -136,6 +137,7 @@ const TgsAnimation = memo(function TgsAnimation({
     className,
     style,
     alwaysPlay = false,
+    hoverPlay = false,
 }: TgsAnimationProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const instanceId = useRef<string>('tgs_' + (++_idCounter));
@@ -193,7 +195,9 @@ const TgsAnimation = memo(function TgsAnimation({
                             svg.setAttribute('height', String(px));
                             svg.style.cssText = `width:${px}px;height:${px}px;display:block;`;
                         }
-                        if (!alwaysPlay) {
+                        if (hoverPlay) {
+                            anim.goToAndStop(0, true);
+                        } else if (!alwaysPlay) {
                             // Отдаём управление play/pause IntersectionObserver'у
                             _observer.observe(target);
                         }
@@ -225,15 +229,30 @@ const TgsAnimation = memo(function TgsAnimation({
     // Реагируем на изменение autoplay-пропа без перезагрузки анимации
     // Используется рулеткой: isSpinning → autoplay=false паузит все ячейки
     useEffect(() => {
+        if (hoverPlay) return;
         const anim = _instances.get(instanceId.current);
         if (!anim) return;
         try { autoplay ? anim.play() : anim.pause(); } catch (_) { }
-    }, [autoplay]);
+    }, [autoplay, hoverPlay]);
+
+    const handleMouseEnter = () => {
+        if (!hoverPlay) return;
+        const anim = _instances.get(instanceId.current);
+        if (anim) try { anim.play(); } catch (_) { }
+    };
+
+    const handleMouseLeave = () => {
+        if (!hoverPlay) return;
+        const anim = _instances.get(instanceId.current);
+        if (anim) try { anim.goToAndStop(0, true); } catch (_) { }
+    };
 
     return (
         <div
             ref={containerRef}
             className={className}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             style={{
                 width: px,
                 height: px,

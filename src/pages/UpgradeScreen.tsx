@@ -83,8 +83,9 @@ export default function UpgradeScreen() {
     }, [maxAddedBalance, addedBalance]);
 
     const availableTargetGifts = useMemo(() => {
-        if (inventoryValue === 0) return targetGifts;
-        return targetGifts.filter(g => g.value > inventoryValue);
+        let filtered = targetGifts.filter(g => !g.name.toLowerCase().startsWith('star '));
+        if (inventoryValue === 0) return filtered;
+        return filtered.filter(g => g.value > inventoryValue);
     }, [targetGifts, inventoryValue]);
 
     const toggleInventoryItem = (id: number) => {
@@ -213,8 +214,8 @@ export default function UpgradeScreen() {
 
                     {/* Needle */}
                     <div className="absolute top-0 left-0 w-full h-full p-2 pointer-events-none z-20" style={{ transform: `rotate(${needleRotation}deg)`, transition: isRolling && !isFast ? 'transform 3.5s cubic-bezier(0.1, 0.7, 0.1, 1)' : 'none' }}>
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 drop-shadow-md">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" strokeWidth="2" strokeLinejoin="round">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 drop-shadow-md rotate-180">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round">
                                 <path d="M12 2L2 22h20L12 2z"/>
                             </svg>
                         </div>
@@ -424,7 +425,9 @@ export default function UpgradeScreen() {
                             <GiftIcon url={wonItem.image_url} size={160} className="filter drop-shadow-[0_0_30px_rgba(59,130,246,0.6)] animate-[bounce_3s_infinite]" />
                         </div>
                         <div className="text-2xl font-bold mt-8 text-center">{wonItem.name}</div>
-                        <div className="text-yellow-500 font-bold mt-2 text-2xl">{wonItem.value} ⭐</div>
+                        <div className="text-yellow-500 font-bold mt-2 text-2xl flex items-center justify-center gap-2">
+                            {wonItem.value} <img src="/assets/images/star.png" className="w-6 h-6" alt="star" />
+                        </div>
 
                         <button 
                             onClick={() => setWinOverlayOpen(false)}

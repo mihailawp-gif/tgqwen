@@ -424,7 +424,7 @@ export default function CrashScreen() {
 
             {/* Players */}
             <div className="crash-players-section" id="crashPlayersSection" style={{ padding: players.length ? '12px 16px' : '0' }}>
-                <div className="crash-total-bets"> <img src="/assets/images/star.png" style={{ width: '14px', marginRight: '5px' }} />Всего ставок: {totalBets}</div>
+                <div className="crash-total-bets" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Всего ставок: {totalBets} <img src="/assets/images/star.png" style={{ width: '14px', marginLeft: '5px' }} /></div>
                 <div className="crash-players-list">
                     {sortedPlayers.map((p, i) => (
                         <div key={i} className="crash-player-item">
@@ -500,8 +500,8 @@ export default function CrashScreen() {
                         </div>
 
                         <div style={{ padding: '0 20px 20px' }}>
-                            <button className="btn-crash-main" onClick={submitBet} style={{ width: '100%' }}>
-                                ПОСТАВИТЬ {betInput} ⭐
+                            <button className="btn-crash-main" onClick={submitBet} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                ПОСТАВИТЬ {betInput} <img src="/assets/images/star.png" style={{ width: '18px' }} />
                             </button>
                         </div>
                     </div>

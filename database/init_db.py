@@ -20,21 +20,21 @@ GIFTS_CATALOG = [
     (49,   "Astral Shard",         21195),
     (15,   "Mighty Arm",           19647),
     (4,    "Gem Signet",           14906), 
-    (128,  "Krypton Gem",          11167), 
+    #(128,  "Krypton Gem",          11167), 
     (42,   "Mini Oscar",           11077),
-    (129,  "Victory Hand",         10631), 
+    #(129,  "Victory Hand",         10631), 
     (66,   "Parfume Bottle",       10429),
     (46,   "Scared Cat",           9775),
     (130,  "Jade Token",           9586),  
     (12,   "Artisan Brick",        9585),
     (77,   "Diamond Ring",         7851),
     (56,   "Kissed Frog",          6231),
-    (131,  "Eclipse Ring",         6229),  
+    (20,  "Bonded Ring",         6229),  
     (88,   "Swiss Watch",          5654),
     (84,   "Genie Lamp",           5438),
     (103,  "Red Lips",             4707),
     (102,  "Toy Bear",             4677),
-    (132,  "Retro Car",            4621),  
+    #(132,  "Snoop Car",            4621),  
     (58,   "Neko Helmet",          4129),
     (53,   "Vintage Cigar",        3729),
     (59,   "Electric Skull",       3623),
@@ -182,7 +182,7 @@ CASES_CONFIG = [
             {"key": 114, "chance": 45.0}, # Santa Hat (Цена 555 - Окуп 1х)
             {"key": 78,  "chance": 1.0}, # Loot Bag (Цена 671)
             #{"key": 65,  "chance": 15.0}, # Mad Pumpkin (Цена 1534)
-            {"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
+            #{"key": 136, "chance": 8.0},  # Engagement Ring (Цена 2960)
             {"key": 46,  "chance": 0.9},  # Scared Cat (Цена 9775)
             {"key": 59,  "chance": 9.9},  #  Electric Skull
             {"key": 55,  "chance": 43.0}, #     (55,   "Hypno Lollipop",       600),

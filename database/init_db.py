@@ -41,6 +41,7 @@ GIFTS_CATALOG = [
     (64,   "Skull Flower",         1174),
     (72,   "Voodoo Doll",          3331),
     (63,   "Eternal Rose",         2632),
+    (141,  "Rare Bird",            2300),
     (105,  "Ionic Dryer",          1916),
     (52,   "Magic Potion",         1647),
     (104,  "Sky Stilettos",        1582),
@@ -49,6 +50,7 @@ GIFTS_CATALOG = [
     (36,   "Crystal Ball",         1335),
     (96,   "Eternal Candle",       1319),
     (97,   "Sakura Flower",        1195),
+    (143,  "Snoop Cigar",          1100),
     (69,   "Flying Broom",         1145),
     (1,    "Victory Medal",        580),
     (10,   "Stellar Rocket",       350),
@@ -71,6 +73,7 @@ GIFTS_CATALOG = [
     (85,   "Light Sword",          671),
     (86,   "Lol Pop",              280),
     (87,   "Restless Jar",         671),
+    (140,   "Swag Bag",         480),
     (91,   "Jester Hat",           500),
     (92,   "Moon Pendant",         635),
     (93,   "Faith Amulet",         287),
@@ -288,6 +291,25 @@ CASES_CONFIG = [
                 {"key": 47,  "chance": 0.7},  # (47,  "Heroic Helmet",   28662)- Эпический дроп (плюс х1.8)
                 {"key": 39,  "chance": 0.2},  # (39,  "Precious Peach",  47259)- Мифический дроп (плюс х2.9)
                 {"key": 18,  "chance": 0.1},  # (18,  "Durov's Cap",     80043)- Легендарный дроп (плюс х5)
+            ]
+        },
+        {
+            "name": "Потихоньку",
+            "description": "Для Здравых",
+            "price": 1000,
+            "is_free": False,
+            "image_url": "/assets/images/rybik.jpg",
+            "items": [
+                {"key": 130, "chance": 45.0}, # (130, "Jade Token",      9586) - Частый дроп (минус)
+                {"key": 46,  "chance": 25.0}, # (46,  "Scared Cat",      9775) - Частый дроп (минус)
+                {"key": 12, "chance": 12.0}, # (12, "Artisan Brick",    9585)- Средний дроп (минус)
+                {"key": 42,  "chance": 10.0}, # (42,  "Mini Oscar",      11077)- Средний дроп (минус)
+                {"key": 78, "chance": 5.0},  # (78, "Loot Bag",      15000)- Окупаемость (плюс)
+                {"key": 49,  "chance": 2.0},  # (49,  "Astral Shard",    21195)- Редкий дроп (плюс х1.3)
+                {"key": 47,  "chance": 0.7},  # (47,  "Heroic Helmet",   28662)- Эпический дроп (плюс х1.8)
+                {"key": 39,  "chance": 0.2},  # (39,  "Precious Peach",  47259)- Мифический дроп (плюс х2.9)
+                {"key": 18,  "chance": 0.1},  # (18,  "Durov's Cap",     80043)- Легендарный дроп (плюс х5)
+
             ]
         },
 ]

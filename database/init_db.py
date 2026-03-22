@@ -300,15 +300,13 @@ CASES_CONFIG = [
             "is_free": False,
             "image_url": "/assets/images/rybik.jpg",
             "items": [
-                {"key": 130, "chance": 45.0}, # (130, "Jade Token",      9586) - Частый дроп (минус)
-                {"key": 46,  "chance": 25.0}, # (46,  "Scared Cat",      9775) - Частый дроп (минус)
-                {"key": 12, "chance": 12.0}, # (12, "Artisan Brick",    9585)- Средний дроп (минус)
-                {"key": 42,  "chance": 10.0}, # (42,  "Mini Oscar",      11077)- Средний дроп (минус)
-                {"key": 78, "chance": 5.0},  # (78, "Loot Bag",      15000)- Окупаемость (плюс)
-                {"key": 49,  "chance": 2.0},  # (49,  "Astral Shard",    21195)- Редкий дроп (плюс х1.3)
-                {"key": 47,  "chance": 0.7},  # (47,  "Heroic Helmet",   28662)- Эпический дроп (плюс х1.8)
-                {"key": 39,  "chance": 0.2},  # (39,  "Precious Peach",  47259)- Мифический дроп (плюс х2.9)
-                {"key": 18,  "chance": 0.1},  # (18,  "Durov's Cap",     80043)- Легендарный дроп (плюс х5)
+                {"key": 140, "chance": 90.0}, # (140,  "Swag Bag",         480)
+                {"key": 92,  "chance": 4.2},  # (92,   "Moon Pendant",     635)
+                {"key": 14,  "chance": 3.4},  # (14,   "Happy Brownie",    650)
+                {"key": 143, "chance": 1.5},  # (143,  "Snoop Cigar",      1100)
+                {"key": 141, "chance": 0.5},  # (141,  "Rare Bird",        2300)
+                {"key": 53,  "chance": 0.3},  # (53,   "Vintage Cigar",    3729)
+                {"key": 18,  "chance": 0.1},  # (18,   "Durov's Cap",      80043)
 
             ]
         },

@@ -83,7 +83,7 @@ export default function UpgradeScreen() {
     }, [maxAddedBalance, addedBalance]);
 
     const availableTargetGifts = useMemo(() => {
-        let filtered = targetGifts.filter(g => !g.name.toLowerCase().startsWith('star '));
+        let filtered = targetGifts.filter(g => !g.name.toLowerCase().startsWith('star'));
         if (inventoryValue === 0) return filtered;
         return filtered.filter(g => g.value > inventoryValue);
     }, [targetGifts, inventoryValue]);

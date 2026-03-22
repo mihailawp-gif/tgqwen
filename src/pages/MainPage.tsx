@@ -74,10 +74,10 @@ export default function MainPage() {
                         <div className="plinko-anim-wrapper">
                             <svg className="plinko-bg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                                 <g fill="rgba(255, 255, 255, 0.25)">
-                                    <circle cx="35" cy="20" r="1.5"/><circle cx="45" cy="20" r="1.5"/><circle cx="55" cy="20" r="1.5"/><circle cx="65" cy="20" r="1.5"/>
-                                    <circle cx="30" cy="30" r="1.5"/><circle cx="40" cy="30" r="1.5"/><circle cx="50" cy="30" r="1.5"/><circle cx="60" cy="30" r="1.5"/><circle cx="70" cy="30" r="1.5"/>
-                                    <circle cx="25" cy="40" r="1.5"/><circle cx="35" cy="40" r="1.5"/><circle cx="45" cy="40" r="1.5"/><circle cx="55" cy="40" r="1.5"/><circle cx="65" cy="40" r="1.5"/><circle cx="75" cy="40" r="1.5"/>
-                                    <circle cx="20" cy="50" r="1.5"/><circle cx="30" cy="50" r="1.5"/><circle cx="40" cy="50" r="1.5"/><circle cx="50" cy="50" r="1.5"/><circle cx="60" cy="50" r="1.5"/><circle cx="70" cy="50" r="1.5"/><circle cx="80" cy="50" r="1.5"/>
+                                    <circle cx="35" cy="20" r="1.5" /><circle cx="45" cy="20" r="1.5" /><circle cx="55" cy="20" r="1.5" /><circle cx="65" cy="20" r="1.5" />
+                                    <circle cx="30" cy="30" r="1.5" /><circle cx="40" cy="30" r="1.5" /><circle cx="50" cy="30" r="1.5" /><circle cx="60" cy="30" r="1.5" /><circle cx="70" cy="30" r="1.5" />
+                                    <circle cx="25" cy="40" r="1.5" /><circle cx="35" cy="40" r="1.5" /><circle cx="45" cy="40" r="1.5" /><circle cx="55" cy="40" r="1.5" /><circle cx="65" cy="40" r="1.5" /><circle cx="75" cy="40" r="1.5" />
+                                    <circle cx="20" cy="50" r="1.5" /><circle cx="30" cy="50" r="1.5" /><circle cx="40" cy="50" r="1.5" /><circle cx="50" cy="50" r="1.5" /><circle cx="60" cy="50" r="1.5" /><circle cx="70" cy="50" r="1.5" /><circle cx="80" cy="50" r="1.5" />
                                 </g>
                             </svg>
                             <div className="plinko-menu-ball pb-1" />
@@ -93,8 +93,8 @@ export default function MainPage() {
 
                 <div className="game-block block-upgrade align-right" onClick={() => setActiveScreen('upgrade-screen')} style={{ background: 'linear-gradient(135deg, #1c2028, #2a2e38)' }}>
                     <div className="art-left flex items-center justify-center">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ffffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7" />
                         </svg>
                     </div>
                     <div className="info">

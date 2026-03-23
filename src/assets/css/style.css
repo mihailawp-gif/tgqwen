@@ -4252,7 +4252,7 @@ input:checked+.slider:before {
     position: relative;
     width: 140px;
     height: 140px;
-    transform: scale(0.75) translate(-20px, 0);
+    transform: scale(0.95) translate(5px, 0);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4358,46 +4358,46 @@ input:checked+.slider:before {
     }
 
     22% {
-        transform: rotate(720deg);
+        transform: rotate(800deg);
     }
 
     25% {
-        transform: rotate(720deg);
+        transform: rotate(800deg);
     }
 
     35% {
-        transform: rotate(720deg);
+        transform: rotate(800deg);
     }
 
     47% {
-        transform: rotate(1440deg);
+        transform: rotate(1650deg);
     }
 
     50% {
-        transform: rotate(1440deg);
+        transform: rotate(1650deg);
     }
 
     60% {
-        transform: rotate(1440deg);
+        transform: rotate(1650deg);
     }
 
     72% {
-        transform: rotate(2160deg);
+        transform: rotate(2480deg);
     }
 
     75% {
-        transform: rotate(2160deg);
+        transform: rotate(2480deg);
     }
 
     85% {
-        transform: rotate(2160deg);
+        transform: rotate(2480deg);
     }
 
     97% {
-        transform: rotate(2880deg);
+        transform: rotate(3240deg);
     }
 
     100% {
-        transform: rotate(2880deg);
+        transform: rotate(3240deg);
     }
 }

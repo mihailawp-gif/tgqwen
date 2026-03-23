@@ -102,7 +102,7 @@ export default function MainPage() {
                                 <img src="/assets/gift-silhouette.png" alt="Gift" className="upgrade-gift-img" />
                             </div>
                             <div className="upgrade-arrow-wrapper">
-                                <img src="/arrow.svg" alt="Arrow" className="upgrade-arrow-img" />
+                                <img src="/assets/images/arrow.svg" alt="Arrow" className="upgrade-arrow-img" />
                             </div>
                         </div>
                     </div>

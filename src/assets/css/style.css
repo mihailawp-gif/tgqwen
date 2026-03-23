@@ -13,7 +13,7 @@
 }
 
 :root {
-    --bg: #090a0f;
+    --bg: #13151c;
     --bg2: rgba(18, 20, 28, 0.75);
     --bg3: #181a25;
     --card: #13151c;
@@ -1667,7 +1667,7 @@ body {
 
 .modal-content {
     position: relative;
-    background: var(--bg);
+    background: #13151c;
     border-top: 1px solid var(--border2);
     border-radius: 32px 32px 0 0;
     width: 100%;

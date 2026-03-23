@@ -338,7 +338,8 @@ export default function CasesPage() {
         return (
             <div
                 id="opening-screen"
-                className="fixed inset-0 bg-[#13151c] text-white flex flex-col z-50 overflow-hidden"
+                className="screen active"
+                style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', position: 'relative', background: '#13151c', color: 'white' }}
             >
                 {/* ── HEADER ── */}
                 <div className="p-4 flex flex-col items-center justify-center z-20 sticky top-0 relative shrink-0" style={{
@@ -540,7 +541,7 @@ export default function CasesPage() {
                 <div className="w-full bg-[#1a1d27] p-4 border-b border-white/5 mb-4">
                     <div className="flex items-center justify-between mx-auto max-w-[400px] mb-3">
                         <span className="font-bold text-sm text-gray-400 uppercase tracking-widest">Последние выигрыши</span>
-                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /><span className="text-red-500 text-xs font-black tracking-widest">LIVE</span></div>
+                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-red-500 text-xs font-black tracking-widest">LIVE</span></div>
                     </div>
                     <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px]" style={{ scrollbarWidth: 'none' }}>
                         {history.map((item) => (

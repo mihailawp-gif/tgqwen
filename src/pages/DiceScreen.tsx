@@ -109,7 +109,7 @@ export default function DiceScreen() {
             <div className="flex-1 px-4 pb-10 flex flex-col items-center gap-4 overflow-y-auto">
                 {/* Result Box */}
                 <div className="w-full max-w-[400px] flex flex-col items-center mt-2 mb-4">
-                    <div className={`text-5xl font-black tracking-widest ${resultStatus === 'win' ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]' : resultStatus === 'lose' ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-300'} transition-all duration-300 pb-2`}>
+                    <div className={`text-5xl font-black tracking-widest ${resultStatus === 'win' ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]' : resultStatus === 'lose' ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-300'} pb-2`}>
                         {resultNumber}
                     </div>
                     <div

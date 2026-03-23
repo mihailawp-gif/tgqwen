@@ -268,68 +268,72 @@ export default function PlinkoScreen() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-[var(--bg)]">
-            <div className="preview-header">
-                <button className="btn-back" onClick={() => setActiveScreen('main-screen')}>
+        <div className="flex flex-col min-h-screen bg-[#13151c] text-white">
+            {/* Header */}
+            <div className="p-4 flex flex-col items-center justify-center z-10 sticky top-0 relative">
+                <button className="absolute left-4 top-4 p-2 rounded-full bg-white/5" onClick={() => setActiveScreen('main-screen')}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <h2>Плинко</h2>
-                <div className="mines-balance-badge">
-                    <img src="/assets/images/star.png" alt="⭐" />
-                    <span>{balance}</span>
+                <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-xl tracking-wide">Плинко</h2>
+                </div>
+                <div className="flex bg-[#1c1f28] rounded-full px-3 py-1 border border-white/5 shadow-sm transform hover:scale-105 transition-all text-yellow-500 mt-2 z-20 items-center gap-1 font-bold text-sm">
+                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
                 </div>
             </div>
 
-            <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto">
-                <div className="plinko-game-area" style={{ position: 'relative', height: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '12px' }}>
+            <div className="flex-1 px-4 pb-10 flex flex-col items-center gap-4 overflow-y-auto">
+                <div className="w-full max-w-[400px]" style={{ position: 'relative', height: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '12px' }}>
                     <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: 'calc(100% - 60px)', position: 'absolute', top: 0 }}></div>
                     <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets" style={{ position: 'relative', zIndex: 5 }}></div>
                 </div>
 
-                <div className="mines-controls-panel" style={{ opacity: activeBalls > 0 ? 0.5 : 1, pointerEvents: activeBalls > 0 ? 'none' : 'auto' }}>
-                    <div className="control-group">
-                        <label>Сумма ставки</label>
-                        <div className="input-with-icon">
-                            <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
-                            <img src="/assets/images/star.png" alt="star" />
-                        </div>
-                        <div className="quick-buttons">
-                            <button onClick={() => setBet(prev => prev + 10)}>+10</button>
-                            <button onClick={() => setBet(prev => prev + 50)}>+50</button>
-                            <button onClick={() => setBet(prev => Math.floor(prev * 2))}>x2</button>
-                            <button onClick={() => setBet(prev => Math.max(1, Math.floor(prev / 2)))}>/2</button>
+                <div className="w-full max-w-[400px] flex flex-col gap-2 mt-2" style={{ opacity: activeBalls > 0 ? 0.5 : 1, pointerEvents: activeBalls > 0 ? 'none' : 'auto' }}>
+                    
+                    <div className="w-full bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                            <span>Сумма ставки</span>
+                            <div className="text-yellow-500 flex items-center gap-1">
+                                <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} className="bg-transparent border-none outline-none text-right text-yellow-500 w-20 font-bold" />
+                                <img src="/assets/images/star.png" className="w-3.5 h-3.5" alt="star" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="control-group">
-                        <label>Сложность</label>
-                        <div className="quick-buttons diff-buttons">
-                            {(['low', 'medium', 'high'] as const).map(d => (
-                                <button key={d} className={difficulty === d ? 'active' : ''} onClick={() => setDifficulty(d)}>
-                                    {d === 'low' ? 'Легко' : d === 'medium' ? 'Средне' : 'Сложно'}
-                                </button>
-                            ))}
-                        </div>
+                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
+                        <button onClick={() => setBet(prev => prev + 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+10</button>
+                        <button onClick={() => setBet(prev => prev + 50)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+50</button>
+                        <button onClick={() => setBet(prev => Math.floor(prev * 2))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">x2</button>
+                        <button onClick={() => setBet(prev => Math.max(1, Math.floor(prev / 2)))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
                     </div>
 
-                    <div className="control-group">
-                        <label>Количество рядов</label>
-                        <div className="quick-buttons pins-buttons">
-                            {[8, 10, 12, 14, 16].map(p => (
-                                <button key={p} className={pinsCount === p ? 'active' : ''} onClick={() => setPinsCount(p)}>
-                                    {p}
-                                </button>
-                            ))}
-                        </div>
+                    <div className="text-xs text-gray-400 font-bold px-2 mt-2">Сложность</div>
+                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
+                        {(['low', 'medium', 'high'] as const).map(d => (
+                            <button key={d} onClick={() => setDifficulty(d)} className={`text-sm font-bold py-3 flex-1 rounded-2xl transition-all ${difficulty === d ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
+                                {d === 'low' ? 'Легко' : d === 'medium' ? 'Средне' : 'Сложно'}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="text-xs text-gray-400 font-bold px-2 mt-2">Количество рядов</div>
+                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
+                        {[8, 10, 12, 14, 16].map(p => (
+                            <button key={p} onClick={() => setPinsCount(p)} className={`text-sm font-bold py-3 flex-1 rounded-2xl transition-all ${pinsCount === p ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
+                                {p}
+                            </button>
+                        ))}
                     </div>
                 </div>
-            </div>
 
-            <div className="open-case-footer">
-                <button className="btn-open-case w-full" onClick={handlePlay}>
-                    {activeBalls > 0 ? `Шариков в полете: ${activeBalls}` : 'ИГРАТЬ'}
+                {/* Action Button */}
+                <button
+                    onClick={handlePlay}
+                    className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl mt-4 transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                >
+                    {activeBalls > 0 ? `ШАРИКОВ В ПОЛЕТЕ: ${activeBalls}` : 'ИГРАТЬ'}
                 </button>
             </div>
         </div>

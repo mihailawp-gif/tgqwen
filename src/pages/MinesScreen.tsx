@@ -161,93 +161,95 @@ export default function MinesScreen() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen pb-10 bg-[var(--bg)]">
-            <div className="preview-header flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <button className="btn-back" onClick={() => setActiveScreen('main-screen')}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </button>
-                    <h2>MINES</h2>
+        <div className="flex flex-col min-h-screen pb-10 bg-[#13151c] text-white">
+            {/* Header */}
+            <div className="p-4 flex flex-col items-center justify-center z-10 sticky top-0 relative">
+                <button className="absolute left-4 top-4 p-2 rounded-full bg-white/5" onClick={() => setActiveScreen('main-screen')}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-xl tracking-wide">MINES</h2>
                 </div>
-                <div className="mines-balance-badge">
-                    <span>{balance}</span>
-                    <img src="/assets/images/star.png" alt="star" />
+                <div className="flex bg-[#1c1f28] rounded-full px-3 py-1 border border-white/5 shadow-sm transform hover:scale-105 transition-all text-yellow-500 mt-2 z-20 items-center gap-1 font-bold text-sm">
+                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
                 </div>
             </div>
 
-            <div className="flex-1 p-4 flex flex-col pt-2 bg-gradient-to-t from-[var(--bg)] to-[var(--bg)]/50 overflow-y-auto">
+            <div className="flex-1 px-4 flex flex-col items-center pt-2 overflow-y-auto">
                 {/* Control Panel */}
-                <div className={`transition-all duration-300 ${gameActive ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div className="mines-controls-panel">
-                        <div className="control-group">
-                            <label>Ставка</label>
-                            <div className="input-with-icon">
-                                <input type="number" id="minesBet" value={bet} onChange={(e) => setBet(Number(e.target.value))} />
-                                <img src="/assets/images/star.png" alt="star" />
-                            </div>
-                            <div className="quick-buttons">
-                                <button onClick={() => modifyBet('clear')}>MIN</button>
-                                <button onClick={() => modifyBet('add', 10)}>+10</button>
-                                <button onClick={() => modifyBet('add', 50)}>+50</button>
-                                <button onClick={() => modifyBet('mult', 2)}>X2</button>
-                                <button onClick={() => modifyBet('mult', 0.5)}>/2</button>
+                <div className={`w-full max-w-[400px] flex flex-col gap-2 transition-all duration-300 ${gameActive ? 'opacity-50 pointer-events-none' : ''}`}>
+                    
+                    <div className="w-full bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                            <span>Сумма ставки</span>
+                            <div className="text-yellow-500 flex items-center gap-1">
+                                <input type="number" value={bet} onChange={(e) => setBet(Math.max(0, Number(e.target.value)))} className="bg-transparent border-none outline-none text-right text-yellow-500 w-20 font-bold" />
+                                <img src="/assets/images/star.png" className="w-3.5 h-3.5" alt="star" />
                             </div>
                         </div>
-                        <div className="control-group">
-                            <label>Бомбы</label>
-                            <div className="input-with-icon">
-                                <input type="number" id="minesCount" value={bombs} onChange={(e) => setBombs(Math.max(1, Math.min(24, Number(e.target.value))))} />
-                            </div>
-                            <div className="quick-buttons bombs-buttons">
-                                {[3, 5, 10, 24].map((b) => (
-                                    <button key={b} className={bombs === b ? 'active' : ''} onClick={() => setBombs(b)}>
-                                        {b}
-                                    </button>
-                                ))}
+                    </div>
+
+                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
+                        <button onClick={() => modifyBet('clear')} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">Min</button>
+                        <button onClick={() => modifyBet('add', 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+10</button>
+                        <button onClick={() => modifyBet('add', 50)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+50</button>
+                        <button onClick={() => modifyBet('mult', 2)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">x2</button>
+                        <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
+                    </div>
+
+                    <div className="w-full bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                            <span>Бомбы</span>
+                            <div className="text-white flex items-center gap-1">
+                                <input type="number" value={bombs} onChange={(e) => setBombs(Math.max(1, Math.min(24, Number(e.target.value))))} className="bg-transparent border-none outline-none text-right text-white w-16 font-bold" />
                             </div>
                         </div>
+                    </div>
+
+                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0 mt-1">
+                        {[3, 5, 10, 24].map((b) => (
+                            <button key={b} onClick={() => setBombs(b)} className={`text-sm font-bold py-3 flex-1 rounded-2xl transition-all ${bombs === b ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
+                                {b}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 {/* Multipliers Tape */}
-                <div className="mines-multipliers" id="minesMultipliers" ref={multipliersRef}>
+                <div className="w-full max-w-[400px] flex gap-2 overflow-x-auto py-4 scrollbar-none" id="minesMultipliers" ref={multipliersRef} style={{ scrollbarWidth: 'none' }}>
                     {MINES_COEFS_JS[bombs]?.map((coef, index) => (
-                        <div key={index} className={`mult-step ${index === step ? 'active' : ''}`}>
-                            <div className="mult-step-label">Шаг {index + 1}</div>x{coef}
+                        <div key={index} className={`relative shrink-0 border border-white/5 rounded-xl px-3 py-2 min-w-[70px] text-center font-bold text-sm transition-all duration-300 ${index === step ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#3b82f6] shadow-[0_4px_12px_rgba(37,99,235,0.2)] scale-105 z-10' : 'bg-[#1a1d27] text-gray-500'}`}>
+                            <div className="absolute -top-2 left-2 px-1 text-[9px] font-semibold text-gray-500 bg-[#13151c] rounded">Шаг {index + 1}</div>
+                            x{coef}
                         </div>
                     ))}
                 </div>
 
                 {/* Mines Grid */}
-                <div className="flex justify-center mt-auto mb-auto">
-                    <div className="mines-grid" id="minesGrid">
+                <div className="w-full max-w-[400px] flex justify-center mt-auto mb-auto bg-[#1a1d27] p-2 rounded-3xl border border-white/5">
+                    <div className="grid grid-cols-5 gap-1.5 w-full">
                         {Array.from({ length: 25 }).map((_, i) => {
                             const isClicked = clickedGrid.includes(i);
                             const isMineRevealed = minesGrid.includes(i);
 
                             let cellContent = null;
-                            let cellClasses = 'mine-cell';
+                            let cellClasses = 'aspect-square bg-[#13151c] rounded-xl border border-white/5 flex items-center justify-center cursor-pointer transition-all shadow-[0_4px_12px_rgba(0,0,0,0.4)] active:scale-95';
                             let cellStyles: React.CSSProperties = {};
 
                             if (!gameActive && minesGrid.length > 0) {
                                 // Game over render state
-                                cellClasses += ' disabled';
+                                cellClasses += ' pointer-events-none opacity-60';
                                 if (isMineRevealed) {
-                                    cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_BOMB }} className="w-full h-full flex items-center justify-center p-2" />;
+                                    cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_BOMB }} className="w-full h-full flex items-center justify-center p-1.5" />;
                                     if (isClicked) {
-                                        cellClasses += ' bomb';
-                                        cellStyles.opacity = 1;
-                                        cellStyles.transform = 'scale(1.05)';
-                                    } else {
-                                        cellStyles.opacity = 0.6;
+                                        cellClasses = 'aspect-square bg-gradient-to-br from-red-500 to-red-700 rounded-xl border border-red-400 flex items-center justify-center transition-all opacity-100 scale-105';
                                     }
                                 } else {
-                                    cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_DIAMOND }} className="w-full h-full flex items-center justify-center p-2" />;
+                                    cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_DIAMOND }} className="w-full h-full flex items-center justify-center p-1.5" />;
                                     if (isClicked) {
-                                        cellClasses += ' success';
-                                        cellStyles.opacity = 1;
+                                        cellClasses = 'aspect-square bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl border border-emerald-400 flex items-center justify-center transition-all opacity-100 scale-105';
                                     } else {
                                         cellStyles.opacity = 0.3;
                                         cellStyles.transform = 'scale(0.85)';
@@ -255,9 +257,8 @@ export default function MinesScreen() {
                                 }
                             } else if (gameActive && isClicked) {
                                 // Currently playing, revealed diamond
-                                cellClasses += ' success';
-                                cellStyles.opacity = 1;
-                                cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_DIAMOND }} className="w-full h-full flex items-center justify-center p-2" />;
+                                cellClasses = 'aspect-square bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl border border-emerald-400 flex items-center justify-center transition-all opacity-100 shadow-[0_4px_12px_rgba(16,185,129,0.3)] scale-105 pointer-events-none';
+                                cellContent = <div dangerouslySetInnerHTML={{ __html: ICON_DIAMOND }} className="w-full h-full flex items-center justify-center p-1.5" />;
                             }
 
                             return (
@@ -273,19 +274,19 @@ export default function MinesScreen() {
                         })}
                     </div>
                 </div>
-            </div>
 
-            {/* Action Area */}
-            <div className="open-case-footer p-4 pt-2 shrink-0 border-t border-border bg-[var(--bg2)] text-center rounded-t-[32px] overflow-hidden">
-                {!gameActive ? (
-                    <button id="btnMinesAction" className="btn-open-case w-full mt-2" onClick={handleStartMines}>
-                        {minesGrid.length > 0 ? 'Попробовать еще раз' : 'Играть'}
-                    </button>
-                ) : (
-                    <button id="btnMinesAction" className="btn-open-case free w-full mt-2" onClick={handleCollectMines}>
-                        Забрать: {winAmount || bet} <img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} />
-                    </button>
-                )}
+                {/* Action Area */}
+                <div className="w-full flex justify-center mt-6">
+                    {!gameActive ? (
+                        <button onClick={handleStartMines} className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]">
+                            {minesGrid.length > 0 ? 'ПОПРОБОВАТЬ СНОВА' : 'ИГРАТЬ'}
+                        </button>
+                    ) : (
+                        <button onClick={handleCollectMines} className="w-full max-w-[400px] shrink-0 bg-[#22c55e] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(34,197,94,0.4)]">
+                            ЗАБРАТЬ: {winAmount || bet} <img src="/assets/images/star.png" style={{ width: '22px', height: '22px' }} />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

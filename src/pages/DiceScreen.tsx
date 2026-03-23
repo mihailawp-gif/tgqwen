@@ -89,102 +89,108 @@ export default function DiceScreen() {
     }, [isRolling, bet, clampedChance, balance, telegramId, showToast, setBalance]);
 
     return (
-        <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+        <div className="flex flex-col min-h-screen bg-[#13151c] text-white">
             {/* Header */}
-            <div className="preview-header">
-                <button className="btn-back" onClick={() => setActiveScreen('main-screen')}>
+            <div className="p-4 flex flex-col items-center justify-center z-10 sticky top-0 relative">
+                <button className="absolute left-4 top-4 p-2 rounded-full bg-white/5" onClick={() => setActiveScreen('main-screen')}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <h2>Дайс</h2>
-                <div className="mines-balance-badge">
-                    <img src="/assets/images/star.png" alt="star" />
-                    <span>{balance}</span>
+                <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-xl tracking-wide">Дайс</h2>
+                </div>
+                <div className="flex bg-[#1c1f28] rounded-full px-3 py-1 border border-white/5 shadow-sm transform hover:scale-105 transition-all text-yellow-500 mt-2 z-20 items-center gap-1 font-bold text-sm">
+                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-4 flex flex-col gap-4">
+            <div className="flex-1 px-4 pb-10 flex flex-col items-center gap-4 overflow-y-auto">
                 {/* Result Box */}
-                <div className="dice-result-box">
-                    <div className={`dice-result-number ${resultStatus === 'win' ? 'win' : resultStatus === 'lose' ? 'lose' : ''}`}>
+                <div className="w-full max-w-[400px] flex flex-col items-center mt-2 mb-4">
+                    <div className={`text-5xl font-black tracking-widest ${resultStatus === 'win' ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]' : resultStatus === 'lose' ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-300'} transition-all duration-300 pb-2`}>
                         {resultNumber}
                     </div>
                     <div
-                        className={`dice-result-label ${resultStatus !== 'idle' ? 'big-result' : ''}`}
-                        style={{ color: resultStatus === 'win' ? 'var(--green)' : resultStatus === 'lose' ? '#ef4444' : 'var(--txt3)' }}
+                        className={`text-sm font-bold flex items-center gap-1 ${resultStatus !== 'idle' ? 'text-lg' : ''}`}
+                        style={{ color: resultStatus === 'win' ? '#22c55e' : resultStatus === 'lose' ? '#ef4444' : '#6b7280' }}
                     >
                         {resultLabel}
                         {resultStatus !== 'idle' && (
-                            <img src="/assets/images/star.png" style={{ width: '20px', height: '20px', verticalAlign: 'middle', position: 'relative', top: '-2px', marginLeft: '4px' }} />
+                            <img src="/assets/images/star.png" className="w-5 h-5 flex-shrink-0" />
                         )}
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div className="mines-controls-panel" style={{ marginBottom: 0 }}>
-                    <div className="control-group">
-                        <label>Сумма ставки</label>
-                        <div className="input-with-icon">
-                            <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} />
-                            <img src="/assets/images/star.png" alt="star" />
-                        </div>
-                        <div className="quick-buttons">
-                            <button onClick={() => modifyBet('add', 10)}>+10</button>
-                            <button onClick={() => modifyBet('add', 100)}>+100</button>
-                            <button onClick={() => modifyBet('mult', 2)}>x2</button>
-                            <button onClick={() => modifyBet('mult', 0.5)}>/2</button>
-                            <button onClick={() => modifyBet('clear')}>Min</button>
-                        </div>
-                    </div>
+                <div className="w-full max-w-[400px] flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
+                    <button onClick={() => modifyBet('clear')} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">Min</button>
+                    <button onClick={() => modifyBet('add', 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+10</button>
+                    <button onClick={() => modifyBet('add', 100)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+100</button>
+                    <button onClick={() => modifyBet('mult', 2)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">x2</button>
+                    <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
+                </div>
 
-                    <div className="control-group">
-                        <label>Шанс выигрыша (%)</label>
-                        <div className="input-with-icon">
-                            <input
-                                type="number"
-                                value={chance}
-                                min={1}
-                                max={95}
-                                onChange={(e) => setDiceChance(Number(e.target.value))}
-                            />
-                            <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontFamily: "'Exo 2', sans-serif", fontWeight: 800, color: 'var(--txt3)' }}>%</span>
-                        </div>
-                        <div className="quick-buttons">
-                            {[10, 33, 50, 80, 95].map(v => (
-                                <button key={v} onClick={() => setDiceChance(v)}>{v}%</button>
-                            ))}
+                <div className="w-full max-w-[400px] bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                        <span>Сумма ставки</span>
+                        <div className="text-yellow-500 flex items-center gap-1">
+                            <input type="number" value={bet} onChange={(e) => setBet(Math.max(1, Number(e.target.value)))} className="bg-transparent border-none outline-none text-right text-yellow-500 w-20 font-bold" />
+                            <img src="/assets/images/star.png" className="w-3.5 h-3.5" alt="star" />
                         </div>
                     </div>
                 </div>
 
-                {/* Множитель + Выигрыш + кнопки — всё вместе внизу */}
-                <div className="flex flex-col gap-3 mt-auto">
-                    <div className="dice-info-row">
-                        <div className="dice-info-box">
-                            <span>Множитель</span>
-                            <div>{multiplier.toFixed(2)}x</div>
-                        </div>
-                        <div className="dice-info-box">
-                            <span>Выигрыш</span>
-                            <div>
-                                <span>{possibleWin}</span>
-                                <img src="/assets/images/star.png" style={{ width: '25px', height: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
-                            </div>
+                <div className="w-full max-w-[400px] bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                        <span>Шанс выигрыша (%)</span>
+                        <div className="text-white flex items-center gap-1">
+                            <input type="number" value={chance} min={1} max={95} onChange={(e) => setDiceChance(Number(e.target.value))} className="bg-transparent border-none outline-none text-right text-white w-16 font-bold" />
+                            <span>%</span>
                         </div>
                     </div>
+                </div>
 
-                    <div className="dice-actions">
-                        <button className="btn-dice btn-dice-under" onClick={() => playDice('under')} disabled={isRolling}>
-                            <div className="dice-btn-title">МЕНЬШЕ</div>
-                            <div className="dice-btn-range">0 - <span>{underMax}</span></div>
-                        </button>
-                        <button className="btn-dice btn-dice-over" onClick={() => playDice('over')} disabled={isRolling}>
-                            <div className="dice-btn-title">БОЛЬШЕ</div>
-                            <div className="dice-btn-range"><span>{overMin}</span> - 999999</div>
-                        </button>
+                <div className="w-full max-w-[400px] flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0 mt-2">
+                    {[10, 33, 50, 80, 95].map(v => (
+                        <button key={v} onClick={() => setDiceChance(v)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">{v}%</button>
+                    ))}
+                </div>
+
+                {/* Info Boxes */}
+                <div className="w-full max-w-[400px] flex gap-4 mt-6 h-28 shrink-0">
+                    <div className="flex-1 bg-[#1a1d27] border border-white/5 rounded-3xl flex flex-col items-center justify-center p-4">
+                        <span className="text-xs text-gray-400 font-bold text-center leading-tight mb-2">Множитель</span>
+                        <div className="text-white font-black text-xl">{multiplier.toFixed(2)}x</div>
                     </div>
+                    <div className="flex-1 bg-[#1a1d27] border border-white/5 rounded-3xl flex flex-col items-center justify-center p-4">
+                        <span className="text-xs text-gray-400 font-bold text-center leading-tight mb-2">Выигрыш</span>
+                        <div className="flex items-center gap-1 justify-center">
+                            <span className="text-yellow-500 font-black text-xl">{possibleWin}</span>
+                            <img src="/assets/images/star.png" className="w-5 h-5 object-contain" alt="star" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex w-full max-w-[400px] gap-4 mt-6 shrink-0">
+                    <button
+                        onClick={() => playDice('under')}
+                        disabled={isRolling}
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                    >
+                        <span>МЕНЬШЕ</span>
+                        <span className="text-xs font-medium opacity-80 mt-1">0 - {underMax}</span>
+                    </button>
+                    <button
+                        onClick={() => playDice('over')}
+                        disabled={isRolling}
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                    >
+                        <span>БОЛЬШЕ</span>
+                        <span className="text-xs font-medium opacity-80 mt-1">{overMin} - 999999</span>
+                    </button>
                 </div>
             </div>
         </div>

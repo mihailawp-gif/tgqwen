@@ -310,6 +310,19 @@ CASES_CONFIG = [
 
             ]
         },
+                {
+            "name": "Мажорский кейс",
+            "description": "Для носатых",
+            "price": 150000,
+            "is_free": False,
+            "image_url": "/assets/images/nos.jpg",
+            "items": [
+                {"key": 18,  "chance": 63.5},  # (18,   "Durov's Cap",      80043)
+                {"key": 39,  "chance": 25.0},  # (39,  "Precious Peach",  47259)
+                {"key": 81,  "chance": 11.0},   # (81,   "Heart Locket",  210892) 
+                {"key": 22,  "chance": 0.5},   # Plush Pepe (Цена 1М - Джекпот)
+            ]
+        },
 ]
 
 async def populate_db():

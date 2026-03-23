@@ -172,7 +172,7 @@ export default function MinesScreen() {
                 <div className="flex items-center gap-2">
                     <h2 className="font-bold text-xl tracking-wide">MINES</h2>
                 </div>
-                <div className="flex bg-[#1c1f28] rounded-full px-3 py-1 border border-white/5 shadow-sm transform hover:scale-105 transition-all text-yellow-500 mt-2 z-20 items-center gap-1 font-bold text-sm">
+                <div className="absolute right-4 top-4 flex bg-[#1c1f28] rounded-full px-3 py-1.5 border border-white/5 shadow-sm text-yellow-500 z-20 items-center gap-1 font-bold text-sm">
                     {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
                 </div>
             </div>
@@ -181,12 +181,12 @@ export default function MinesScreen() {
                 {/* Control Panel */}
                 <div className={`w-full max-w-[400px] flex flex-col gap-2 transition-all duration-300 ${gameActive ? 'opacity-50 pointer-events-none' : ''}`}>
                     
-                    <div className="w-full bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
-                        <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                    <div className="w-full bg-[#1a1d27] mt-2 p-5 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-sm text-gray-400 font-bold px-2">
                             <span>Сумма ставки</span>
-                            <div className="text-yellow-500 flex items-center gap-1">
-                                <input type="number" value={bet} onChange={(e) => setBet(Math.max(0, Number(e.target.value)))} className="bg-transparent border-none outline-none text-right text-yellow-500 w-20 font-bold" />
-                                <img src="/assets/images/star.png" className="w-3.5 h-3.5" alt="star" />
+                            <div className="text-yellow-500 flex items-center gap-1.5">
+                                <input type="number" value={bet} onChange={(e) => setBet(Math.max(0, Number(e.target.value)))} className="bg-transparent border-none outline-none text-right text-yellow-500 text-xl w-24 font-black" />
+                                <img src="/assets/images/star.png" className="w-5 h-5 object-contain" alt="star" />
                             </div>
                         </div>
                     </div>
@@ -199,11 +199,11 @@ export default function MinesScreen() {
                         <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
                     </div>
 
-                    <div className="w-full bg-[#1a1d27] mt-2 p-4 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
-                        <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                    <div className="w-full bg-[#1a1d27] mt-2 p-5 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-sm text-gray-400 font-bold px-2">
                             <span>Бомбы</span>
-                            <div className="text-white flex items-center gap-1">
-                                <input type="number" value={bombs} onChange={(e) => setBombs(Math.max(1, Math.min(24, Number(e.target.value))))} className="bg-transparent border-none outline-none text-right text-white w-16 font-bold" />
+                            <div className="text-white flex items-center gap-1.5">
+                                <input type="number" value={bombs} onChange={(e) => setBombs(Math.max(1, Math.min(24, Number(e.target.value))))} className="bg-transparent border-none outline-none text-right text-white text-xl w-20 font-black" />
                             </div>
                         </div>
                     </div>

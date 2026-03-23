@@ -125,28 +125,16 @@
 .cases-list .case-card:nth-child(3) { animation-delay: 0.11s; }
 .cases-list .case-card:nth-child(n+4) { animation-delay: 0.15s; }
 
-/* ── 7. DICE РЕЗУЛЬТАТ ──────────────────────────────────── */
+/* ── 7. DICE РЕЗУЛЬТАТ — анимации убраны чтобы не моргало ── */
 
 .dice-result-number {
-    transition: color 0.25s ease, text-shadow 0.25s ease;
+    /* transition убран — вызывал мерцание при ре-рендерах */
 }
 .dice-result-number.win {
-    animation: diceWin 0.45s var(--ease-spring) both;
+    /* animation убрана */
 }
 .dice-result-number.lose {
-    animation: diceShake 0.35s ease both;
-}
-@keyframes diceWin {
-    from { transform: scale(0.7); opacity: 0.5; }
-    65%  { transform: scale(1.14); }
-    to   { transform: scale(1); opacity: 1; }
-}
-@keyframes diceShake {
-    0%,100% { transform: translateX(0); }
-    20%     { transform: translateX(-5px); }
-    40%     { transform: translateX(5px); }
-    60%     { transform: translateX(-3px); }
-    80%     { transform: translateX(3px); }
+    /* animation убрана */
 }
 
 /* ── 8. MINES — открытие ячеек ──────────────────────────── */

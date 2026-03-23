@@ -483,7 +483,6 @@
     font-weight: 900;
     letter-spacing: 4px;
     color: var(--txt);
-    transition: all 0.3s;
 }
 
 .dice-result-number.win {

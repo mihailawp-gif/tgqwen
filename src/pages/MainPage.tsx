@@ -92,10 +92,19 @@ export default function MainPage() {
                 </div>
 
                 <div className="game-block block-upgrade align-right" onClick={() => setActiveScreen('upgrade-screen')} style={{ background: 'linear-gradient(135deg, #1c2028, #2a2e38)' }}>
-                    <div className="art-left flex items-center justify-center">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ffffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 19V5M5 12l7-7 7 7" />
-                        </svg>
+                    <div className="art-left">
+                        <div className="upgrade-anim-wrapper">
+                            <svg className="upgrade-circle-bg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="40" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="6" fill="none" />
+                                <circle className="upgrade-chance-circle" cx="50" cy="50" r="40" stroke="#ffffff" strokeWidth="6" fill="none" strokeDasharray="251.3" strokeDashoffset="200" strokeLinecap="round" />
+                            </svg>
+                            <div className="upgrade-gift-wrapper">
+                                <img src="/assets/gift-silhouette.png" alt="Gift" className="upgrade-gift-img" />
+                            </div>
+                            <div className="upgrade-arrow-wrapper">
+                                <img src="/arrow.svg" alt="Arrow" className="upgrade-arrow-img" />
+                            </div>
+                        </div>
                     </div>
                     <div className="info">
                         <h2 style={{ color: '#22c55e' }}>АПГРЕЙД</h2>

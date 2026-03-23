@@ -107,9 +107,9 @@ export default function CasesPage() {
 
     const openPreview = async (caseItem: CaseItem) => {
         setPreviewCase(caseItem);
-        setLoaderVisible(true);
+        // setLoaderVisible(true);
         const res = await fetchCaseItemsApi(caseItem.id);
-        setLoaderVisible(false);
+        // setLoaderVisible(false);
         if (res.success) {
             setPreviewItems(res.items || []);
             // Pre-build a static roulette track from preview items (no won item yet)
@@ -508,9 +508,6 @@ export default function CasesPage() {
                                         )}
                                     </div>
                                     <div className="preview-tile-name">{item.gift.name}</div>
-                                    <div className="preview-tile-footer">
-                                        <span className="preview-tile-chance">{item.drop_chance.toFixed(1)}%</span>
-                                    </div>
                                 </div>
                             ))}
                         </div>

@@ -22,14 +22,14 @@ export default function ProfilePage() {
 
     const loadProfile = async () => {
         if (!telegramId) return;
-        setLoaderVisible(true);
+        // setLoaderVisible(true);
         try {
             const res = await fetchProfileApi(telegramId);
             if (res.success) {
                 setProfileData(res.profile);
             }
         } catch (e) { }
-        setLoaderVisible(false);
+        // setLoaderVisible(false);
     };
 
     const loadReferrals = async () => {

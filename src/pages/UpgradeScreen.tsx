@@ -16,7 +16,7 @@ function GiftIcon({ url, className, size = 60, hoverPlay = false }: { url: strin
 }
 
 export default function UpgradeScreen() {
-    const { setActiveScreen, showToast, setLoaderVisible } = useAppStore();
+    const { activeScreen, setActiveScreen, showToast, setLoaderVisible } = useAppStore();
     const { balance, setBalance } = useUserStore();
 
     const [inventory, setInventory] = useState<any[]>([]);
@@ -53,8 +53,10 @@ export default function UpgradeScreen() {
     };
 
     useEffect(() => {
-        loadData();
-    }, [telegramId]);
+        if (activeScreen === 'upgrade-screen') {
+            loadData();
+        }
+    }, [telegramId, activeScreen]);
 
     const inventoryItems = useMemo(() => {
         return inventory.filter(i => selectedInventoryItemIds.includes(i.opening_id));

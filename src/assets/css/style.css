@@ -94,11 +94,10 @@ body {
     background-attachment: fixed;
 }
 
-/* ===== СТЕКЛЯННЫЕ ЭКРАНЫ ===== */
+/* ===== ЭКРАНЫ ===== */
 .screen {
     display: none;
     min-height: 100dvh;
-    animation: screenFade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .screen.active {
@@ -107,37 +106,10 @@ body {
 
 .tab-content {
     display: none;
-    animation: tabFade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tab-content.active {
     display: block;
-}
-
-@keyframes screenFade {
-    from {
-        opacity: 0;
-        transform: scale(0.96) translateY(15px);
-        filter: blur(5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-        filter: blur(0);
-    }
-}
-
-@keyframes tabFade {
-    from {
-        opacity: 0;
-        transform: translateX(10px) translateY(5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0) translateY(0);
-    }
 }
 
 .rarity-unique {
@@ -4280,7 +4252,7 @@ input:checked+.slider:before {
         stroke-dashoffset: 200;
     }
 
-    /* small */
+
     25%,
     40% {
         stroke-dashoffset: 125;

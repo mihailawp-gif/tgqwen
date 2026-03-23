@@ -288,7 +288,7 @@ export default function CasesPage() {
                 <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative">
                     <div className="absolute -inset-1 bg-gradient-to-b from-[#2563eb]/20 to-transparent rounded-[3rem] blur-xl -z-10"></div>
                     <div className="w-32 h-32 flex items-center justify-center mb-6 relative">
-                        <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-full blur-2xl animate-pulse"></div>
+                        <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-full blur-2xl"></div>
                         {resultData.gift?.image_url?.endsWith('.tgs') ? (
                             <TgsAnimation url={resultData.gift.image_url} width={128} height={128} alwaysPlay />
                         ) : (
@@ -541,7 +541,7 @@ export default function CasesPage() {
                     </div>
                     <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px]" style={{ scrollbarWidth: 'none' }}>
                         {history.map((item, index) => (
-                            <div key={index} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
+                            <div key={item.id ?? index} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
                                 <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl"></div>
                                 <div className="aspect-square flex items-center justify-center mb-1 z-10 w-12 h-12">
                                     {item.gift?.image_url?.endsWith('.tgs') ? (

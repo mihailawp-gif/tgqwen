@@ -101,12 +101,25 @@ export default function DiceScreen() {
             <div className="flex-1 px-4 pb-10 flex flex-col items-center gap-4 overflow-y-auto">
                 {/* Result Box */}
                 <div className="w-full max-w-[400px] flex flex-col items-center mt-2 mb-4">
-                    <div className={`text-5xl font-black tracking-widest ${resultStatus === 'win' ? 'text-green-500 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]' : resultStatus === 'lose' ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'text-gray-300'} pb-2`}>
+                    <div
+                        className="text-5xl font-black tracking-widest pb-2"
+                        style={{
+                            color: resultStatus === 'win' ? '#22c55e' : resultStatus === 'lose' ? '#ef4444' : '#d1d5db',
+                            filter: resultStatus === 'win'
+                                ? 'drop-shadow(0 0 15px rgba(34,197,94,0.5))'
+                                : resultStatus === 'lose'
+                                    ? 'drop-shadow(0 0 15px rgba(239,68,68,0.5))'
+                                    : 'none',
+                        }}
+                    >
                         {resultNumber}
                     </div>
                     <div
-                        className={`text-sm font-bold flex items-center gap-1 ${resultStatus !== 'idle' ? 'text-lg' : ''}`}
-                        style={{ color: resultStatus === 'win' ? '#22c55e' : resultStatus === 'lose' ? '#ef4444' : '#6b7280' }}
+                        className="font-bold flex items-center gap-1"
+                        style={{
+                            fontSize: resultStatus !== 'idle' ? '1.125rem' : '0.875rem',
+                            color: resultStatus === 'win' ? '#22c55e' : resultStatus === 'lose' ? '#ef4444' : '#6b7280',
+                        }}
                     >
                         {resultLabel}
                         {resultStatus !== 'idle' && (

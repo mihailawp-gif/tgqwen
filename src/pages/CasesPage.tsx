@@ -90,8 +90,7 @@ export default function CasesPage() {
     useEffect(() => {
         loadCases();
         loadHistory();
-        const interval = setInterval(loadHistory, 5000);
-        return () => clearInterval(interval);
+        // Polling removed to completely stop the DOM from shifting and "disappearing/appearing" lottie animations
     }, []);
 
     const loadCases = async () => {
@@ -280,7 +279,7 @@ export default function CasesPage() {
         }
     }, [setCasePreviewOpen]);
 
-    // ── RESULT SCREEN ─────────────────────────────────────────────────────────
+
     if (showResult && resultData) {
         return (
             <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4">

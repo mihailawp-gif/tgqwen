@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { playDiceApi } from '../api/api';
 
@@ -12,7 +12,6 @@ export default function DiceScreen() {
     const [resultNumber, setResultNumber] = useState('000000');
     const [resultLabel, setResultLabel] = useState('Сделайте ставку');
     const [resultStatus, setResultStatus] = useState<'idle' | 'win' | 'lose'>('idle');
-    const rollIntervalRef = useRef<number | null>(null);
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -51,17 +50,10 @@ export default function DiceScreen() {
         setIsRolling(true);
         setResultStatus('idle');
         setResultLabel('Бросаем кости...');
-
-        rollIntervalRef.current = window.setInterval(() => {
-            setResultNumber(String(Math.floor(Math.random() * 999999)).padStart(6, '0'));
-        }, 40);
+        // We will not change the resultNumber randomly anymore to absolutely prevent any visual flashing
 
         const res = await playDiceApi(telegramId, bet, clampedChance, type);
 
-        if (rollIntervalRef.current) {
-            clearInterval(rollIntervalRef.current);
-            rollIntervalRef.current = null;
-        }
         setIsRolling(false);
 
         if (res.success) {

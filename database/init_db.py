@@ -317,10 +317,10 @@ CASES_CONFIG = [
             "is_free": False,
             "image_url": "/assets/images/nos.jpg",
             "items": [
-                {"key": 18,  "chance": 63.5},  # (18,   "Durov's Cap",      80043)
-                {"key": 39,  "chance": 25.0},  # (39,  "Precious Peach",  47259)
-                {"key": 81,  "chance": 11.0},   # (81,   "Heart Locket",  210892) 
-                {"key": 22,  "chance": 0.5},   # Plush Pepe (Цена 1М - Джекпот)
+                {"key": 18,  "chance": 62.5},  # (18,   "Durov's Cap",      80043)
+                {"key": 39,  "chance": 24.0},  # (39,  "Precious Peach",  47259)
+                {"key": 81,  "chance": 10.0},   # (81,   "Heart Locket",  210892) 
+                {"key": 22,  "chance": 3.5},   # Plush Pepe (Цена 1М - Джекпот)
             ]
         },
 ]

@@ -123,13 +123,12 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Controls */}
                 <div className="w-full max-w-[400px] flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
-                    <button onClick={() => modifyBet('clear')} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">Min</button>
-                    <button onClick={() => modifyBet('add', 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+10</button>
-                    <button onClick={() => modifyBet('add', 100)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+100</button>
-                    <button onClick={() => modifyBet('mult', 2)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">x2</button>
-                    <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
+                    <button onClick={() => modifyBet('clear')} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">Min</button>
+                    <button onClick={() => modifyBet('add', 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">+10</button>
+                    <button onClick={() => modifyBet('add', 100)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">+100</button>
+                    <button onClick={() => modifyBet('mult', 2)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">x2</button>
+                    <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">/2</button>
                 </div>
 
                 <div className="w-full max-w-[400px] bg-[#1a1d27] mt-2 p-5 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
@@ -154,7 +153,7 @@ export default function DiceScreen() {
 
                 <div className="w-full max-w-[400px] flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0 mt-2">
                     {[10, 33, 50, 80, 95].map(v => (
-                        <button key={v} onClick={() => setDiceChance(v)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">{v}%</button>
+                        <button key={v} onClick={() => setDiceChance(v)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl">{v}%</button>
                     ))}
                 </div>
 
@@ -178,7 +177,7 @@ export default function DiceScreen() {
                     <button
                         onClick={() => playDice('under')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
                     >
                         <span>МЕНЬШЕ</span>
                         <span className="text-xs font-medium opacity-80 mt-1">0 - {underMax}</span>
@@ -186,7 +185,7 @@ export default function DiceScreen() {
                     <button
                         onClick={() => playDice('over')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
                     >
                         <span>БОЛЬШЕ</span>
                         <span className="text-xs font-medium opacity-80 mt-1">{overMin} - 999999</span>

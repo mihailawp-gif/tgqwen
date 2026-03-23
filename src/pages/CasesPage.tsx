@@ -284,7 +284,7 @@ export default function CasesPage() {
     if (showResult && resultData) {
         return (
             <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4">
-                <div className="text-3xl font-black text-[#2563eb] tracking-widest mb-10 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)] animate-bounce">ВЫИГРЫШ!</div>
+                <div className="text-3xl font-black text-[#2563eb] tracking-widest mb-10 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">ВЫИГРЫШ!</div>
                 
                 <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative">
                     <div className="absolute -inset-1 bg-gradient-to-b from-[#2563eb]/20 to-transparent rounded-[3rem] blur-xl -z-10"></div>
@@ -297,15 +297,12 @@ export default function CasesPage() {
                         )}
                     </div>
                     
-                    <div className="text-xl font-bold mb-4 text-center">{resultData.gift?.name || 'Приз'}</div>
+                    <div className="text-xl font-bold text-center">{resultData.gift?.name || 'Приз'}</div>
                     
                     {!resultData.gift?.is_stars && (
-                        <div className="bg-[#13151c] rounded-2xl p-4 border border-white/5 w-full flex justify-between items-center mb-2">
-                            <span className="text-sm font-bold text-gray-400">Стоимость</span>
-                            <div className="flex items-center gap-1.5 text-yellow-500 font-black text-lg">
-                                {resultData.gift?.value || 0}
-                                <img src="/assets/images/star.png" className="w-5 h-5 object-contain" alt="star" />
-                            </div>
+                        <div className="flex items-center gap-1.5 text-yellow-500 font-black text-xl mt-3">
+                            {resultData.gift?.value || 0}
+                            <img src="/assets/images/star.png" className="w-6 h-6 object-contain" alt="star" />
                         </div>
                     )}
                 </div>

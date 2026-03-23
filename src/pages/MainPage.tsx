@@ -78,11 +78,14 @@ export default function MainPage() {
                                     <circle cx="30" cy="30" r="1.5" /><circle cx="40" cy="30" r="1.5" /><circle cx="50" cy="30" r="1.5" /><circle cx="60" cy="30" r="1.5" /><circle cx="70" cy="30" r="1.5" />
                                     <circle cx="25" cy="40" r="1.5" /><circle cx="35" cy="40" r="1.5" /><circle cx="45" cy="40" r="1.5" /><circle cx="55" cy="40" r="1.5" /><circle cx="65" cy="40" r="1.5" /><circle cx="75" cy="40" r="1.5" />
                                     <circle cx="20" cy="50" r="1.5" /><circle cx="30" cy="50" r="1.5" /><circle cx="40" cy="50" r="1.5" /><circle cx="50" cy="50" r="1.5" /><circle cx="60" cy="50" r="1.5" /><circle cx="70" cy="50" r="1.5" /><circle cx="80" cy="50" r="1.5" />
+                                    <circle cx="15" cy="60" r="1.5" /><circle cx="25" cy="60" r="1.5" /><circle cx="35" cy="60" r="1.5" /><circle cx="45" cy="60" r="1.5" /><circle cx="55" cy="60" r="1.5" /><circle cx="65" cy="60" r="1.5" /><circle cx="75" cy="60" r="1.5" /><circle cx="85" cy="60" r="1.5" />
+                                    <circle cx="10" cy="70" r="1.5" /><circle cx="20" cy="70" r="1.5" /><circle cx="30" cy="70" r="1.5" /><circle cx="40" cy="70" r="1.5" /><circle cx="50" cy="70" r="1.5" /><circle cx="60" cy="70" r="1.5" /><circle cx="70" cy="70" r="1.5" /><circle cx="80" cy="70" r="1.5" /><circle cx="90" cy="70" r="1.5" />
+                                    <circle cx="5" cy="80" r="1.5" /><circle cx="15" cy="80" r="1.5" /><circle cx="25" cy="80" r="1.5" /><circle cx="35" cy="80" r="1.5" /><circle cx="45" cy="80" r="1.5" /><circle cx="55" cy="80" r="1.5" /><circle cx="65" cy="80" r="1.5" /><circle cx="75" cy="80" r="1.5" /><circle cx="85" cy="80" r="1.5" /><circle cx="95" cy="80" r="1.5" />
                                 </g>
                             </svg>
-                            <div className="plinko-menu-ball pb-1" />
-                            <div className="plinko-menu-ball pb-2" />
-                            <div className="plinko-menu-ball pb-3" />
+                            <div className="plinko-menu-ball pb-1"></div>
+                            <div className="plinko-menu-ball pb-2"></div>
+                            <div className="plinko-menu-ball pb-3"></div>
                         </div>
                     </div>
                     <div className="info">
@@ -107,7 +110,7 @@ export default function MainPage() {
                         </div>
                     </div>
                     <div className="info">
-                        <h2 style={{ color: '#22c55e' }}>АПГРЕЙД</h2>
+                        <h2 style={{ color: '#ffffffff' }}>АПГРЕЙД</h2>
                         <p>УЛУЧШАЙ ПОДАРКИ</p>
                     </div>
                 </div>

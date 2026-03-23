@@ -283,41 +283,42 @@ export default function CasesPage() {
     // ── RESULT SCREEN ─────────────────────────────────────────────────────────
     if (showResult && resultData) {
         return (
-            <div className="result-container">
-                <div className="congrats-text">ПОЗДРАВЛЯЕМ!</div>
-                <div className="won-item-showcase">
-                    <div className="item-glow-effect" />
-                    <div className="won-item-card">
+            <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4">
+                <div className="text-3xl font-black text-[#2563eb] tracking-widest mb-10 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)] animate-bounce">ВЫИГРЫШ!</div>
+                
+                <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative">
+                    <div className="absolute -inset-1 bg-gradient-to-b from-[#2563eb]/20 to-transparent rounded-[3rem] blur-xl -z-10"></div>
+                    <div className="w-32 h-32 flex items-center justify-center mb-6 relative">
+                        <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-full blur-2xl animate-pulse"></div>
                         {resultData.gift?.image_url?.endsWith('.tgs') ? (
-                            <TgsAnimation url={resultData.gift.image_url} width={120} height={120} alwaysPlay />
+                            <TgsAnimation url={resultData.gift.image_url} width={128} height={128} alwaysPlay />
                         ) : (
-                            <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name}
-                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                            <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name} className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]" />
                         )}
-                        <div className={`item-rarity-badge ${resultData.gift?.rarity || 'common'}`}>
-                            {resultData.gift?.rarity?.toUpperCase() || 'COMMON'}
-                        </div>
                     </div>
-                </div>
-                <div className="won-item-details">
-                    <div className="item-name">{resultData.gift?.name || 'Приз'}</div>
+                    
+                    <div className="text-xl font-bold mb-4 text-center">{resultData.gift?.name || 'Приз'}</div>
+                    
                     {!resultData.gift?.is_stars && (
-                        <div className="item-value">
-                            <span>Стоимость:</span>
-                            <div className="value-amount">
-                                <img src="/assets/images/star.png" className="value-icon" alt="star" />
+                        <div className="bg-[#13151c] rounded-2xl p-4 border border-white/5 w-full flex justify-between items-center mb-2">
+                            <span className="text-sm font-bold text-gray-400">Стоимость</span>
+                            <div className="flex items-center gap-1.5 text-yellow-500 font-black text-lg">
                                 {resultData.gift?.value || 0}
+                                <img src="/assets/images/star.png" className="w-5 h-5 object-contain" alt="star" />
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="result-actions">
+
+                <div className="w-full max-w-[320px] flex flex-col gap-3 mt-8">
                     {!resultData.gift?.is_stars && (
-                        <button className="btn-action btn-sell-result" onClick={sellResult}>
-                            Продать за <img src="/assets/images/star.png" className="btn-sell-star-icon" alt="star" /> {resultData.gift?.value || 0}
+                        <button className="w-full bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(37,99,235,0.4)]" onClick={sellResult}>
+                            ПРОДАТЬ ЗА {resultData.gift?.value || 0} <img src="/assets/images/star.png" className="w-5 h-5" alt="star" />
                         </button>
                     )}
-                    <button className="btn-action btn-continue" onClick={closeAll}>Продолжить</button>
+                    <button className="w-full bg-[#1a1d27] text-white border border-white/10 font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98]" onClick={closeAll}>
+                        ЗАБРАТЬ
+                    </button>
                 </div>
             </div>
         );
@@ -334,33 +335,34 @@ export default function CasesPage() {
             ? `calc(${vh / 2 - savedTopRef.current - rouletteH / 2}px)`
             : '0px';
 
-
-
         return (
             <div
                 id="opening-screen"
-                className="screen active"
-                style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', position: 'relative' }}
+                className="fixed inset-0 bg-[#13151c] text-white flex flex-col z-50 overflow-hidden"
             >
                 {/* ── HEADER ── */}
-                <div className="preview-header" style={{
+                <div className="p-4 flex flex-col items-center justify-center z-20 sticky top-0 relative shrink-0" style={{
                     transition: 'opacity 0.45s',
                     opacity: isActive ? 0 : 1,
                     pointerEvents: isActive ? 'none' : 'auto',
-                    flexShrink: 0,
                 }}>
-                    <button className="btn-back" onClick={() => { setShowPreview(false); setCasePreviewOpen(false); }}>
+                    <button className="absolute left-4 top-4 p-2 rounded-full bg-white/5" onClick={() => { setShowPreview(false); setCasePreviewOpen(false); }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <h2>{previewCase.name}</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="font-bold text-xl tracking-wide">{previewCase.name}</h2>
+                    </div>
+                    <div className="absolute right-4 top-4 flex bg-[#1c1f28] rounded-full px-3 py-1.5 border border-white/5 shadow-sm text-yellow-500 z-20 items-center gap-1 font-bold text-sm">
+                        {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
+                    </div>
                 </div>
 
                 {/* ── DIM OVERLAY ── */}
                 <div style={{
                     position: 'absolute', inset: 0, zIndex: 10,
-                    background: 'rgba(5,5,14,0.92)',
+                    background: 'rgba(19,21,28,0.92)',
                     opacity: isActive ? 1 : 0,
                     transition: 'opacity 0.45s ease',
                     pointerEvents: isActive ? 'auto' : 'none',
@@ -384,21 +386,21 @@ export default function CasesPage() {
                             position: 'absolute', top: 0, bottom: 0,
                             left: '50%', transform: 'translateX(-50%)',
                             width: '3px',
-                            background: 'linear-gradient(to bottom, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%)',
-                            boxShadow: '0 0 10px var(--gold)',
+                            background: 'linear-gradient(to bottom, transparent 0%, #3b82f6 20%, #3b82f6 80%, transparent 100%)',
+                            boxShadow: '0 0 15px rgba(59,130,246,0.6)',
                             zIndex: 6, pointerEvents: 'none',
                         }} />
                         <div style={{
                             position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)',
                             width: 0, height: 0,
                             borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
-                            borderTop: '9px solid var(--gold)', zIndex: 7,
+                            borderTop: '9px solid #3b82f6', zIndex: 7,
                         }} />
                         <div style={{
                             position: 'absolute', bottom: '-1px', left: '50%', transform: 'translateX(-50%)',
                             width: 0, height: 0,
                             borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
-                            borderBottom: '9px solid var(--gold)', zIndex: 7,
+                            borderBottom: '9px solid #3b82f6', zIndex: 7,
                         }} />
                     </>)}
 
@@ -406,9 +408,9 @@ export default function CasesPage() {
                     <div style={{
                         overflow: 'hidden',
                         height: isActive ? '152px' : '148px',
-                        background: isActive ? 'rgba(0,0,0,0.55)' : '#0c0d12',
-                        borderTop: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
-                        borderBottom: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'var(--border)'}`,
+                        background: isActive ? 'rgba(0,0,0,0.55)' : '#13151c',
+                        borderTop: `1px solid rgba(255,255,255,0.05)`,
+                        borderBottom: `1px solid rgba(255,255,255,0.05)`,
                         transition: 'height 0.3s, background 0.4s',
                         position: 'relative',
                     }}>
@@ -426,12 +428,12 @@ export default function CasesPage() {
                         </div>
                         <div style={{
                             position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
-                            background: `linear-gradient(to right, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            background: `linear-gradient(to right, ${isActive ? 'rgba(19,21,28,0.9)' : '#13151c'}, transparent)`,
                             transition: 'background 0.4s',
                         }} />
                         <div style={{
                             position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
-                            background: `linear-gradient(to left, ${isActive ? 'rgba(5,5,14,0.9)' : '#0c0d12'}, transparent)`,
+                            background: `linear-gradient(to left, ${isActive ? 'rgba(19,21,28,0.9)' : '#13151c'}, transparent)`,
                             transition: 'background 0.4s',
                         }} />
                     </div>
@@ -467,47 +469,46 @@ export default function CasesPage() {
                     opacity: isActive ? 0 : 1,
                     transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
-                }}>
+                }} className="w-full max-w-[400px] mx-auto flex flex-col items-center">
                     <button
-                        className={`btn-open-case ${previewCase.is_free ? 'free' : ''}`}
+                        className="w-full shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl mt-2 transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)] disabled:opacity-50"
                         onClick={handleOpenCase}
                         disabled={isActive}
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
                         {previewCase.is_free
-                            ? 'Открыть бесплатно'
-                            : <>Открыть за&nbsp;<img src="/assets/images/star.png" style={{ width: '18px', height: '18px', verticalAlign: 'middle', position: 'relative', top: '-1px' }} alt="star" />&nbsp;{previewCase.price}</>
+                            ? 'ОТКРЫТЬ БЕСПЛАТНО'
+                            : <div className="flex items-center gap-1.5 uppercase font-black">ОТКРЫТЬ ЗА <img src="/assets/images/star.png" className="w-5 h-5 mx-0.5" /> {previewCase.price}</div>
                         }
                     </button>
                 </div>
 
                 {/* ── SCROLLABLE CONTENT — items list ── */}
-                <div className="preview-scrollable" style={{
-                    flex: 1, overflowY: 'auto', paddingBottom: '16px',
+                <div style={{
+                    flex: 1, overflowY: 'auto', paddingBottom: '32px',
                     opacity: isActive ? 0 : 1,
                     transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
-                    marginTop: '12px',
+                    marginTop: '24px',
+                    width: '100%',
+                    paddingLeft: '16px',
+                    paddingRight: '16px',
                 }}>
-                    {previewCase.description && (
-                        <div className="case-description">{previewCase.description}</div>
-                    )}
-                    <div className="items-preview-section">
-                        <h3>Содержимое кейса</h3>
-                        <div className="preview-tiles-grid">
+                    <div className="w-full max-w-[400px] mx-auto bg-[#1a1d27] p-5 rounded-3xl border border-white/5 flex flex-col gap-3">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-bold text-gray-400 px-2 uppercase tracking-widest">Содержимое кейса</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
                             {previewItems.map((item, i) => (
-                                <div key={i} className={`preview-tile rarity-${item.gift.rarity || 'common'}`}>
-                                    <div className="preview-tile-tgs">
+                                <div key={i} className="bg-[#13151c] rounded-2xl p-3 border border-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="aspect-square w-12 h-12 flex items-center justify-center mb-1 z-10 transition-transform group-hover:scale-110">
                                         {item.gift.image_url?.endsWith('.tgs') ? (
-                                            <TgsAnimation url={item.gift.image_url} width={80} height={80} />
+                                            <TgsAnimation url={item.gift.image_url} width={48} height={48} />
                                         ) : (
-                                            <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name}
-                                                style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+                                            <img src={item.gift.image_url || '/assets/images/star.png'} alt={item.gift.name} style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
                                         )}
                                     </div>
-                                    <div className="preview-tile-name">{item.gift.name}</div>
+                                    <div className="text-[10px] font-bold text-center text-gray-300 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis">{item.gift.name}</div>
                                 </div>
                             ))}
                         </div>
@@ -534,55 +535,58 @@ export default function CasesPage() {
 
     // ── CASES GRID ────────────────────────────────────────────────────────────
     return (
-        <div className="tab-content active">
+        <div className="flex flex-col min-h-screen bg-[#13151c] text-white pb-24">
             {history.length > 0 && (
-                <div className="live-history-section" style={{ margin: '0 0 16px 0', borderRadius: '0' }}>
-                    <div className="live-history-header">
-                        <span className="live-history-title">Последние выигрыши</span>
-                        <div className="live-indicator"><span className="live-dot" /><span>LIVE</span></div>
+                <div className="w-full bg-[#1a1d27] p-4 border-b border-white/5 mb-4">
+                    <div className="flex items-center justify-between mx-auto max-w-[400px] mb-3">
+                        <span className="font-bold text-sm text-gray-400 uppercase tracking-widest">Последние выигрыши</span>
+                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /><span className="text-red-500 text-xs font-black tracking-widest">LIVE</span></div>
                     </div>
-                    <div className="live-history-scroll">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px]" style={{ scrollbarWidth: 'none' }}>
                         {history.map((item) => (
-                            <div key={item.id} className={`live-history-card rarity-${item.gift?.rarity || 'common'}`}>
-                                {item.gift?.image_url?.endsWith('.tgs') ? (
-                                    <TgsAnimation url={item.gift.image_url} width={48} height={48} />
-                                ) : (
-                                    <img src={item.gift?.image_url || '/assets/images/star.png'}
-                                        style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }} alt="" />
-                                )}
-                                <div className="live-history-card-name">{item.gift?.name || 'Приз'}</div>
-                                <div className="live-history-card-user">{item.user?.first_name || '...'}</div>
+                            <div key={item.id} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl opacity-50"></div>
+                                <div className="aspect-square flex items-center justify-center mb-1 z-10 w-12 h-12">
+                                    {item.gift?.image_url?.endsWith('.tgs') ? (
+                                        <TgsAnimation url={item.gift.image_url} width={48} height={48} />
+                                    ) : (
+                                        <img src={item.gift?.image_url || '/assets/images/star.png'} style={{ maxWidth: '48px', maxHeight: '48px', objectFit: 'contain' }} alt="" />
+                                    )}
+                                </div>
+                                <div className="text-[10px] font-bold text-gray-300 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.gift?.name || 'Приз'}</div>
+                                <div className="text-[9px] font-black text-[#2563eb] mt-0.5 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.user?.first_name || '...'}</div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-            <div className="cases-container">
+            <div className="px-4 w-full flex flex-col items-center">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20"><div className="loader-spinner" /></div>
+                    <div className="flex items-center justify-center py-20">
+                        <div className="w-8 h-8 rounded-full border-4 border-white/10 border-t-[#2563eb] animate-spin"></div>
+                    </div>
                 ) : cases.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon">📦</div>
-                        <div className="empty-state-text">Пока нет доступных кейсов</div>
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                        <div className="text-4xl mb-4 opacity-50">📦</div>
+                        <div className="font-bold tracking-wide">Пока нет доступных кейсов</div>
                     </div>
                 ) : (
-                    <div className="cases-grid">
+                    <div className="grid grid-cols-2 gap-4 w-full max-w-[400px]">
                         {cases.map(c => (
-                            <div key={c.id} className="case-card" onClick={() => openPreview(c)}>
-                                <div className="case-image-wrapper">
-                                    <img className="case-image" src={c.image_url || '/assets/images/free-stars-case.png'} alt={c.name} />
+                            <div key={c.id} className="bg-[#1a1d27] rounded-[2rem] p-4 border border-white/5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-white/5 active:scale-95 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.2)] group" onClick={() => openPreview(c)}>
+                                <div className="aspect-square w-full mb-2 flex items-center justify-center relative">
+                                    <div className="absolute inset-0 bg-[#2563eb]/5 rounded-full blur-xl group-hover:bg-[#2563eb]/10 transition-colors"></div>
+                                    <img className="max-w-[100px] max-h-[100px] object-contain relative z-10 drop-shadow-[0_0_15px_rgba(255,255,255,0.05)] group-hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all group-hover:scale-105" src={c.image_url || '/assets/images/free-stars-case.png'} alt={c.name} />
                                 </div>
-                                <div className="case-info">
-                                    <div className="case-name">{c.name.replace(/[^\w\s\u0400-\u04FF]/gu, '').trim()}</div>
-                                    {c.is_free ? (
-                                        <div className="case-price free">Открыть бесплатно</div>
-                                    ) : (
-                                        <div className="case-price">
-                                            <img src="/assets/images/star.png" className="price-star-icon" alt="star" />
-                                            {c.price}
-                                        </div>
-                                    )}
-                                </div>
+                                <div className="font-bold text-sm text-center leading-tight tracking-wide z-10 text-white truncate w-full px-1">{c.name.replace(/[^\w\s\u0400-\u04FF]/gu, '').trim()}</div>
+                                {c.is_free ? (
+                                    <div className="text-[#3b82f6] text-[10px] font-black mt-2 uppercase tracking-widest bg-[#2563eb]/10 px-3 py-1.5 rounded-full w-full text-center">БЕСПЛАТНО</div>
+                                ) : (
+                                    <div className="flex items-center justify-center gap-1.5 mt-2 bg-yellow-500/10 text-yellow-500 font-black text-xs px-3 py-1.5 rounded-full border border-yellow-500/20 w-full">
+                                        <img src="/assets/images/star.png" className="w-4 h-4" alt="star" />
+                                        {c.price}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

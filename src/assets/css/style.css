@@ -4250,9 +4250,9 @@ input:checked+.slider:before {
 /* ===== АНИМАЦИЯ АПГРЕЙДА (МЕНЮ) ===== */
 .upgrade-anim-wrapper {
     position: relative;
-    width: 140px; 
+    width: 140px;
     height: 140px;
-    transform: scale(0.75) translate(-20px, 0); 
+    transform: scale(0.75) translate(-20px, 0);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4272,11 +4272,34 @@ input:checked+.slider:before {
 }
 
 @keyframes upgradeChanceAnim {
-    0%, 15%   { stroke-dashoffset: 200; } /* small */
-    25%, 40%  { stroke-dashoffset: 125; } /* medium */
-    50%, 65%  { stroke-dashoffset: 50;  } /* large */
-    75%, 90%  { stroke-dashoffset: 220; } /* tiny */
-    100%      { stroke-dashoffset: 200; }
+
+    0%,
+    15% {
+        stroke-dashoffset: 200;
+    }
+
+    /* small */
+    25%,
+    40% {
+        stroke-dashoffset: 125;
+    }
+
+    /* medium */
+    50%,
+    65% {
+        stroke-dashoffset: 50;
+    }
+
+    /* large */
+    75%,
+    90% {
+        stroke-dashoffset: 220;
+    }
+
+    /* tiny */
+    100% {
+        stroke-dashoffset: 200;
+    }
 }
 
 .upgrade-gift-wrapper {
@@ -4295,8 +4318,17 @@ input:checked+.slider:before {
 }
 
 @keyframes upgradeGiftPulse {
-    0%, 100% { transform: scale(0.95); opacity: 0.6; }
-    50%      { transform: scale(1.05); opacity: 0.9; }
+
+    0%,
+    100% {
+        transform: scale(0.95);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
 }
 
 .upgrade-arrow-wrapper {
@@ -4308,29 +4340,64 @@ input:checked+.slider:before {
 
 .upgrade-arrow-img {
     position: absolute;
-    top: -2px; 
+    top: -2px;
     left: 50%;
     transform: translateX(-50%);
-    width: 16px; 
+    width: 16px;
     height: 10px;
     filter: drop-shadow(0 0 8px #ffffff);
 }
 
 @keyframes upgradeArrowSpin {
-    0%    { transform: rotate(0deg); }
-    10%   { transform: rotate(0deg); } 
-    22%   { transform: rotate(720deg); } 
-    25%   { transform: rotate(720deg); }
+    0% {
+        transform: rotate(0deg);
+    }
 
-    35%   { transform: rotate(720deg); } 
-    47%   { transform: rotate(1440deg); }
-    50%   { transform: rotate(1440deg); }
+    10% {
+        transform: rotate(0deg);
+    }
 
-    60%   { transform: rotate(1440deg); }
-    72%   { transform: rotate(2160deg); }
-    75%   { transform: rotate(2160deg); }
+    22% {
+        transform: rotate(720deg);
+    }
 
-    85%   { transform: rotate(2160deg); }
-    97%   { transform: rotate(2880deg); }
-    100%  { transform: rotate(2880deg); }
+    25% {
+        transform: rotate(720deg);
+    }
+
+    35% {
+        transform: rotate(720deg);
+    }
+
+    47% {
+        transform: rotate(1440deg);
+    }
+
+    50% {
+        transform: rotate(1440deg);
+    }
+
+    60% {
+        transform: rotate(1440deg);
+    }
+
+    72% {
+        transform: rotate(2160deg);
+    }
+
+    75% {
+        transform: rotate(2160deg);
+    }
+
+    85% {
+        transform: rotate(2160deg);
+    }
+
+    97% {
+        transform: rotate(2880deg);
+    }
+
+    100% {
+        transform: rotate(2880deg);
+    }
 }

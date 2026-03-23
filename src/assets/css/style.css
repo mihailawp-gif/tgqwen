@@ -98,20 +98,27 @@ body {
 .screen {
     display: none;
     min-height: 100dvh;
-    animation: screenFade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .screen.active {
     display: block;
 }
 
+/* animation только при первом открытии, НЕ при ре-рендерах */
+.screen.entering {
+    animation: screenFade .4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .tab-content {
     display: none;
-    animation: tabFade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tab-content.active {
     display: block;
+}
+
+.tab-content.entering {
+    animation: tabFade .4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes screenFade {

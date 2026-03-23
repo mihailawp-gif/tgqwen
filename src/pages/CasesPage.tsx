@@ -23,7 +23,7 @@ interface CaseGift {
 type AnimPhase = 'idle' | 'dimming' | 'spinning' | 'done';
 type SpinPattern = 'center' | 'undershoot' | 'overshoot' | 'edge' | 'snap';
 
-const ITEM_W   = 120;
+const ITEM_W = 120;
 const ITEM_GAP = 6;
 const ITEM_STEP = ITEM_W + ITEM_GAP;
 // Won item is placed at index 46 — enough runway after the track resets
@@ -64,26 +64,26 @@ export default function CasesPage() {
     const { showToast, setLoaderVisible, setCasePreviewOpen } = useAppStore();
     const { balance, setBalance } = useUserStore();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [cases, setCases]   = useState<CaseItem[]>([]);
+    const [cases, setCases] = useState<CaseItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState<HistoryItem[]>([]);
 
-    const [previewCase,  setPreviewCase]  = useState<CaseItem | null>(null);
+    const [previewCase, setPreviewCase] = useState<CaseItem | null>(null);
     const [previewItems, setPreviewItems] = useState<CaseGift[]>([]);
-    const [showPreview,  setShowPreview]  = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
-    const [animPhase,     setAnimPhase]     = useState<AnimPhase>('idle');
+    const [animPhase, setAnimPhase] = useState<AnimPhase>('idle');
     // Single roulette item list — pre-built from previewItems, won item slotted in
     const [rouletteItems, setRouletteItems] = useState<any[]>([]);
-    const [showResult,    setShowResult]    = useState(false);
-    const [resultData,    setResultData]    = useState<any>(null);
+    const [showResult, setShowResult] = useState(false);
+    const [resultData, setResultData] = useState<any>(null);
 
     // ref to the roulette track (always rendered inside preview screen)
-    const rouletteTrackRef    = useRef<HTMLDivElement>(null);
+    const rouletteTrackRef = useRef<HTMLDivElement>(null);
     // remembers the pixel offset of the roulette wrapper from viewport top (for the "fly to center" trick)
-    const rouletteWrapperRef  = useRef<HTMLDivElement>(null);
-    const savedTopRef         = useRef<number>(0);
-    const spinPatternRef      = useRef<SpinPattern>('center');
+    const rouletteWrapperRef = useRef<HTMLDivElement>(null);
+    const savedTopRef = useRef<number>(0);
+    const spinPatternRef = useRef<SpinPattern>('center');
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -182,12 +182,12 @@ export default function CasesPage() {
         applySpinTransform(pattern);
 
         const spinMs: Record<SpinPattern, number> = {
-            center:    5200,
-            undershoot:5400,
+            center: 5200,
+            undershoot: 5400,
             overshoot: 5600,
-            snap:      4600,
+            snap: 4600,
             // unused but needed for type
-            edge:      5000,
+            edge: 5000,
         };
 
         await new Promise(r => setTimeout(r, spinMs[pattern]));
@@ -218,37 +218,37 @@ export default function CasesPage() {
         // Max jitter is ±(ITEM_W/2 - 4)px so the item stays visibly under the indicator.
         const halfItem = ITEM_W / 2 - 4; // 56px — won't reach neighbour cell edge
         const jitters: Record<SpinPattern, number> = {
-            center:     Math.random() * 8 - 4,          // ±4px  — dead center
+            center: Math.random() * 8 - 4,          // ±4px  — dead center
             undershoot: -(halfItem * 0.85),              // -52px — indicator near left edge of item
-            overshoot:   (halfItem * 0.85),              // +52px — indicator near right edge of item
-            snap:        Math.random() * 6 - 3,          // ±3px  — snappy center
-            edge:       -(halfItem * 0.6),               // -34px — slightly left
+            overshoot: (halfItem * 0.85),              // +52px — indicator near right edge of item
+            snap: Math.random() * 6 - 3,          // ±3px  — snappy center
+            edge: -(halfItem * 0.6),               // -34px — slightly left
         };
 
         const eases: Record<SpinPattern, string> = {
-            center:    'cubic-bezier(0.06, 0.87, 0.13, 1)',
-            undershoot:'cubic-bezier(0.06, 0.92, 0.18, 1)',
+            center: 'cubic-bezier(0.06, 0.87, 0.13, 1)',
+            undershoot: 'cubic-bezier(0.06, 0.92, 0.18, 1)',
             overshoot: 'cubic-bezier(0.06, 0.90, 0.16, 1)',
-            snap:      'cubic-bezier(0.14, 0.02, 0.06, 1)',
-            edge:      'cubic-bezier(0.08, 0.88, 0.15, 1)',
+            snap: 'cubic-bezier(0.14, 0.02, 0.06, 1)',
+            edge: 'cubic-bezier(0.08, 0.88, 0.15, 1)',
         };
 
         const durations: Record<SpinPattern, string> = {
-            center:    '5s',
-            undershoot:'5.2s',
+            center: '5s',
+            undershoot: '5.2s',
             overshoot: '5.4s',
-            snap:      '4.4s',
-            edge:      '4.8s',
+            snap: '4.4s',
+            edge: '4.8s',
         };
 
         // Reset without transition
         track.style.transition = 'none';
-        track.style.transform  = 'translateX(0)';
+        track.style.transform = 'translateX(0)';
         track.getBoundingClientRect(); // force reflow
 
         // Apply spin
         track.style.transition = `transform ${durations[pattern]} ${eases[pattern]}`;
-        track.style.transform  = `translateX(-${base + jitters[pattern]}px)`;
+        track.style.transform = `translateX(-${base + jitters[pattern]}px)`;
     };
 
     // ── Sell / close ──────────────────────────────────────────────────────────
@@ -276,7 +276,7 @@ export default function CasesPage() {
         // Reset track position for next open
         if (rouletteTrackRef.current) {
             rouletteTrackRef.current.style.transition = 'none';
-            rouletteTrackRef.current.style.transform  = 'translateX(0)';
+            rouletteTrackRef.current.style.transform = 'translateX(0)';
         }
     }, [setCasePreviewOpen]);
 
@@ -285,7 +285,7 @@ export default function CasesPage() {
         return (
             <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4">
                 <div className="text-3xl font-black text-[#2563eb] tracking-widest mb-10 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">ВЫИГРЫШ!</div>
-                
+
                 <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative">
                     <div className="absolute -inset-1 bg-gradient-to-b from-[#2563eb]/20 to-transparent rounded-[3rem] blur-xl -z-10"></div>
                     <div className="w-32 h-32 flex items-center justify-center mb-6 relative">
@@ -296,9 +296,9 @@ export default function CasesPage() {
                             <img src={resultData.gift?.image_url || '/assets/images/star.png'} alt={resultData.gift?.name} className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]" />
                         )}
                     </div>
-                    
+
                     <div className="text-xl font-bold text-center">{resultData.gift?.name || 'Приз'}</div>
-                    
+
                     {!resultData.gift?.is_stars && (
                         <div className="flex items-center gap-1.5 text-yellow-500 font-black text-xl mt-3">
                             {resultData.gift?.value || 0}
@@ -353,7 +353,7 @@ export default function CasesPage() {
                         <h2 className="font-bold text-xl tracking-wide">{previewCase.name}</h2>
                     </div>
                     <div className="absolute right-4 top-4 flex bg-[#1c1f28] rounded-full px-3 py-1.5 border border-white/5 shadow-sm text-yellow-500 z-20 items-center gap-1 font-bold text-sm">
-                        {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
+                        {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4" />
                     </div>
                 </div>
 
@@ -541,9 +541,9 @@ export default function CasesPage() {
                         <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-red-500 text-xs font-black tracking-widest">LIVE</span></div>
                     </div>
                     <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px]" style={{ scrollbarWidth: 'none' }}>
-                        {history.map((item) => (
-                            <div key={item.id} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl opacity-50"></div>
+                        {history.map((item, index) => (
+                            <div key={index} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl"></div>
                                 <div className="aspect-square flex items-center justify-center mb-1 z-10 w-12 h-12">
                                     {item.gift?.image_url?.endsWith('.tgs') ? (
                                         <TgsAnimation url={item.gift.image_url} width={48} height={48} />

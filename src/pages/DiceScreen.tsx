@@ -101,7 +101,7 @@ export default function DiceScreen() {
                     <h2 className="font-bold text-xl tracking-wide">Дайс</h2>
                 </div>
                 <div className="absolute right-4 top-4 flex bg-[#1c1f28] rounded-full px-3 py-1.5 border border-white/5 shadow-sm text-yellow-500 z-20 items-center gap-1 font-bold text-sm">
-                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
+                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4" />
                 </div>
             </div>
 
@@ -172,23 +172,22 @@ export default function DiceScreen() {
                     </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex w-full max-w-[400px] gap-4 mt-6 shrink-0">
                     <button
                         onClick={() => playDice('under')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
                     >
                         <span>МЕНЬШЕ</span>
-                        <span className="text-xs font-medium opacity-80 mt-1">0 - {underMax}</span>
+                        <span className="text-xs font-medium mt-1">0 - {underMax}</span>
                     </button>
                     <button
                         onClick={() => playDice('over')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:opacity-50 flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
                     >
                         <span>БОЛЬШЕ</span>
-                        <span className="text-xs font-medium opacity-80 mt-1">{overMin} - 999999</span>
+                        <span className="text-xs font-medium mt-1">{overMin} - 999999</span>
                     </button>
                 </div>
             </div>

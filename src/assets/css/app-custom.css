@@ -952,21 +952,6 @@
     border-radius: 50%;
     background: var(--pink);
     box-shadow: 0 0 10px var(--pink);
-    animation: pulseLive 1.5s infinite;
-}
-
-@keyframes pulseLive {
-    0% {
-        box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);
-    }
-
-    70% {
-        box-shadow: 0 0 0 6px rgba(236, 72, 153, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
-    }
 }
 
 /* --- ФИКС АНИМАЦИИ ПЛИНКО В ГЛАВНОМ МЕНЮ --- */

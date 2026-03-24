@@ -85,3 +85,17 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ── Запрет ВСЕХ анимаций и переходов на dice и history элементах ── */
+/* Это включает любые унаследованные, глобальные или Tailwind анимации */
+.screen .flex-col .text-5xl,
+.screen .flex-col .font-black,
+.screen .tracking-widest,
+.live-history-scroll *,
+.live-history-scroll,
+[data-tgs-id] ~ *,
+.live-history-card {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+}

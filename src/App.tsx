@@ -159,6 +159,7 @@ function App() {
       <div className={`screen ${activeScreen === 'dice-screen' ? 'active' : ''}`}><DiceScreen /></div>
       <div className={`screen ${activeScreen === 'upgrade-screen' ? 'active' : ''}`}><UpgradeScreen /></div>
 
+
       {/* TopUp Modal */}
       <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 

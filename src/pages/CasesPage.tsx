@@ -29,6 +29,11 @@ const ITEM_STEP = ITEM_W + ITEM_GAP;
 // Won item is placed at index 46 — enough runway after the track resets
 const TARGET_IDX = 46;
 
+// Module-level caches — survive component remounts (tab switches)
+// so history/cases are shown instantly on every revisit without empty flash
+let _cachedHistory: HistoryItem[] = [];
+let _cachedCases: CaseItem[] = [];
+
 // Memoized roulette cell — re-renders only when `item` or `isSpinning` changes.
 // Во время спина TGS-анимации паузятся — убирает 60 одновременных RAF loop'ов.
 const RouletteCell = memo(function RouletteCell({
@@ -64,9 +69,10 @@ export default function CasesPage() {
     const { showToast, setLoaderVisible, setCasePreviewOpen } = useAppStore();
     const { balance, setBalance } = useUserStore();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [cases, setCases] = useState<CaseItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [history, setHistory] = useState<HistoryItem[]>([]);
+    // Init from module-level cache — no empty flash on remount
+    const [cases, setCases] = useState<CaseItem[]>(_cachedCases);
+    const [loading, setLoading] = useState(_cachedCases.length === 0);
+    const [history, setHistory] = useState<HistoryItem[]>(_cachedHistory);
 
     const [previewCase, setPreviewCase] = useState<CaseItem | null>(null);
     const [previewItems, setPreviewItems] = useState<CaseGift[]>([]);
@@ -90,18 +96,23 @@ export default function CasesPage() {
     useEffect(() => {
         loadCases();
         loadHistory();
-        // Polling removed to completely stop the DOM from shifting and "disappearing/appearing" lottie animations
     }, []);
 
     const loadCases = async () => {
-        setLoading(true);
+        if (_cachedCases.length === 0) setLoading(true);
         const res = await fetchCasesApi();
-        if (res.success) setCases(res.cases || []);
+        if (res.success) {
+            _cachedCases = res.cases || [];
+            setCases(_cachedCases);
+        }
         setLoading(false);
     };
     const loadHistory = async () => {
         const res = await fetchHistoryApi();
-        if (res?.success) setHistory(res.history || []);
+        if (res?.success) {
+            _cachedHistory = res.history || [];
+            setHistory(_cachedHistory);
+        }
     };
 
     const openPreview = async (caseItem: CaseItem) => {

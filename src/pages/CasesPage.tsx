@@ -109,8 +109,9 @@ export default function CasesPage() {
     };
     const loadHistory = async () => {
         const res = await fetchHistoryApi();
-        if (res?.success) {
-            _cachedHistory = res.history || [];
+        // If success, update cache. Otherwise KEEP old cache to prevent flickering!
+        if (res?.success && res.history && res.history.length > 0) {
+            _cachedHistory = res.history;
             setHistory(_cachedHistory);
         }
     };
@@ -535,30 +536,38 @@ export default function CasesPage() {
     // ── CASES GRID ────────────────────────────────────────────────────────────
     return (
         <div className="flex flex-col min-h-screen bg-[#13151c] text-white pb-24">
-            {history.length > 0 && (
-                <div className="w-full bg-[#1a1d27] p-4 border-b border-white/5 mb-4">
-                    <div className="flex items-center justify-between mx-auto max-w-[400px] mb-3">
-                        <span className="font-bold text-sm text-gray-400 uppercase tracking-widest">Последние выигрыши</span>
-                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-red-500 text-xs font-black tracking-widest">LIVE</span></div>
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px]" style={{ scrollbarWidth: 'none' }}>
-                        {history.map((item, index) => (
-                            <div key={item.id ?? index} className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24">
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl"></div>
-                                <div className="aspect-square flex items-center justify-center mb-1 z-10 w-12 h-12">
-                                    {item.gift?.image_url?.endsWith('.tgs') ? (
-                                        <TgsAnimation url={item.gift.image_url} width={48} height={48} />
-                                    ) : (
-                                        <img src={item.gift?.image_url || '/assets/images/star.png'} style={{ maxWidth: '48px', maxHeight: '48px', objectFit: 'contain' }} alt="" />
-                                    )}
-                                </div>
-                                <div className="text-[10px] font-bold text-gray-300 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.gift?.name || 'Приз'}</div>
-                                <div className="text-[9px] font-black text-[#2563eb] mt-0.5 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.user?.first_name || '...'}</div>
-                            </div>
-                        ))}
+            {/* Stable History Container — no conditional mount to prevent flickering */}
+            <div className="w-full bg-[#1a1d27] p-4 border-b border-white/5 mb-4" 
+                 style={{ 
+                    display: history.length > 0 ? 'block' : 'none',
+                    contain: 'layout style paint' 
+                 }}>
+                <div className="flex items-center justify-between mx-auto max-w-[400px] mb-3 live-history-title-row">
+                    <span className="font-bold text-sm text-gray-400 uppercase tracking-widest">Последние выигрыши</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="text-red-500 text-xs font-black tracking-widest">LIVE</span>
                     </div>
                 </div>
-            )}
+                <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 mx-auto max-w-[400px] live-history-scroll" 
+                     style={{ scrollbarWidth: 'none' }}>
+                    {history.map((item, index) => (
+                        <div key={item.id ?? index} 
+                             className="relative flex-shrink-0 bg-[#13151c] rounded-2xl p-2 border border-white/5 flex flex-col items-center w-24 live-history-card">
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-2xl"></div>
+                            <div className="aspect-square flex items-center justify-center mb-1 z-10 w-12 h-12">
+                                {item.gift?.image_url?.endsWith('.tgs') ? (
+                                    <TgsAnimation url={item.gift.image_url} width={48} height={48} alwaysPlay={true} />
+                                ) : (
+                                    <img src={item.gift?.image_url || '/assets/images/star.png'} style={{ maxWidth: '48px', maxHeight: '48px', objectFit: 'contain' }} alt="" />
+                                )}
+                            </div>
+                            <div className="text-[10px] font-bold text-gray-300 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.gift?.name || 'Приз'}</div>
+                            <div className="text-[9px] font-black text-[#2563eb] mt-0.5 z-10 w-full whitespace-nowrap overflow-hidden text-ellipsis text-center">{item.user?.first_name || '...'}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
             <div className="px-4 w-full flex flex-col items-center">
                 {loading ? (
                     <div className="flex items-center justify-center py-20">

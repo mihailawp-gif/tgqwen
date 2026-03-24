@@ -93,8 +93,11 @@
 .screen .tracking-widest,
 .live-history-scroll *,
 .live-history-scroll,
-[data-tgs-id] ~ *,
-.live-history-card {
+.live-history-card,
+.live-history-card *,
+.live-history-title-row,
+.live-history-title-row *,
+[data-tgs-id] ~ * {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;

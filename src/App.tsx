@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import Lottie from 'lottie-react';
 import loseAnimation from './assets/error.json';
 import { useAppStore } from './store/useStore';
@@ -51,30 +51,6 @@ const SmartToast = () => {
 };
 function App() {
   const { activeScreen, activeTab, loaderVisible, desktopGuardVisible, topUpOpen, setTopUpOpen } = useAppStore();
-
-  // Track previous values to only animate on REAL switches, not on re-renders
-  const prevScreenRef = useRef(activeScreen);
-  const prevTabRef = useRef(activeTab);
-  const [screenEntering, setScreenEntering] = useState('');
-  const [_tabEntering, setTabEntering] = useState('');
-
-  useEffect(() => {
-    if (prevScreenRef.current !== activeScreen) {
-      prevScreenRef.current = activeScreen;
-      setScreenEntering(activeScreen);
-      const t = setTimeout(() => setScreenEntering(''), 450);
-      return () => clearTimeout(t);
-    }
-  }, [activeScreen]);
-
-  useEffect(() => {
-    if (prevTabRef.current !== activeTab) {
-      prevTabRef.current = activeTab;
-      setTabEntering(activeTab);
-      const t = setTimeout(() => setTabEntering(''), 450);
-      return () => clearTimeout(t);
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     const initApp = async () => {
@@ -166,7 +142,7 @@ function App() {
 
   return (
     <div className="bg-background min-h-screen text-text overflow-x-hidden font-inter select-none">
-      <div className={`screen ${activeScreen === 'main-screen' ? 'active' : ''} ${screenEntering === 'main-screen' ? 'entering' : ''}`}>
+      <div className={`screen ${activeScreen === 'main-screen' ? 'active' : ''}`}>
         <Header />
 
         {activeTab === 'main' && <MainPage />}
@@ -177,11 +153,11 @@ function App() {
         <BottomNav />
       </div>
 
-      <div className={`screen ${activeScreen === 'crash-screen' ? 'active' : ''} ${screenEntering === 'crash-screen' ? 'entering' : ''}`}><CrashScreen /></div>
-      <div className={`screen ${activeScreen === 'mines-screen' ? 'active' : ''} ${screenEntering === 'mines-screen' ? 'entering' : ''}`}><MinesScreen /></div>
-      <div className={`screen ${activeScreen === 'plinko-screen' ? 'active' : ''} ${screenEntering === 'plinko-screen' ? 'entering' : ''}`}><PlinkoScreen /></div>
-      <div className={`screen ${activeScreen === 'dice-screen' ? 'active' : ''} ${screenEntering === 'dice-screen' ? 'entering' : ''}`}><DiceScreen /></div>
-      <div className={`screen ${activeScreen === 'upgrade-screen' ? 'active' : ''} ${screenEntering === 'upgrade-screen' ? 'entering' : ''}`}><UpgradeScreen /></div>
+      <div className={`screen ${activeScreen === 'crash-screen' ? 'active' : ''}`}><CrashScreen /></div>
+      <div className={`screen ${activeScreen === 'mines-screen' ? 'active' : ''}`}><MinesScreen /></div>
+      <div className={`screen ${activeScreen === 'plinko-screen' ? 'active' : ''}`}><PlinkoScreen /></div>
+      <div className={`screen ${activeScreen === 'dice-screen' ? 'active' : ''}`}><DiceScreen /></div>
+      <div className={`screen ${activeScreen === 'upgrade-screen' ? 'active' : ''}`}><UpgradeScreen /></div>
 
       {/* TopUp Modal */}
       <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />

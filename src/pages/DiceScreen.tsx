@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useAppStore, useUserStore } from '../store/useStore';
 import { playDiceApi } from '../api/api';
 
@@ -12,6 +12,10 @@ export default function DiceScreen() {
     const [resultNumber, setResultNumber] = useState('000000');
     const [resultLabel, setResultLabel] = useState('Сделайте ставку');
     const [resultStatus, setResultStatus] = useState<'idle' | 'win' | 'lose'>('idle');
+
+    // Keep balance in a ref so playDice doesn't re-create on every balance change
+    const balanceRef = useRef(balance);
+    useEffect(() => { balanceRef.current = balance; }, [balance]);
 
     const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
@@ -45,17 +49,15 @@ export default function DiceScreen() {
             setChance(95);
             return showToast('❌ Шанс от 1% до 95%');
         }
-        if (bet > balance) return showToast('❌ Недостаточно звезд');
+        if (bet > balanceRef.current) return showToast('❌ Недостаточно звезд');
 
         setIsRolling(true);
         setResultStatus('idle');
         setResultLabel('Бросаем кости...');
-        // We will not change the resultNumber randomly anymore to absolutely prevent any visual flashing
 
         const res = await playDiceApi(telegramId, bet, clampedChance, type);
 
-        setIsRolling(false);
-
+        // All state updates in one batch — React 18 batches these automatically
         if (res.success) {
             setResultNumber(String(res.result).padStart(6, '0'));
             setBalance(res.balance);
@@ -78,7 +80,9 @@ export default function DiceScreen() {
             setResultLabel('Сделайте ставку');
             showToast(res.error);
         }
-    }, [isRolling, bet, clampedChance, balance, telegramId, showToast, setBalance]);
+        // setIsRolling at the very end so all result states land in the same render
+        setIsRolling(false);
+    }, [isRolling, bet, clampedChance, telegramId, showToast, setBalance]);
 
     return (
         <div className="flex flex-col min-h-screen bg-[#13151c] text-white">
@@ -122,9 +126,12 @@ export default function DiceScreen() {
                         }}
                     >
                         {resultLabel}
-                        {resultStatus !== 'idle' && (
-                            <img src="/assets/images/star.png" className="w-5 h-5 flex-shrink-0" />
-                        )}
+                        {/* Always in DOM, visibility toggled — avoids mount/unmount flash */}
+                        <img
+                            src="/assets/images/star.png"
+                            className="w-5 h-5 flex-shrink-0"
+                            style={{ visibility: resultStatus !== 'idle' ? 'visible' : 'hidden' }}
+                        />
                     </div>
                 </div>
 

@@ -294,10 +294,10 @@ export default function CasesPage() {
 
     if (showResult && resultData) {
         return (
-            <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4">
+            <div className="fixed inset-0 bg-[#0c0d12]/95 backdrop-blur-md text-white flex flex-col items-center justify-center z-[100] px-4 result-overlay-active">
                 <div className="text-3xl font-black text-[#2563eb] tracking-widest mb-10 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">ВЫИГРЫШ!</div>
 
-                <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative">
+                <div className="w-full max-w-[320px] bg-[#1a1d27] rounded-[3rem] p-8 border border-white/10 flex flex-col items-center shadow-[0_20px_60px_rgba(37,99,235,0.2)] relative result-card-pop">
                     <div className="absolute -inset-1 bg-gradient-to-b from-[#2563eb]/20 to-transparent rounded-[3rem] blur-xl -z-10"></div>
                     <div className="w-32 h-32 flex items-center justify-center mb-6 relative">
                         <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-full blur-2xl"></div>
@@ -320,11 +320,11 @@ export default function CasesPage() {
 
                 <div className="w-full max-w-[320px] flex flex-col gap-3 mt-8">
                     {!resultData.gift?.is_stars && (
-                        <button className="w-full bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(37,99,235,0.4)]" onClick={sellResult}>
+                        <button className="w-full bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.96] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(37,99,235,0.4)] transition-transform" onClick={sellResult}>
                             ПРОДАТЬ ЗА {resultData.gift?.value || 0} <img src="/assets/images/star.png" className="w-5 h-5" alt="star" />
                         </button>
                     )}
-                    <button className="w-full bg-[#1a1d27] text-white border border-white/10 font-bold text-lg py-4 rounded-3xl transition-all active:scale-[0.98]" onClick={closeAll}>
+                    <button className="w-full bg-[#1a1d27] text-white border border-white/10 font-bold text-lg py-4 rounded-3xl active:scale-[0.96] transition-transform" onClick={closeAll}>
                         ЗАБРАТЬ
                     </button>
                 </div>
@@ -383,6 +383,7 @@ export default function CasesPage() {
                         flexShrink: 0,
                         zIndex: isActive ? 20 : 1,
                         transform: `translateY(${targetTranslateY})`,
+                        transition: 'transform 0.8s cubic-bezier(0.3, 1, 0.4, 1)',
                         willChange: 'transform',
                     }}
                 >

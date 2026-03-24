@@ -1,12 +1,20 @@
-/*
- * animations.css — тактильные отклики и минимальные переходы.
- * Все entrance-анимации с opacity:0 УБРАНЫ чтобы ничего не моргало.
- */
-
 :root {
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
     --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ── ПЛАВНЫЕ ЭКРАНЫ И ТАБЫ ─────────────────────────── */
+
+.screen.active, 
+.tab-content.active {
+    animation: screenFadeIn 0.18s var(--ease-out) both;
+}
+
+@keyframes screenFadeIn {
+    from { opacity: 0; transform: scale(0.99); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 /* ── КНОПКИ — тактильный отклик ─────────────────────── */
@@ -24,6 +32,35 @@
 .btn-open-case:active { transform: scale(0.95) !important; }
 .btn-action:active    { transform: scale(0.94) !important; }
 .amount-card:active   { transform: scale(0.93) !important; }
+
+/* ── МОДАЛКИ (Scale Pop) ───────────────────────────── */
+
+.modal.active .modal-content,
+.confirm-modal,
+.win-modal-content {
+    animation: modalPop 0.35s var(--ease-spring) both;
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── КЕЙСЫ — залет выигрыша ───────────────────────── */
+
+.result-overlay-active {
+    animation: fadeIn 0.4s ease both;
+}
+
+.result-card-pop {
+    animation: resultPop 0.5s var(--ease-bounce) both;
+}
+
+@keyframes resultPop {
+    0%   { transform: scale(0.6) translateY(40px); opacity: 0; }
+    60%  { transform: scale(1.05) translateY(-5px); }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
 
 /* ── MINES — открытие ячеек ──────────────────────────── */
 
@@ -86,19 +123,30 @@
     }
 }
 
-/* ── Запрет ВСЕХ анимаций и переходов на dice и history элементах ── */
-/* Это включает любые унаследованные, глобальные или Tailwind анимации */
-.screen .flex-col .text-5xl,
-.screen .flex-col .font-black,
-.screen .tracking-widest,
-.live-history-scroll *,
-.live-history-scroll,
+/* ── Запрет ВСЕХ анимаций и переходов на истории ── */
+/* Оставляем его только для карточек при загрузке, 
+   чтобы не было 'прыжков' opacity при обновлении стейта. */
 .live-history-card,
-.live-history-card *,
-.live-history-title-row,
-.live-history-title-row *,
-[data-tgs-id] ~ * {
-    animation: none !important;
+.live-history-scroll > div,
+[data-tgs-id]:empty {
     transition: none !important;
+    animation: none !important;
     opacity: 1 !important;
+}
+
+/* Текстовки и иконки пусть будут стабильными */
+.dice-result-number *,
+.live-history-card * {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ── LIVE МОРГАЛКА ────────────────────────────────── */
+.bg-red-500 {
+    animation: livePulse 2s infinite ease-in-out;
+}
+@keyframes livePulse {
+    0%   { transform: scale(1); opacity: 1; }
+    50%  { transform: scale(1.2); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
 }

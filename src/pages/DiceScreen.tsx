@@ -114,6 +114,7 @@ export default function DiceScreen() {
                                 : resultStatus === 'lose'
                                     ? 'drop-shadow(0 0 15px rgba(239,68,68,0.5))'
                                     : 'none',
+                            transition: 'color 0.4s ease, filter 0.4s ease',
                         }}
                     >
                         {resultNumber}
@@ -123,6 +124,7 @@ export default function DiceScreen() {
                         style={{
                             fontSize: resultStatus !== 'idle' ? '1.125rem' : '0.875rem',
                             color: resultStatus === 'win' ? '#22c55e' : resultStatus === 'lose' ? '#ef4444' : '#6b7280',
+                            transition: 'font-size 0.3s var(--ease-spring), color 0.3s ease',
                         }}
                     >
                         {resultLabel}
@@ -188,7 +190,7 @@ export default function DiceScreen() {
                     <button
                         onClick={() => playDice('under')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.96] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)] transition-all"
                     >
                         <span>МЕНЬШЕ</span>
                         <span className="text-xs font-medium mt-1">0 - {underMax}</span>
@@ -196,7 +198,7 @@ export default function DiceScreen() {
                     <button
                         onClick={() => playDice('over')}
                         disabled={isRolling}
-                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.98] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                        className="flex-1 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl active:scale-[0.96] disabled:bg-[#1a1d27] disabled:text-gray-400 disabled:shadow-none flex flex-col items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)] transition-all"
                     >
                         <span>БОЛЬШЕ</span>
                         <span className="text-xs font-medium mt-1">{overMin} - 999999</span>

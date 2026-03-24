@@ -5,17 +5,7 @@
     --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* ── ПЛАВНЫЕ ЭКРАНЫ И ТАБЫ ─────────────────────────── */
-
-.screen.active, 
-.tab-content.active {
-    animation: screenFadeIn 0.18s var(--ease-out) both;
-}
-
-@keyframes screenFadeIn {
-    from { opacity: 0; transform: scale(0.99); }
-    to   { opacity: 1; transform: scale(1); }
-}
+/* ── ПЛАВНЫЕ ЭКРАНЫ И ТАБЫ (Убраны из-за фоновых ре-рендеров) ── */
 
 /* ── КНОПКИ — тактильный отклик ─────────────────────── */
 
@@ -142,8 +132,8 @@
 }
 
 /* ── LIVE МОРГАЛКА ────────────────────────────────── */
-.bg-red-500 {
-    animation: livePulse 2s infinite ease-in-out;
+.live-dot {
+    animation: livePulse 2s infinite ease-in-out !important;
 }
 @keyframes livePulse {
     0%   { transform: scale(1); opacity: 1; }

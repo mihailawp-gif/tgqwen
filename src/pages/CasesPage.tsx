@@ -339,7 +339,6 @@ export default function CasesPage() {
             >
                 {/* ── HEADER ── */}
                 <div className="p-4 flex flex-col items-center justify-center z-20 sticky top-0 relative shrink-0" style={{
-                    transition: 'opacity 0.45s',
                     opacity: isActive ? 0 : 1,
                     pointerEvents: isActive ? 'none' : 'auto',
                 }}>
@@ -361,7 +360,6 @@ export default function CasesPage() {
                     position: 'absolute', inset: 0, zIndex: 10,
                     background: 'rgba(19,21,28,0.92)',
                     opacity: isActive ? 1 : 0,
-                    transition: 'opacity 0.45s ease',
                     pointerEvents: isActive ? 'auto' : 'none',
                 }} />
 
@@ -373,7 +371,6 @@ export default function CasesPage() {
                         flexShrink: 0,
                         zIndex: isActive ? 20 : 1,
                         transform: `translateY(${targetTranslateY})`,
-                        transition: isActive ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none',
                         willChange: 'transform',
                     }}
                 >
@@ -408,7 +405,6 @@ export default function CasesPage() {
                         background: isActive ? 'rgba(0,0,0,0.55)' : '#13151c',
                         borderTop: `1px solid rgba(255,255,255,0.05)`,
                         borderBottom: `1px solid rgba(255,255,255,0.05)`,
-                        transition: 'height 0.3s, background 0.4s',
                         position: 'relative',
                     }}>
                         <div
@@ -426,12 +422,10 @@ export default function CasesPage() {
                         <div style={{
                             position: 'absolute', top: 0, bottom: 0, left: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
                             background: `linear-gradient(to right, ${isActive ? 'rgba(19,21,28,0.9)' : '#13151c'}, transparent)`,
-                            transition: 'background 0.4s',
                         }} />
                         <div style={{
                             position: 'absolute', top: 0, bottom: 0, right: 0, width: '70px', zIndex: 3, pointerEvents: 'none',
                             background: `linear-gradient(to left, ${isActive ? 'rgba(19,21,28,0.9)' : '#13151c'}, transparent)`,
-                            transition: 'background 0.4s',
                         }} />
                     </div>
                 </div>
@@ -444,7 +438,6 @@ export default function CasesPage() {
                     minHeight: '38px',
                     position: 'relative',
                     zIndex: isActive ? 20 : 1,
-                    transition: 'opacity 0.3s',
                 }}>
                     {animPhase === 'spinning' && (
                         <span style={{
@@ -464,7 +457,6 @@ export default function CasesPage() {
                     position: 'relative',
                     zIndex: isActive ? 20 : 1,
                     opacity: isActive ? 0 : 1,
-                    transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
                 }} className="w-full max-w-[400px] mx-auto flex flex-col items-center">
                     <button
@@ -483,7 +475,6 @@ export default function CasesPage() {
                 <div style={{
                     flex: 1, overflowY: 'auto', paddingBottom: '32px',
                     opacity: isActive ? 0 : 1,
-                    transition: 'opacity 0.4s',
                     pointerEvents: isActive ? 'none' : 'auto',
                     marginTop: '24px',
                     width: '100%',

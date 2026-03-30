@@ -96,33 +96,19 @@ body {
 
 /* ===== СТЕКЛЯННЫЕ ЭКРАНЫ ===== */
 .screen {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
+    display: none;
     min-height: 100dvh;
-    transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
-    transform: scale(0.98);
 }
 
 .screen.active {
-    opacity: 1;
-    visibility: visible;
-    transform: scale(1);
-    position: relative;
-    z-index: 10;
+    display: block;
 }
 
 .tab-content {
-    opacity: 0;
-    visibility: hidden;
-    display: none; /* Keep display: none for tabs to prevent layout overlaps */
-    transition: opacity 0.2s ease;
+    display: none;
 }
 
 .tab-content.active {
-    opacity: 1;
-    visibility: visible;
     display: block;
 }
 

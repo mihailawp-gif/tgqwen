@@ -113,25 +113,29 @@
     }
 }
 
-/* ── Запрет ВСЕХ анимаций и переходов на истории ── */
-/* Оставляем его только для карточек при загрузке, 
-   чтобы не было 'прыжков' opacity при обновлении стейта. */
+/* ── Запрет ВСЕХ паразитных глобальных анимаций на истории и дайсах ── */
+/* Эти селекторы критически важны для отключения моргания Tailwind-классов */
+.screen .flex-col .text-5xl,
+.screen .flex-col .font-black,
+.screen .tracking-widest,
+.live-history-scroll *,
+.live-history-scroll,
 .live-history-card,
-.live-history-scroll > div,
+.live-history-card *,
+.live-history-title-row,
+.live-history-title-row *,
+[data-tgs-id] ~ *,
 [data-tgs-id]:empty {
-    transition: none !important;
     animation: none !important;
+    transition: none !important;
     opacity: 1 !important;
 }
 
-/* Текстовки и иконки пусть будут стабильными */
-.dice-result-number *,
+/* ── Текстовки и иконки стабильны ── */
 .live-history-card * {
     transition: none !important;
     animation: none !important;
 }
-
-/* ── LIVE МОРГАЛКА ────────────────────────────────── */
 .live-dot {
     animation: livePulse 2s infinite ease-in-out !important;
 }

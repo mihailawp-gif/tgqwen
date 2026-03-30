@@ -540,10 +540,8 @@ export default function CasesPage() {
             {/* Stable History Container — no conditional mount to prevent flickering */}
             <div className="w-full bg-[#1a1d27] p-4 border-b border-white/5 mb-4" 
                  style={{ 
-                    opacity: history.length > 0 ? 1 : 0,
-                    pointerEvents: history.length > 0 ? 'auto' : 'none',
-                    contain: 'layout style paint',
-                    transition: 'opacity 0.2s ease',
+                    display: history.length > 0 ? 'block' : 'none',
+                    contain: 'layout style paint'
                  }}>
                 <div className="flex items-center justify-between mx-auto max-w-[400px] mb-3 live-history-title-row">
                     <span className="font-bold text-sm text-gray-400 uppercase tracking-widest">Последние выигрыши</span>

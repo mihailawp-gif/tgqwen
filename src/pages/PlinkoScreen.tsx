@@ -284,7 +284,7 @@ export default function PlinkoScreen() {
                 </div>
             </div>
 
-            <div className="flex-1 px-3 pb-1 flex flex-col items-center pt-1 gap-1 overflow-visible">
+            <div className="flex-1 px-3 pb-1 flex flex-col items-center pt-1 gap-1 overflow-hidden">
                 <div className="w-full max-w-[400px] shrink-0" style={{ position: 'relative', height: '310px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '8px' }}>
                     <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: 'calc(100% - 60px)', position: 'absolute', top: 0 }}></div>
                     <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets" style={{ position: 'relative', zIndex: 5 }}></div>

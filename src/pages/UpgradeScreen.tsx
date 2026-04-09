@@ -193,7 +193,7 @@ export default function UpgradeScreen() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-visible px-4 flex flex-col items-center pb-1">
+            <div className="flex-1 overflow-hidden px-4 flex flex-col items-center pb-1">
 
 
                 <div className="relative w-[260px] h-[260px] flex items-center justify-center mt-2 shrink-0">

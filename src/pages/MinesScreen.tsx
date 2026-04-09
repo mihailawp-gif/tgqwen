@@ -173,15 +173,15 @@ export default function MinesScreen() {
                     <h2 className="font-bold text-xl tracking-wide">MINES</h2>
                 </div>
                 <div className="absolute right-4 top-4 flex bg-[#1c1f28] rounded-full px-3 py-1.5 border border-white/5 shadow-sm text-yellow-500 z-20 items-center gap-1 font-bold text-sm">
-                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4"/>
+                    {balance} <img src="/assets/images/star.png" alt="star" className="w-4 h-4" />
                 </div>
             </div>
 
-            <div className="flex-1 px-4 flex flex-col items-center pt-2 overflow-y-auto">
+            <div className="flex-1 px-3 flex flex-col items-center pt-1 pb-1 overflow-visible">
                 {/* Control Panel */}
                 <div className={`w-full max-w-[400px] flex flex-col gap-2 transition-all duration-300 ${gameActive ? 'opacity-50 pointer-events-none' : ''}`}>
-                    
-                    <div className="w-full bg-[#1a1d27] mt-1 p-3 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-2">
+
+                    <div className="w-full bg-[#1a1d27] mt-[2px] p-2 rounded-2xl border border-white/5 shrink-0 flex flex-col gap-1.5">
                         <div className="flex justify-between items-center text-sm text-gray-400 font-bold px-2">
                             <span>Сумма ставки</span>
                             <div className="text-yellow-500 flex items-center gap-1.5">
@@ -191,7 +191,7 @@ export default function MinesScreen() {
                         </div>
                     </div>
 
-                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0 mt-1">
+                    <div className="w-full flex gap-1 justify-center bg-[#1a1d27] rounded-3xl p-1 border border-white/5 shrink-0 mt-1">
                         <button onClick={() => modifyBet('clear')} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">Min</button>
                         <button onClick={() => modifyBet('add', 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">+10</button>
                         <button onClick={() => modifyBet('add', 50)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">+50</button>
@@ -199,7 +199,7 @@ export default function MinesScreen() {
                         <button onClick={() => modifyBet('mult', 0.5)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">/2</button>
                     </div>
 
-                    <div className="w-full bg-[#1a1d27] mt-1 p-3 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-2">
+                    <div className="w-full bg-[#1a1d27] mt-1 p-2 rounded-2xl border border-white/5 shrink-0 flex flex-col gap-1.5">
                         <div className="flex justify-between items-center text-sm text-gray-400 font-bold px-2">
                             <span>Бомбы</span>
                             <div className="text-white flex items-center gap-1.5">
@@ -208,7 +208,7 @@ export default function MinesScreen() {
                         </div>
                     </div>
 
-                    <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0 mt-1">
+                    <div className="w-full flex gap-1 justify-center bg-[#1a1d27] rounded-3xl p-1 border border-white/5 shrink-0 mt-1">
                         {[3, 5, 10, 24].map((b) => (
                             <button key={b} onClick={() => setBombs(b)} className={`text-sm font-bold py-2 flex-1 rounded-2xl transition-all ${bombs === b ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
                                 {b}
@@ -220,7 +220,7 @@ export default function MinesScreen() {
                 {/* Multipliers Tape */}
                 <div className="w-full max-w-[400px] flex gap-2 overflow-x-auto py-2 my-1 scrollbar-none" id="minesMultipliers" ref={multipliersRef} style={{ scrollbarWidth: 'none' }}>
                     {MINES_COEFS_JS[bombs]?.map((coef, index) => (
-                        <div key={index} className={`relative shrink-0 border border-white/5 rounded-xl px-3 py-2 min-w-[70px] text-center font-bold text-sm transition-all duration-300 ${index === step ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#3b82f6] shadow-[0_4px_12px_rgba(37,99,235,0.2)] scale-105 z-10' : 'bg-[#1a1d27] text-gray-500'}`}>
+                        <div key={index} className={`relative shrink-0 border border-white/5 rounded-xl px-2 py-1.5 min-w-[60px] text-center font-bold text-xs transition-all duration-300 ${index === step ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#3b82f6] shadow-[0_4px_12px_rgba(37,99,235,0.2)] scale-105 z-10' : 'bg-[#1a1d27] text-gray-500'}`}>
                             <div className="absolute -top-2 left-2 px-1 text-[9px] font-semibold text-gray-500 bg-[#13151c] rounded">Шаг {index + 1}</div>
                             x{coef}
                         </div>
@@ -228,7 +228,7 @@ export default function MinesScreen() {
                 </div>
 
                 {/* Mines Grid */}
-                <div className="w-full max-w-[400px] flex justify-center mt-auto mb-auto bg-[#1a1d27] p-2 rounded-3xl border border-white/5">
+                <div className="w-full max-w-[400px] flex justify-center mt-auto mb-auto bg-[#1a1d27] p-1.5 rounded-3xl border border-white/5">
                     <div className="grid grid-cols-5 gap-1.5 w-full">
                         {Array.from({ length: 25 }).map((_, i) => {
                             const isClicked = clickedGrid.includes(i);
@@ -278,11 +278,11 @@ export default function MinesScreen() {
                 {/* Action Area */}
                 <div className="w-full flex justify-center mt-1 mb-2">
                     {!gameActive ? (
-                        <button onClick={handleStartMines} className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-3.5 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]">
+                        <button onClick={handleStartMines} className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-base py-3 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]">
                             {minesGrid.length > 0 ? 'ПОПРОБОВАТЬ СНОВА' : 'ИГРАТЬ'}
                         </button>
                     ) : (
-                        <button onClick={handleCollectMines} className="w-full max-w-[400px] shrink-0 bg-[#22c55e] text-white border-none font-bold text-lg py-3.5 rounded-3xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(34,197,94,0.4)]">
+                        <button onClick={handleCollectMines} className="w-full max-w-[400px] shrink-0 bg-[#22c55e] text-white border-none font-bold text-base py-3 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(34,197,94,0.4)]">
                             ЗАБРАТЬ: {winAmount || bet} <img src="/assets/images/star.png" style={{ width: '22px', height: '22px' }} />
                         </button>
                     )}

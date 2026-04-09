@@ -193,22 +193,22 @@ export default function UpgradeScreen() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 flex flex-col items-center pb-24">
+            <div className="flex-1 overflow-y-auto px-4 flex flex-col items-center pb-2">
 
 
-                <div className="relative w-[300px] h-[300px] flex items-center justify-center mt-[-10px]">
+                <div className="relative w-[260px] h-[260px] flex items-center justify-center mt-2 shrink-0">
 
                     <div className="absolute inset-4 rounded-full border border-white/5 bg-[#171a22]" />
-                    <div className="absolute inset-10 rounded-full border border-white/5 bg-[#1b1f28]" />
-                    <div className="absolute inset-16 rounded-full border border-white/5 bg-[#1e222d]" />
+                    <div className="absolute inset-[30px] rounded-full border border-white/5 bg-[#1b1f28]" />
+                    <div className="absolute inset-[50px] rounded-full border border-white/5 bg-[#1e222d]" />
 
 
 
-                    <svg className="absolute w-[280px] h-[280px] -rotate-90 pointer-events-none z-10" viewBox="0 0 280 280">
-                        <circle cx="140" cy="140" r="130" fill="none" stroke="#2a2d36" strokeWidth="8" />
-                        <circle cx="140" cy="140" r="130" fill="none" stroke="#22c55e" strokeWidth="8" strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 130}
-                            strokeDashoffset={(2 * Math.PI * 130) * (1 - chance / 100)}
+                    <svg className="absolute w-[240px] h-[240px] -rotate-90 pointer-events-none z-10" viewBox="0 0 240 240">
+                        <circle cx="120" cy="120" r="110" fill="none" stroke="#2a2d36" strokeWidth="8" />
+                        <circle cx="120" cy="120" r="110" fill="none" stroke="#22c55e" strokeWidth="8" strokeLinecap="round"
+                            strokeDasharray={2 * Math.PI * 110}
+                            strokeDashoffset={(2 * Math.PI * 110) * (1 - chance / 100)}
                             style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
                         />
                     </svg>
@@ -223,27 +223,27 @@ export default function UpgradeScreen() {
                     </div>
 
 
-                    <div className="relative w-36 h-36 flex flex-col items-center justify-center z-10 mt-4">
+                    <div className="relative w-32 h-32 flex flex-col items-center justify-center z-10 mt-4">
                         {targetGift ? (
-                            <GiftIcon url={targetGift.image_url} size={110} className="drop-shadow-2xl" />
+                            <GiftIcon url={targetGift.image_url} size={90} className="drop-shadow-2xl" />
                         ) : (
-                            <img src="/assets/gift-silhouette.png" alt="Silhouette" className="w-[100px] h-[100px] object-contain opacity-20 filter grayscale blur-[1px]" />
+                            <img src="/assets/gift-silhouette.png" alt="Silhouette" className="w-[80px] h-[80px] object-contain opacity-20 filter grayscale blur-[1px]" />
                         )}
                         <span className="text-xl font-black mt-1 text-gray-200">{chance.toFixed(2)}%</span>
                     </div>
                 </div>
 
 
-                <div className="flex gap-2 justify-center w-full max-w-[400px] bg-[#1a1d27] rounded-3xl p-1.5 mt-8 border border-white/5">
+                <div className="flex gap-2 justify-center w-full max-w-[400px] bg-[#1a1d27] rounded-3xl p-1.5 mt-4 border border-white/5 shrink-0">
                     {[{ v: 1.5, l: 'x1.5' }, { v: 2, l: 'x2' }, { v: 3, l: 'x3' }, { v: 5, l: 'x5' }, { v: 10, l: 'x10' }].map((item, i) => (
-                        <button key={i} onClick={() => handleMultiplier(item.v)} disabled={isRolling} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">
+                        <button key={i} onClick={() => handleMultiplier(item.v)} disabled={isRolling} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">
                             {item.l}
                         </button>
                     ))}
                 </div>
 
-                <div className="w-full max-w-[400px] bg-[#1a1d27] mt-4 p-4 rounded-3xl border border-white/5 shrink-0">
-                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold mb-3 px-1">
+                <div className="w-full max-w-[400px] bg-[#1a1d27] mt-3 p-3 rounded-3xl border border-white/5 shrink-0">
+                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold mb-2 px-1">
                         <span>Докинуть звезд</span>
                         <div className="text-yellow-500 flex items-center gap-1">
                             {addedBalance} <img src="/assets/images/star.png" className="w-3.5 h-3.5" alt="star" />
@@ -261,8 +261,8 @@ export default function UpgradeScreen() {
                 </div>
 
 
-                <div className="flex w-full max-w-[400px] gap-4 mt-6 h-40 shrink-0">
-                    <div onClick={() => !isRolling && setInventoryModalOpen(true)} className="flex-1 bg-[#1a1d27] border border-white/5 hover:border-white/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 p-4 shadow-lg relative">
+                <div className="flex w-full max-w-[400px] gap-3 mt-4 h-32 shrink-0">
+                    <div onClick={() => !isRolling && setInventoryModalOpen(true)} className="flex-1 bg-[#1a1d27] border border-white/5 hover:border-white/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 p-3 shadow-lg relative">
                         {inventoryItems.length > 0 ? (
                             <div className="flex flex-col items-center w-full h-full justify-center">
                                 {inventoryItems.length === 1 ? (
@@ -296,7 +296,7 @@ export default function UpgradeScreen() {
                         )}
                     </div>
 
-                    <div onClick={() => !isRolling && setTargetModalOpen(true)} className="flex-1 bg-[#1a1d27] border border-white/5 hover:border-white/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 p-4 shadow-lg relative">
+                    <div onClick={() => !isRolling && setTargetModalOpen(true)} className="flex-1 bg-[#1a1d27] border border-white/5 hover:border-white/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 p-3 shadow-lg relative">
                         {targetGift ? (
                             <div className="flex flex-col items-center justify-center w-full h-full">
                                 <GiftIcon url={targetGift.image_url} size={64} className="mb-2" />
@@ -319,7 +319,7 @@ export default function UpgradeScreen() {
                 <button
                     onClick={playUpgrade}
                     disabled={isRolling || selectedInventoryItemIds.length === 0 || !selectedTargetGiftId}
-                    className="w-full max-w-[400px] shrink-0 bg-[#2b2d38] text-gray-500 border border-white/5 font-bold text-lg py-4 rounded-3xl mt-6 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center shadow-md"
+                    className="w-full max-w-[400px] shrink-0 bg-[#2b2d38] text-gray-500 border border-white/5 font-bold text-lg py-3.5 rounded-3xl mt-4 mb-2 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center shadow-md"
                     style={selectedInventoryItemIds.length > 0 && selectedTargetGiftId ? { background: '#2563eb', color: '#fff', border: 'none', boxShadow: '0 8px 24px rgba(37,99,235,0.4)' } : {}}
                 >
                     Апгрейд

@@ -284,15 +284,15 @@ export default function PlinkoScreen() {
                 </div>
             </div>
 
-            <div className="flex-1 px-4 pb-10 flex flex-col items-center gap-4 overflow-y-auto">
-                <div className="w-full max-w-[400px]" style={{ position: 'relative', height: '420px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '12px' }}>
+            <div className="flex-1 px-4 pb-2 flex flex-col items-center gap-2 overflow-y-auto">
+                <div className="w-full max-w-[400px]" style={{ position: 'relative', height: '360px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '12px' }}>
                     <div ref={pinsContainerRef} id="plinkoPins" style={{ width: '100%', height: 'calc(100% - 60px)', position: 'absolute', top: 0 }}></div>
                     <div ref={bucketsContainerRef} id="plinkoBuckets" className="plinko-buckets" style={{ position: 'relative', zIndex: 5 }}></div>
                 </div>
 
                 <div className="w-full max-w-[400px] flex flex-col gap-2 mt-2" style={{ opacity: activeBalls > 0 ? 0.5 : 1, pointerEvents: activeBalls > 0 ? 'none' : 'auto' }}>
                     
-                    <div className="w-full bg-[#1a1d27] mt-2 p-5 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-3">
+                    <div className="w-full bg-[#1a1d27] mt-1 p-3 rounded-3xl border border-white/5 shrink-0 flex flex-col gap-2">
                         <div className="flex justify-between items-center text-sm text-gray-400 font-bold px-2">
                             <span>Сумма ставки</span>
                             <div className="text-yellow-500 flex items-center gap-1.5">
@@ -303,16 +303,16 @@ export default function PlinkoScreen() {
                     </div>
 
                     <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
-                        <button onClick={() => setBet(prev => prev + 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+10</button>
-                        <button onClick={() => setBet(prev => prev + 50)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">+50</button>
-                        <button onClick={() => setBet(prev => Math.floor(prev * 2))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">x2</button>
-                        <button onClick={() => setBet(prev => Math.max(1, Math.floor(prev / 2)))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-3 flex-1 rounded-2xl transition-all">/2</button>
+                        <button onClick={() => setBet(prev => prev + 10)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">+10</button>
+                        <button onClick={() => setBet(prev => prev + 50)} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">+50</button>
+                        <button onClick={() => setBet(prev => Math.floor(prev * 2))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">x2</button>
+                        <button onClick={() => setBet(prev => Math.max(1, Math.floor(prev / 2)))} className="bg-transparent hover:bg-white/10 active:bg-white/20 text-gray-300 text-sm font-bold py-2 flex-1 rounded-2xl transition-all">/2</button>
                     </div>
 
                     <div className="text-xs text-gray-400 font-bold px-2 mt-2">Сложность</div>
                     <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
                         {(['low', 'medium', 'high'] as const).map(d => (
-                            <button key={d} onClick={() => setDifficulty(d)} className={`text-sm font-bold py-3 flex-1 rounded-2xl transition-all ${difficulty === d ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
+                            <button key={d} onClick={() => setDifficulty(d)} className={`text-sm font-bold py-2 flex-1 rounded-2xl transition-all ${difficulty === d ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
                                 {d === 'low' ? 'Легко' : d === 'medium' ? 'Средне' : 'Сложно'}
                             </button>
                         ))}
@@ -321,7 +321,7 @@ export default function PlinkoScreen() {
                     <div className="text-xs text-gray-400 font-bold px-2 mt-2">Количество рядов</div>
                     <div className="w-full flex gap-2 justify-center bg-[#1a1d27] rounded-3xl p-1.5 border border-white/5 shrink-0">
                         {[8, 10, 12, 14, 16].map(p => (
-                            <button key={p} onClick={() => setPinsCount(p)} className={`text-sm font-bold py-3 flex-1 rounded-2xl transition-all ${pinsCount === p ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
+                            <button key={p} onClick={() => setPinsCount(p)} className={`text-sm font-bold py-2 flex-1 rounded-2xl transition-all ${pinsCount === p ? 'bg-[#2563eb] text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)]' : 'bg-transparent text-gray-300 hover:bg-white/10 active:bg-white/20'}`}>
                                 {p}
                             </button>
                         ))}
@@ -331,7 +331,7 @@ export default function PlinkoScreen() {
                 {/* Action Button */}
                 <button
                     onClick={handlePlay}
-                    className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-4 rounded-3xl mt-4 transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
+                    className="w-full max-w-[400px] shrink-0 bg-[#2563eb] text-white border-none font-bold text-lg py-3.5 rounded-3xl mt-2 mb-2 transition-all active:scale-[0.98] flex items-center justify-center shadow-[0_8px_24px_rgba(37,99,235,0.4)]"
                 >
                     {activeBalls > 0 ? `ШАРИКОВ В ПОЛЕТЕ: ${activeBalls}` : 'ИГРАТЬ'}
                 </button>
